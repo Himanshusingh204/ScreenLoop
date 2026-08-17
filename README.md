@@ -73,20 +73,6 @@ Host Browser ────── WebRTC P2P Direct Mesh (DTLS 1.2 / SRTP) ──�
 
 ---
 
-## 📊 Platform Comparison Matrix
-
-| Feature | Screenloop Pro | Discord | Zoom | Teleparty |
-|---|:---:|:---:|:---:|:---:|
-| **48kHz Stereo Movie Audio** | ✅ **Native Dynamic Range** | ⚠️ Voice-filtered | ❌ Mono voice codec | ❌ Extension audio |
-| **Direct P2P Media (Zero Server Storage)** | ✅ **100% P2P Mesh** | ❌ Server Relayed | ❌ Server Relayed | ❌ Third-party server |
-| **End-to-End Chat Encryption (AES-256)** | ✅ **Client-side `#key`** | ❌ Server Plaintext | ❌ Server Managed | ❌ Unencrypted |
-| **Account / Software Installation** | ✅ **Zero Sign-Up / Pure Web** | ❌ Account Required | ❌ App Required | ❌ Chrome Extension |
-| **1080p / 1440p 60fps Screen Sharing** | ✅ **Free & Unlimited** | ❌ Nitro ($9.99/mo) | ❌ 720p Capped | ❌ Not Supported |
-| **Live Screen Drawing & Laser Pointer** | ✅ **Included Built-In** | ❌ Not Available | ⚠️ Meeting Plan only | ❌ Not Available |
-| **Client-Side QR Code Join** | ✅ **Native Canvas** | ❌ Not Supported | ❌ Not Supported | ❌ Not Supported |
-
----
-
 ## 🏛️ System Architecture
 
 Screenloop employs a strict hybrid architecture: a lightweight Node.js signaling control plane and a decentralized WebRTC peer-to-peer data plane.

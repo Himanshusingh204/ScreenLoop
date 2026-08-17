@@ -1,18 +1,18 @@
-// Features.jsx — Deep-dive feature showcase & comparison matrix
+// Features.jsx — Technical feature showcase for Screenloop Pro
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import {
   FilmStrip, MonitorPlay, SpeakerSimpleHigh, LockSimple, PaintBrush,
-  ChartBar, QrCode, Sparkle, Lightning, Users, ShieldCheck, Check,
-  RocketLaunch, PictureInPicture, CornersOut, Cursor
+  ChartBar, QrCode, Lightning, Users, ShieldCheck, Check,
+  RocketLaunch, PictureInPicture
 } from '../components/icons';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
 import { generateRoomId, generateRoomKey } from '../utils';
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Features' },
+  { id: 'all', label: 'All Capabilities' },
   { id: 'media', label: 'Streaming & Audio' },
   { id: 'security', label: 'Privacy & Security' },
   { id: 'interactive', label: 'Interactive Tools' },
@@ -21,85 +21,76 @@ const CATEGORIES = [
 const FEATURES = [
   {
     category: 'media',
-    icon: <SpeakerSimpleHigh size={32} weight="duotone" />,
-    badge: 'Audio Engineering',
+    icon: <SpeakerSimpleHigh size={30} weight="duotone" />,
+    badge: 'Audio Pipeline',
     title: '48 kHz Uncompressed Cinema Audio',
-    desc: 'Echo cancellation and aggressive noise suppression are explicitly disabled. Full dynamic audio range is preserved for explosive movie soundtracks, concerts, and rich dialogue.',
-    specs: ['48,000 Hz Stereo', 'Dynamic Range Compressor', 'Built-in Dialogue Booster'],
+    desc: 'Voice isolation filters and aggressive noise gates are disabled to preserve full dynamic range for movies, background film scores, and delicate audio details.',
+    specs: ['48,000 Hz Stereo', 'Dynamic Range Compression', 'Dialogue Gain Booster'],
   },
   {
     category: 'media',
-    icon: <MonitorPlay size={32} weight="duotone" />,
+    icon: <MonitorPlay size={30} weight="duotone" />,
     badge: 'WebRTC P2P',
-    title: 'Direct Mesh Screen Streaming (1440p / 60fps)',
-    desc: 'Video and audio pixels travel directly from the host to viewers over high-speed peer-to-peer WebRTC connections. No relay servers causing artificial lag or bitrate starvation.',
-    specs: ['Up to 1440p 2K', 'Adaptive Quality Switcher', 'Sub-150ms Glass-to-Glass Latency'],
+    title: 'Direct Mesh Screen Sharing (1440p / 60fps)',
+    desc: 'Video frames travel directly between browsers via peer-to-peer WebRTC connections. Eliminates central relay server congestion and video buffering.',
+    specs: ['Up to 1440p 2K 60fps', 'Adaptive Bitrate Controller', 'Sub-150ms Glass Latency'],
   },
   {
     category: 'security',
-    icon: <LockSimple size={32} weight="duotone" />,
+    icon: <LockSimple size={30} weight="duotone" />,
     badge: 'Cryptography',
     title: 'AES-GCM 256-Bit End-to-End Encryption',
-    desc: 'Chat messages are encrypted client-side using the browser Web Crypto API. The symmetric encryption key is embedded only in the URL hash fragment (#key), which web servers never receive.',
-    specs: ['AES-256-GCM Cypher', 'Zero Server Plaintext', 'Hash-Fragment Secret Transport'],
+    desc: 'Chat messages are encrypted client-side using the Web Crypto API. Encryption keys reside in the URL hash fragment (#key) and are never sent over HTTP.',
+    specs: ['AES-256-GCM Cypher', 'Zero Server Plaintext', 'Hash-Fragment Isolation'],
   },
   {
     category: 'interactive',
-    icon: <PaintBrush size={32} weight="duotone" />,
-    badge: 'Collaboration',
-    title: 'Live Screen Annotations & Laser Pointer',
-    desc: 'Draw over the stream in real-time with customizable highlighters, pen strokes, and neon laser pointers. Viewers can react and interact synchronously without obscuring the video.',
-    specs: ['Real-Time Canvas Sync', 'Laser Pointer Tracking', 'Pressure-Sensitive Brushes'],
+    icon: <PaintBrush size={30} weight="duotone" />,
+    badge: 'Annotations',
+    title: 'Synchronized Screen Drawing & Laser Pointer',
+    desc: 'Annotate the live stream in real-time with customizable highlighters, pen strokes, and neon laser pointer tracking without disrupting video playback.',
+    specs: ['Real-Time Canvas Sync', 'Laser Pointer Overlay', 'Non-Destructive UI'],
   },
   {
     category: 'interactive',
-    icon: <Users size={32} weight="duotone" />,
-    badge: 'Identity',
+    icon: <Users size={30} weight="duotone" />,
+    badge: 'Avatars',
     title: 'Dynamic Gender-Tailored Avatars',
-    desc: 'Choose your avatar style on room join (Female, Male, or Neutral) to automatically generate stylish, harmonious illustrated avatars powered by the DiceBear API.',
-    specs: ['DiceBear SVG Rendering', 'Deterministic Color Seeds', 'No Profile Accounts Needed'],
+    desc: 'Select your preferred avatar style upon joining (Female, Male, or Neutral) to render deterministic, illustrated avatars powered by the DiceBear API.',
+    specs: ['DiceBear SVG Engine', 'Deterministic Name Seeds', 'No Accounts Required'],
   },
   {
     category: 'interactive',
-    icon: <ChartBar size={32} weight="duotone" />,
-    badge: 'Telemetry',
-    title: 'Real-Time Diagnostic HUD',
-    desc: 'Inspect stream health on the fly. Track live FPS, incoming bitrate in kbps, packet loss percentages, round-trip ping time, and audio buffer states with a single click.',
-    specs: ['WebRTC getStats API', 'Live FPS & Bitrate Meter', 'Network Quality Indicator'],
+    icon: <ChartBar size={30} weight="duotone" />,
+    badge: 'Diagnostics',
+    title: 'Live Telemetry HUD',
+    desc: 'Inspect connection quality at a glance. Track live FPS, incoming bitrate in kbps, packet loss percentage, and round-trip ping time in real time.',
+    specs: ['WebRTC getStats Telemetry', 'FPS & Bitrate Gauge', 'Link Health Status'],
   },
   {
     category: 'security',
-    icon: <ShieldCheck size={32} weight="duotone" />,
+    icon: <ShieldCheck size={30} weight="duotone" />,
     badge: 'Access Control',
     title: 'PIN Protection & Anti-Brute-Force',
-    desc: 'Protect private watch parties with optional room PINs. Integrated sliding-window IP rate limiters automatically lock out brute-force attacks and socket spam.',
-    specs: ['PIN Hash Authentication', 'IP Sliding-Window Throttling', 'Host Kick & Moderation'],
+    desc: 'Protect private watch parties with optional room passwords. Integrated sliding-window rate limiters automatically mitigate brute-force attempts and socket spam.',
+    specs: ['PIN Hash Matching', 'IP Sliding-Window Rate Limit', 'Host Moderation Kick'],
   },
   {
     category: 'media',
-    icon: <QrCode size={32} weight="duotone" />,
-    badge: 'Mobile Onboarding',
+    icon: <QrCode size={30} weight="duotone" />,
+    badge: 'Mobile Joining',
     title: '1-Tap Local QR Code Generation',
-    desc: 'Invite mobile friends seamlessly with client-side rendered QR codes. No third-party QR API is contacted, ensuring your room link and encryption key never leak.',
-    specs: ['Canvas Local Rendering', 'Native Web Share API', 'Zero Data Leakage'],
+    desc: 'Invite mobile viewers with QR codes rendered locally on HTML5 Canvas. No third-party image API is contacted, ensuring room keys remain completely private.',
+    specs: ['HTML5 Canvas Rendering', 'Native Web Share API', 'Zero Data Leakage'],
   },
   {
     category: 'media',
-    icon: <PictureInPicture size={32} weight="duotone" />,
+    icon: <PictureInPicture size={30} weight="duotone" />,
     badge: 'Playback',
     title: 'Picture-in-Picture & Fullscreen Cinema',
-    desc: 'Pop out the stream into a floating Picture-in-Picture window or trigger cinema fullscreen mode with intelligent auto-hiding controls and background stage glow.',
-    specs: ['HTML5 PiP API', 'Screen Wake Lock API', 'Keyboard Shortcut (F)'],
+    desc: 'Pop the stream out into a floating Picture-in-Picture window or trigger fullscreen cinema mode with auto-hiding controls and Screen Wake Lock.',
+    specs: ['HTML5 PiP Standard', 'Screen Wake Lock API', 'Keyboard Shortcut (F)'],
   },
-];
-
-const COMPARISON_DATA = [
-  { feature: '48kHz Cinema Stereo Audio', screenloop: '✅ Full dynamic range', discord: '⚠️ Compressed voice-codec', zoom: '❌ Voice mono tuned', teleparty: '❌ Third-party plugin only' },
-  { feature: 'Direct P2P (Zero Server Video Storage)', screenloop: '✅ 100% P2P mesh', discord: '❌ Server relayed', zoom: '❌ Server relayed', teleparty: '❌ Extension dependent' },
-  { feature: 'End-to-End Chat Encryption (AES-256)', screenloop: '✅ Client-side #key', discord: '❌ Plaintext on server', zoom: '❌ Server managed', teleparty: '❌ Server stored' },
-  { feature: 'Account or Software Install Required', screenloop: '✅ Zero sign-up / Pure web', discord: '❌ Account required', zoom: '❌ App required', teleparty: '❌ Chrome extension' },
-  { feature: '1080p / 1440p 60fps Screen Sharing', screenloop: '✅ Free & unlimited', discord: '❌ Nitro paywall ($9.99/mo)', zoom: '❌ 720p capped', teleparty: '❌ Not supported' },
-  { feature: 'Live Screen Drawing & Laser Pointer', screenloop: '✅ Included built-in', discord: '❌ Not available', zoom: '⚠️ Meeting only', teleparty: '❌ Not available' },
 ];
 
 export default function Features() {
@@ -136,17 +127,14 @@ export default function Features() {
           initial="hidden"
           animate="visible"
         >
-          {/* Hero Section */}
+          {/* Hero */}
           <motion.section className="page-hero" variants={fadeInUp}>
-            <div className="hero-pill">
-              <Sparkle size={14} className="pill-icon" />
-              <span>Engineered For Movie Enthusiasts & Streamers</span>
-            </div>
+            <span className="about-eyebrow">Technical Overview</span>
             <h1 className="page-hero-title">
-              Built for <span className="text-gradient">True Cinema Sync</span>
+              Engineered for <span className="text-gradient">Pure Media Sync</span>
             </h1>
             <p className="page-hero-subtitle">
-              Every detail in Screenloop is optimized for crystal-clear uncompressed sound, ultra-low latency WebRTC streaming, and total privacy without accounts.
+              Detailed technical breakdown of Screenloop's peer-to-peer transport, audio dynamic range compression, and end-to-end encryption.
             </p>
           </motion.section>
 
@@ -171,7 +159,7 @@ export default function Features() {
                 key={idx}
                 className="feature-card-pro"
                 variants={fadeInUp}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                whileHover={{ y: -3 }}
               >
                 <div className="feature-card-header">
                   <div className="feature-icon-box">{feature.icon}</div>
@@ -190,56 +178,20 @@ export default function Features() {
             ))}
           </motion.div>
 
-          {/* Comparison Matrix Section */}
-          <motion.section id="comparison" className="comparison-section" variants={fadeInUp}>
-            <div className="section-header-centered">
-              <span className="section-eyebrow">Platform Matrix</span>
-              <h2 className="section-title">How Screenloop Compares</h2>
-              <p className="section-desc">
-                Traditional tools compress audio for voice chats or force signups. Screenloop is built specifically for watching media together.
-              </p>
-            </div>
-
-            <div className="comparison-table-wrapper">
-              <table className="comparison-table">
-                <thead>
-                  <tr>
-                    <th>Feature</th>
-                    <th className="highlight-col">Screenloop Pro</th>
-                    <th>Discord</th>
-                    <th>Zoom</th>
-                    <th>Teleparty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARISON_DATA.map((row, rIdx) => (
-                    <tr key={rIdx}>
-                      <td className="table-feature-name">{row.feature}</td>
-                      <td className="highlight-col table-feature-val">{row.screenloop}</td>
-                      <td className="table-feature-val">{row.discord}</td>
-                      <td className="table-feature-val">{row.zoom}</td>
-                      <td className="table-feature-val">{row.teleparty}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.section>
-
-          {/* Call to action */}
+          {/* Quick Launch CTA */}
           <motion.section className="page-cta-banner" variants={fadeInUp}>
             <div className="cta-banner-content">
-              <h2 className="cta-title">Experience cinema-grade sync today</h2>
+              <h2 className="cta-title">Ready to stream with friends?</h2>
               <p className="cta-subtitle">
-                No downloads. No payment. Create a private watch room and invite your friends in seconds.
+                No accounts or credit cards required. Create an encrypted room in seconds.
               </p>
               <button
                 type="button"
-                className="btn btn-primary btn-lg cta-action-btn"
+                className="btn btn-primary btn-lg"
                 onClick={handleLaunch}
                 disabled={isLaunching}
               >
-                <RocketLaunch size={18} /> {isLaunching ? 'Preparing Room…' : 'Start Watch Party Free'}
+                <RocketLaunch size={18} /> {isLaunching ? 'Preparing Room…' : 'Launch Watch Room'}
               </button>
             </div>
           </motion.section>
