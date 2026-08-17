@@ -31,7 +31,7 @@ export const ParticipantList = memo(function ParticipantList({
             {/* Avatar */}
             <img
               className="avatar"
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.name)}`}
+              src={`https://api.dicebear.com/7.x/${getAvatarCollection(p.gender)}/svg?seed=${encodeURIComponent(p.name)}`}
               alt={`${p.name} avatar`}
               title={p.name}
               style={{ background: avatarColor(p.name), objectFit: 'cover' }}
@@ -87,6 +87,18 @@ export const ParticipantList = memo(function ParticipantList({
     </div>
   );
 });
+
+/** Return the appropriate DiceBear collection based on gender */
+function getAvatarCollection(gender) {
+  switch (gender) {
+    case 'male':
+      return 'adventurer';
+    case 'female':
+      return 'lorelei';
+    default:
+      return 'bottts'; // fun robots for other/neutral
+  }
+}
 
 /** Generate a deterministic harmonious color from a name string */
 function avatarColor(name) {

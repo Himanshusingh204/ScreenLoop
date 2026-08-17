@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // roomManager.js — In-memory room state management
 // No database needed. Rooms live as long as the server is running.
+// Includes capacity enforcement and room validation.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -9,23 +10,26 @@
  *   id: string,
  *   hostId: string,          // socket.id of the host
  *   pin: string|null,        // optional room password
- *   participants: Map<socketId, { name, isHost }>
+ *   participants: Map<socketId, { name, isHost }>,
+ *   createdAt: number        // timestamp
  * }
  */
 
+const MAX_PARTICIPANTS = 10;
 const rooms = new Map();
 
 /**
  * Create a new room with the given ID and host.
  */
-function createRoom(roomId, hostSocketId, hostName, pin = null) {
+function createRoom(roomId, hostSocketId, hostName, pin = null, gender = 'other') {
   const room = {
     id: roomId,
     hostId: hostSocketId,
     pin: pin || null,
     participants: new Map(),
+    createdAt: Date.now(),
   };
-  room.participants.set(hostSocketId, { name: hostName, isHost: true });
+  room.participants.set(hostSocketId, { name: hostName, isHost: true, gender });
   rooms.set(roomId, room);
   return room;
 }
@@ -39,13 +43,22 @@ function getRoom(roomId) {
 
 /**
  * Add a participant to a room.
+ * Enforces MAX_PARTICIPANTS limit.
  */
-function joinRoom(roomId, socketId, name, pin = null) {
+function joinRoom(roomId, socketId, name, pin = null, gender = 'other') {
   const room = rooms.get(roomId);
   if (!room) throw new Error('Room not found');
 
   if (room.pin && room.pin !== pin) {
     throw new Error('Incorrect PIN');
+  }
+
+  if (room.participants.size >= MAX_PARTICIPANTS) {
+    throw new Error('Room is full');
+  }
+
+  if (room.participants.has(socketId)) {
+    throw new Error('Already in room');
   }
 
   room.participants.set(socketId, { name, isHost: false });
@@ -66,14 +79,12 @@ function leaveRoom(roomId, socketId) {
   room.participants.delete(socketId);
 
   if (room.participants.size === 0) {
-    // Room is empty — clean it up
     rooms.delete(roomId);
     return { room: null, wasHost, newHostId: null };
   }
 
   let newHostId = null;
   if (wasHost) {
-    // Promote first remaining participant to host
     const [nextId] = room.participants.keys();
     room.hostId = nextId;
     room.participants.get(nextId).isHost = true;
@@ -96,7 +107,7 @@ function findRoomBySocket(socketId) {
 }
 
 /**
- * Get serialisable participant list for a room.
+ * Get serializable participant list for a room.
  */
 function getParticipants(roomId) {
   const room = rooms.get(roomId);
@@ -105,11 +116,12 @@ function getParticipants(roomId) {
     socketId: id,
     name: data.name,
     isHost: data.isHost,
+    gender: data.gender || 'other',
   }));
 }
 
 /**
- * Transfer host privileges to another participant
+ * Transfer host privileges to another participant.
  */
 function transferHost(roomId, currentHostId, newHostId) {
   const room = rooms.get(roomId);
@@ -130,4 +142,5 @@ module.exports = {
   findRoomBySocket,
   getParticipants,
   transferHost,
+  MAX_PARTICIPANTS,
 };

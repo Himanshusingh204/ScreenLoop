@@ -27,11 +27,12 @@ const {
  */
 function registerHandlers(socket, io) {
   // ─── Room: Create ───────────────────────────────────────────────────────────
-  socket.on('room:create', ({ roomId, name, pin }) => {
+  socket.on('room:create', ({ roomId, name, pin, gender }) => {
     try {
       if (!roomId || typeof roomId !== 'string' || roomId.length > 20) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
+      const validGender = ['male', 'female', 'other'].includes(gender) ? gender : 'other';
 
       const existing = getRoom(roomId);
       if (existing) {
@@ -39,7 +40,7 @@ function registerHandlers(socket, io) {
         return;
       }
 
-      const room = createRoom(roomId, socket.id, name, pin);
+      const room = createRoom(roomId, socket.id, name, pin, validGender);
       socket.join(roomId);
 
       socket.emit('room:joined', {
@@ -57,11 +58,12 @@ function registerHandlers(socket, io) {
   });
 
   // ─── Room: Join ─────────────────────────────────────────────────────────────
-  socket.on('room:join', ({ roomId, name, pin }) => {
+  socket.on('room:join', ({ roomId, name, pin, gender }) => {
     try {
       if (!roomId || typeof roomId !== 'string' || roomId.length > 20) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
+      const validGender = ['male', 'female', 'other'].includes(gender) ? gender : 'other';
 
       if (!checkPinBruteForce(socket.id)) {
         socket.emit('room:error', { message: 'Too many failed PIN attempts. Try again in 5 minutes.' });
@@ -76,7 +78,7 @@ function registerHandlers(socket, io) {
 
       // joinRoom will throw an error if the PIN is incorrect
       try {
-        joinRoom(roomId, socket.id, name, pin);
+        joinRoom(roomId, socket.id, name, pin, validGender);
         resetFailedPin(socket.id);
       } catch (e) {
         if (e.message === 'Incorrect PIN') {

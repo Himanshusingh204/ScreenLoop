@@ -14,11 +14,12 @@ import { FilmStrip, RocketLaunch, ArrowRight } from './icons';
 export function JoinModal({ roomId, isCreating, onJoin, error, loading }) {
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
+  const [gender, setGender] = useState('female');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onJoin({ name: name.trim(), pin: pin.trim() });
+    onJoin({ name: name.trim(), pin: pin.trim(), gender });
   };
 
   return (
@@ -66,6 +67,22 @@ export function JoinModal({ roomId, isCreating, onJoin, error, loading }) {
               maxLength={20}
               autoComplete="current-password"
             />
+          </div>
+
+          <div>
+            <label className="home-label" htmlFor="gender-select">
+              Select Avatar Style
+            </label>
+            <select
+              id="gender-select"
+              className="input"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            >
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="other">Other</option>
+            </select>
           </div>
 
           {error && (

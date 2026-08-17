@@ -260,7 +260,7 @@ export default function Room() {
   }, [toggleFullscreen]);
 
   // ─── Room Actions ─────────────────────────────────────────────────────────
-  const handleJoin = useCallback(({ name, pin }) => {
+  const handleJoin = useCallback(({ name, pin, gender }) => {
     const socket = socketRef.current;
     if (!socket) {
       setModalError('Not connected to server. Please wait or refresh.');
@@ -270,9 +270,9 @@ export default function Room() {
     setModalLoading(true);
     setModalError(null);
     if (intendedHost) {
-      socket.emit('room:create', { roomId, name, pin });
+      socket.emit('room:create', { roomId, name, pin, gender });
     } else {
-      socket.emit('room:join', { roomId, name, pin });
+      socket.emit('room:join', { roomId, name, pin, gender });
     }
   }, [intendedHost, roomId]);
 
