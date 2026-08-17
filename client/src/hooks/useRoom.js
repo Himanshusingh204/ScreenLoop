@@ -135,8 +135,10 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     };
 
     const onKicked = () => {
-      alert('You have been kicked from the room by the host.');
-      window.location.href = '/';
+      addToast('🚫 You have been kicked from the room by the host.');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
     };
 
     const onParticipantsUpdated = (p) => {

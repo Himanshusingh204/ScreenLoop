@@ -1,39 +1,29 @@
 // ShareModal.jsx — Modal for inviting friends via Web Share API, link, or QR Code
 import React, { useState, useEffect, useRef } from 'react';
+import QRCode from 'qrcode';
 import { buildRoomLink } from '../utils/roomId';
 import { ShareNetwork, X, CopySimple, CheckCircle, DeviceMobile } from './icons';
 
 /**
- * Renders QR Code onto canvas with high contrast and graceful fallback
+ * Renders QR Code onto canvas locally — no third-party API, no data leakage.
+ * The invite URL (containing the E2EE key in the hash fragment) never leaves the browser.
  */
 function renderQRCodeToCanvas(canvas, text) {
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const size = 200;
-  canvas.width = size;
-  canvas.height = size;
-
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, size, size);
-
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}&margin=10`;
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0, size, size);
-  };
-  img.onerror = () => {
+  QRCode.toCanvas(canvas, text, {
+    width: 200,
+    margin: 2,
+    color: { dark: '#0f172a', light: '#ffffff' },
+  }).catch((err) => {
+    console.warn('[QR] Failed to render QR code:', err);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 200, 200);
     ctx.fillStyle = '#0f172a';
-    ctx.fillRect(20, 20, 40, 40);
-    ctx.clearRect(30, 30, 20, 20);
-    ctx.fillRect(140, 20, 40, 40);
-    ctx.clearRect(150, 30, 20, 20);
-    ctx.fillRect(20, 140, 40, 40);
-    ctx.clearRect(30, 150, 20, 20);
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Scan link below', size / 2, size / 2);
-  };
+    ctx.fillText('QR unavailable — copy link', 100, 100);
+  });
 }
 
 /**
@@ -163,7 +153,7 @@ export function ShareModal({ isOpen, onClose, roomId, roomKey }) {
               aria-label="Room Invite QR Code"
             />
           </div>
-          <span className="share-qr-caption"><Smartphone size={14} /> Point mobile camera to join instantly</span>
+          <span className="share-qr-caption"><DeviceMobile size={14} /> Point mobile camera to join instantly</span>
         </div>
 
         {/* Invite Link Copy */}

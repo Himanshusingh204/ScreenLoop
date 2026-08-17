@@ -28,13 +28,4 @@ export function isValidRoomId(roomId) {
   return /^[a-zA-Z0-9_-]{4,20}$/.test(roomId);
 }
 
-/**
- * Validates and sanitizes a display name.
- * @param {string} name
- * @returns {string}
- */
-export function sanitizeDisplayName(name) {
-  if (!name || typeof name !== 'string') return 'Anonymous';
-  const trimmed = name.trim().slice(0, 30);
-  return sanitizeText(trimmed) || 'Anonymous';
-}
+

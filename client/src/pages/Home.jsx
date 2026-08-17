@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { generateRoomId, generateRoomKey, withViewTransition } from '../utils';
-import { ThemeSelector } from '../components';
+import { ThemeSelector, SiteHeader, SiteFooter } from '../components';
 import {
   FilmStrip, RocketLaunch, LinkSimple, LockSimple, PencilSimple,
-  Lightning, ChartBar, Phone, GithubLogo
+  Lightning, ChartBar, Phone, GithubLogo, ArrowRight, ShieldCheck
 } from '../components/icons';
 
 import { staggerContainer, fadeInUp, slideInRight } from '../hooks/useScrollReveal';
@@ -108,24 +108,7 @@ export default function Home() {
       <div className="ambient-glow glow-top-left" aria-hidden="true" />
       <div className="ambient-glow glow-bottom-right" aria-hidden="true" />
 
-      <header className="home-header" role="banner">
-        <motion.div className="home-header-brand" variants={fadeInUp}>
-          <FilmStrip size={28} weight="bold" className="brand-badge" />
-          <span className="brand-name">Screenloop</span>
-        </motion.div>
-        <motion.div className="home-header-actions" variants={slideInRight}>
-          <ThemeSelector />
-          <a
-            href="https://github.com/Himanshusingh204"
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-ghost btn-sm github-link"
-            aria-label="View Screenloop on GitHub"
-          >
-            <GithubLogo size={18} /> GitHub
-          </a>
-        </motion.div>
-      </header>
+      <SiteHeader />
 
       <main className="home-hero">
         <motion.div className="hero-content" variants={fadeInUp}>
@@ -405,22 +388,35 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <footer className="home-footer" role="contentinfo">
-        <div className="footer-content">
-          <span>Screenloop Pro • Zero-Friction Peer-to-Peer Watch Party</span>
-          <span className="footer-sub">
-            Open Source • MIT Licensed • Built by{' '}
-            <a
-              href="https://github.com/Himanshusingh204"
-              target="_blank"
-              rel="noreferrer"
-              className="footer-author"
+      {/* Quick Discovery CTA Banner */}
+      <section className="home-discovery-section" aria-label="Explore Screenloop">
+        <motion.div className="discovery-banner" variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+          <div className="discovery-content">
+            <h3 className="discovery-title">Want to explore how Screenloop is built?</h3>
+            <p className="discovery-desc">
+              Discover our zero-knowledge security architecture, uncompressed 48kHz audio pipeline, and transparent open-source code.
+            </p>
+          </div>
+          <div className="discovery-actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => navigate('/features')}
             >
-              Himanshu
-            </a>
-          </span>
-        </div>
-      </footer>
+              Explore Features <ArrowRight size={14} />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => navigate('/security')}
+            >
+              <ShieldCheck size={16} /> Security Whitepaper
+            </button>
+          </div>
+        </motion.div>
+      </section>
+
+      <SiteFooter />
     </motion.div>
   );
 }

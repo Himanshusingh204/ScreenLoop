@@ -1,32 +1,43 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// rateLimiter.js — In-memory spam and brute force protection
+// rateLimiter.js — IP-based spam and brute force protection
+// Keyed by IP address to prevent bypass via reconnect.
+// Uses expiry-based cleanup to avoid memory leaks.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const spamLimits = new Map();
-const pinAttempts = new Map();
+const spamLimits = new Map();    // IP -> { count, firstEvent }
+const pinAttempts = new Map();   // IP -> { count, firstFail }
 
 const SPAM_WINDOW_MS = 1000;
-const SPAM_MAX_EVENTS = 20; // Increased to 20/s to allow rapid emoji reactions and chat
+const SPAM_MAX_EVENTS = parseInt(process.env.SPAM_MAX_EVENTS, 10) || 20;
 
 const PIN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-const PIN_MAX_ATTEMPTS = 5;
+const PIN_MAX_ATTEMPTS = parseInt(process.env.PIN_MAX_ATTEMPTS, 10) || 5;
+
+const SWEEP_INTERVAL_MS = 60 * 1000; // sweep every 60 seconds
 
 /**
- * Checks if a socket is sending too many generic events (chat, reactions).
+ * Get a stable rate-limit key from a socket (IP address).
+ */
+function getClientKey(socket) {
+  return socket.handshake?.address || socket.id;
+}
+
+/**
+ * Checks if a client is sending too many events.
  * Returns true if allowed, false if blocked.
  */
-function checkSpam(socketId) {
+function checkSpam(socket) {
+  const key = getClientKey(socket);
   const now = Date.now();
-  let record = spamLimits.get(socketId);
+  let record = spamLimits.get(key);
 
   if (!record) {
     record = { count: 1, firstEvent: now };
-    spamLimits.set(socketId, record);
+    spamLimits.set(key, record);
     return true;
   }
 
   if (now - record.firstEvent > SPAM_WINDOW_MS) {
-    // Reset window
     record.count = 1;
     record.firstEvent = now;
     return true;
@@ -37,46 +48,75 @@ function checkSpam(socketId) {
 }
 
 /**
- * Checks if a socket has exceeded the PIN guess limit.
+ * Checks if a client has exceeded the PIN guess limit.
  * Returns true if allowed to guess, false if locked out.
  */
-function checkPinBruteForce(socketId) {
+function checkPinBruteForce(socket) {
+  const key = getClientKey(socket);
   const now = Date.now();
-  const record = pinAttempts.get(socketId);
-  
+  const record = pinAttempts.get(key);
+
   if (!record) return true;
 
   if (record.count >= PIN_MAX_ATTEMPTS) {
     if (now - record.firstFail > PIN_WINDOW_MS) {
-      // Lockout expired
-      pinAttempts.delete(socketId);
+      pinAttempts.delete(key);
       return true;
     }
-    return false; // Currently locked out
+    return false;
   }
 
   return true;
 }
 
 /**
- * Record a failed PIN attempt.
+ * Record a failed PIN attempt (keyed by IP).
  */
-function recordFailedPin(socketId) {
+function recordFailedPin(socket) {
+  const key = getClientKey(socket);
   const now = Date.now();
-  let record = pinAttempts.get(socketId);
+  let record = pinAttempts.get(key);
 
   if (!record || now - record.firstFail > PIN_WINDOW_MS) {
-    pinAttempts.set(socketId, { count: 1, firstFail: now });
+    pinAttempts.set(key, { count: 1, firstFail: now });
   } else {
     record.count++;
   }
 }
 
 /**
- * Reset failed PIN attempts (e.g. on successful login).
+ * Reset failed PIN attempts on success (keyed by IP).
  */
-function resetFailedPin(socketId) {
-  pinAttempts.delete(socketId);
+function resetFailedPin(socket) {
+  const key = getClientKey(socket);
+  pinAttempts.delete(key);
+}
+
+/**
+ * Periodic sweep to remove expired entries and prevent memory leaks.
+ */
+function sweepExpiredEntries() {
+  const now = Date.now();
+  for (const [key, record] of spamLimits.entries()) {
+    if (now - record.firstEvent > SPAM_WINDOW_MS) {
+      spamLimits.delete(key);
+    }
+  }
+  for (const [key, record] of pinAttempts.entries()) {
+    if (now - record.firstFail > PIN_WINDOW_MS) {
+      pinAttempts.delete(key);
+    }
+  }
+}
+
+// Start periodic sweep
+const sweepTimer = setInterval(sweepExpiredEntries, SWEEP_INTERVAL_MS);
+
+/**
+ * Stop the sweep timer (for graceful shutdown or testing).
+ */
+function stopSweep() {
+  clearInterval(sweepTimer);
 }
 
 module.exports = {
@@ -84,4 +124,7 @@ module.exports = {
   checkPinBruteForce,
   recordFailedPin,
   resetFailedPin,
+  getClientKey,
+  stopSweep,
+  sweepExpiredEntries,
 };

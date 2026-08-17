@@ -99,7 +99,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
       };
 
       peer.onconnectionstatechange = () => {
-        console.log(`[webrtc] Peer ${targetId} state: ${peer.connectionState}`);
+        console.debug(`[webrtc] Peer ${targetId} state: ${peer.connectionState}`);
         if (peer.connectionState === 'failed') {
           console.warn('[webrtc] Connection failed. Restarting ICE…');
           peer.restartIce();
@@ -109,7 +109,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
       // Viewer: receive the inbound stream
       if (!isHost) {
         peer.ontrack = (event) => {
-          console.log('[webrtc] Received remote stream track:', event.track.kind);
+          console.debug('[webrtc] Received remote stream track:', event.track.kind);
           if (event.streams && event.streams[0] && onStream) {
             onStream(event.streams[0]);
           }
@@ -145,7 +145,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
 
         const vt = stream.getVideoTracks()[0];
         const { width, height, frameRate: fps } = vt.getSettings();
-        console.log(`[webrtc] Capturing at ${width}×${height} @ ${fps}fps (${quality})`);
+        console.debug(`[webrtc] Capturing at ${width}×${height} @ ${fps}fps (${quality})`);
 
         return stream;
       } catch (err) {
@@ -228,10 +228,6 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     pendingIceCandidates.current = {};
   }, []);
 
-  const closeAllPeers = useCallback(() => {
-    stopScreenShare();
-  }, [stopScreenShare]);
-
   return {
     peers,
     localStream,
@@ -241,6 +237,5 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     handleAnswer,
     handleIce,
     stopScreenShare,
-    closeAllPeers,
   };
 }

@@ -9,7 +9,9 @@ export {
   ShareNetwork, Cursor, PaintBrush, Eraser, Palette,
   Trash, Bell, Info, WarningCircle, CheckCircle,
   Crown, PaperPlaneRight, ShieldCheck, DeviceMobile,
-  CornersIn, CornersOut
+  CornersIn, CornersOut, FileText, Key, Sparkle,
+  ArrowsClockwise, Scales, EyeSlash, Broadcast, Sliders,
+  Shield, CheckFat
 } from '@phosphor-icons/react';
 
 export { ChartBar as BarChart } from '@phosphor-icons/react';

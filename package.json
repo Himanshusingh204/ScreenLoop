@@ -1,6 +1,18 @@
 {
-  "dependencies": {
-    "@phosphor-icons/react": "^2.1.10",
-    "framer-motion": "^13.1.0"
-  }
+  "name": "screenloop",
+  "version": "1.0.0",
+  "description": "Zero-friction peer-to-peer watch party and screen sharing platform",
+  "private": true,
+  "scripts": {
+    "dev": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "cd client && npm run build",
+    "lint": "cd client && npm run lint",
+    "format": "cd client && npm run format",
+    "preview": "cd client && npm run preview",
+    "check": "npm run lint && npm run build"
+  },
+  "keywords": ["screen-share", "watch-party", "webrtc", "p2p", "real-time"],
+  "author": "Himanshu",
+  "license": "MIT"
 }

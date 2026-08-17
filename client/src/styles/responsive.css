@@ -1,0 +1,223 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Responsive — Multi-Device System
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Desktop Sidebar Collapse (768px) ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 100%;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: var(--topbar-height) 0 var(--controlbar-height) 0;
+    z-index: 50;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    transform: translateX(100%);
+    transition: transform var(--transition-fast);
+    width: 100%;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .volume-slider {
+    width: 60px;
+  }
+
+  .topbar-room-id {
+    display: none;
+  }
+
+  /* Make control bar wrap on small screens so buttons don't squish */
+  .controlbar {
+    height: auto;
+    min-height: var(--controlbar-height);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .controlbar-overlay {
+    position: fixed; /* Better than absolute on mobile browsers with dynamic URL bars */
+  }
+
+  .controlbar-left, .controlbar-center, .controlbar-right {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Save space on mobile */
+  .volume-slider {
+    width: 60px;
+  }
+  .host-only-toggle span:last-child {
+    display: none; /* Hide "Host only" text */
+  }
+  .quality-label {
+    display: none; /* Hide emoji */
+  }
+  .btn {
+    padding: 6px 12px;
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* 📱 Mobile Devices (iPhone & Android: < 768px) */
+@media screen and (max-width: 767px) {
+  :root {
+    --topbar-height: 50px;
+    --controlbar-height: auto;
+    --sidebar-width: 100vw;
+  }
+
+  .home-hero {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .hero-title {
+    font-size: 1.85rem;
+    line-height: 1.2;
+  }
+
+  .hero-description {
+    font-size: var(--font-size-sm);
+  }
+
+  .hero-action-card {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .topbar {
+    padding: 0 var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .topbar-room-info {
+    gap: var(--space-1);
+  }
+
+  .topbar-room-id {
+    max-width: 90px;
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+
+  .topbar-quality-badge span:last-child {
+    display: none;
+  }
+
+  /* ControlBar on mobile */
+  .controlbar {
+    padding: var(--space-2);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: center;
+  }
+
+  .controlbar-left, .controlbar-center, .controlbar-right {
+    gap: var(--space-1);
+  }
+
+  .volume-slider {
+    width: 60px;
+  }
+
+  .reaction-btn {
+    padding: 4px 6px;
+    font-size: 16px;
+  }
+
+  /* Chat Sidebar mobile bottom sheet / drawer */
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-height);
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100vw;
+    height: calc(100dvh - var(--topbar-height));
+    z-index: 100;
+    background: rgba(13, 13, 15, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sidebar.open {
+    transform: translateY(0);
+  }
+
+  .modal-card {
+    width: 92vw;
+    max-width: 100%;
+    padding: var(--space-4);
+  }
+
+  .share-qr-canvas {
+    width: 160px !important;
+    height: 160px !important;
+  }
+}
+
+/* 📱 Tablets & iPads (768px – 1024px) */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  :root {
+    --sidebar-width: 260px;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hero-title {
+    font-size: 2.4rem;
+  }
+}
+
+/* 📺 Smart TVs & Large 4K Displays (> 1920px) */
+@media screen and (min-width: 1920px) {
+  :root {
+    --font-size-base: 17px;
+    --topbar-height: 64px;
+    --controlbar-height: 76px;
+  }
+
+  .hero-title {
+    font-size: 3.8rem;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 1300px;
+  }
+}
+
+/* ─── Reduced Motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .pulseGlow,
+  .spinSlow,
+  .floating-emoji,
+  .invite-btn-pulse,
+  .ambient-stage-glow {
+    animation: none !important;
+  }
+}

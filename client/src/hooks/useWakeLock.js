@@ -12,9 +12,9 @@ export function useWakeLock(enabled = true) {
       if (!wakeLockRef.current || wakeLockRef.current.released) {
         wakeLockRef.current = await navigator.wakeLock.request('screen');
         wakeLockRef.current.addEventListener('release', () => {
-          console.log('[wakeLock] Screen wake lock released');
+          console.debug('[wakeLock] Screen wake lock released');
         });
-        console.log('[wakeLock] Screen wake lock active');
+        console.debug('[wakeLock] Screen wake lock active');
       }
     } catch (err) {
       console.warn('[wakeLock] Request failed:', err.name, err.message);

@@ -1,8 +1,9 @@
 // TopBar.jsx — Room metadata header, stream health telemetry & navigation
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ThemeSelector } from './ThemeSelector';
-import { FilmStrip, ShareNetwork, Users, GithubLogo } from './icons';
+import { ConfirmModal } from './ConfirmModal';
+import { FilmStrip, ShareNetwork, Users } from './icons';
 
 /**
  * @param {object} props
@@ -18,6 +19,7 @@ import { FilmStrip, ShareNetwork, Users, GithubLogo } from './icons';
  */
 export function TopBar({
   roomId,
+  roomKey,
   participantCount,
   connected,
   streamQuality = 'good',
@@ -27,6 +29,7 @@ export function TopBar({
   isHost,
 }) {
   const navigate = useNavigate();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const getQualityBadge = () => {
     if (!connected) return { label: 'Offline', color: 'var(--danger)' };
@@ -39,6 +42,11 @@ export function TopBar({
   };
 
   const badge = getQualityBadge();
+
+  const handleLeave = () => {
+    setConfirmOpen(false);
+    navigate('/');
+  };
 
   return (
     <header className="topbar" role="banner">
@@ -107,20 +115,27 @@ export function TopBar({
         <button
           type="button"
           className="btn btn-sm leave-room-btn"
-          onClick={() => {
-            const msg = isHost 
-              ? 'Are you sure you want to stop the room? Everyone will be disconnected.' 
-              : 'Are you sure you want to leave the room?';
-            if (window.confirm(msg)) {
-              navigate('/');
-            }
-          }}
+          onClick={() => setConfirmOpen(true)}
           title={isHost ? "Stop Room" : "Leave Watch Room"}
           aria-label={isHost ? "Stop Room" : "Leave Watch Room"}
         >
           {isHost ? "Stop Room" : "Leave"}
         </button>
       </div>
+
+      <ConfirmModal
+        open={confirmOpen}
+        title={isHost ? "Stop Room?" : "Leave Room?"}
+        message={isHost
+          ? "Are you sure you want to stop the room? Everyone will be disconnected."
+          : "Are you sure you want to leave the room?"
+        }
+        confirmText={isHost ? "Stop Room" : "Leave"}
+        cancelText="Stay"
+        variant="danger"
+        onConfirm={handleLeave}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </header>
   );
 }

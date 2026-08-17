@@ -20,7 +20,6 @@ const {
   checkPinBruteForce,
   recordFailedPin,
   resetFailedPin,
-  cleanupSocket,
 } = require('./rateLimiter');
 
 /**
@@ -127,8 +126,10 @@ function registerHandlers(socket, io) {
 
   // ─── WebRTC: Offer (host -> viewer) ─────────────────────────────────────────
   socket.on('webrtc:offer', ({ targetId, offer }) => {
-    // Validate: sender must be in a room, target must be specified
     if (!socket.data.roomId || !targetId || !offer) return;
+    // Validate target is in the same room (prevent cross-room signaling)
+    const targetRoom = getRoom(socket.data.roomId);
+    if (!targetRoom || !targetRoom.participants.has(targetId)) return;
 
     io.to(targetId).emit('webrtc:offer', {
       fromId: socket.id,
@@ -139,6 +140,8 @@ function registerHandlers(socket, io) {
   // ─── WebRTC: Answer (viewer -> host) ────────────────────────────────────────
   socket.on('webrtc:answer', ({ targetId, answer }) => {
     if (!socket.data.roomId || !targetId || !answer) return;
+    const targetRoom = getRoom(socket.data.roomId);
+    if (!targetRoom || !targetRoom.participants.has(targetId)) return;
 
     io.to(targetId).emit('webrtc:answer', {
       fromId: socket.id,
@@ -149,6 +152,8 @@ function registerHandlers(socket, io) {
   // ─── WebRTC: ICE Candidate (both directions) ────────────────────────────────
   socket.on('webrtc:ice', ({ targetId, candidate }) => {
     if (!socket.data.roomId || !targetId) return;
+    const targetRoom = getRoom(socket.data.roomId);
+    if (!targetRoom || !targetRoom.participants.has(targetId)) return;
 
     io.to(targetId).emit('webrtc:ice', {
       fromId: socket.id,
@@ -175,13 +180,17 @@ function registerHandlers(socket, io) {
   });
 
   // ─── Chat: Message ───────────────────────────────────────────────────────────
-  socket.on('chat:message', ({ roomId, name, text }) => {
+  socket.on('chat:message', ({ roomId, text }) => {
     if (!socket.data.roomId || socket.data.roomId !== roomId) return;
     if (!checkSpam(socket)) return;
     if (!text || typeof text !== 'string' || text.length > 500) return;
-    if (!name || typeof name !== 'string' || name.length > 30) return;
 
-    const payload = { name, text, timestamp: Date.now() };
+    // Use server-side name from room state to prevent impersonation
+    const room = getRoom(roomId);
+    const participant = room?.participants.get(socket.id);
+    if (!participant) return;
+
+    const payload = { name: participant.name, text, timestamp: Date.now() };
     io.to(roomId).emit('chat:message', payload);
   });
 
@@ -194,12 +203,17 @@ function registerHandlers(socket, io) {
   });
 
   // ─── Reactions & Laser Pointer ───────────────────────────────────────────────
-  socket.on('room:reaction', ({ roomId, name, emoji }) => {
+  socket.on('room:reaction', ({ roomId, emoji }) => {
     if (!socket.data.roomId || socket.data.roomId !== roomId) return;
     if (!checkSpam(socket)) return;
     if (!emoji || typeof emoji !== 'string' || emoji.length > 10) return;
 
-    io.to(roomId).emit('room:reaction', { name, emoji, id: Date.now() + Math.random() });
+    // Use server-side name to prevent impersonation
+    const room = getRoom(roomId);
+    const participant = room?.participants.get(socket.id);
+    if (!participant) return;
+
+    io.to(roomId).emit('room:reaction', { name: participant.name, emoji, id: Date.now() + Math.random() });
   });
 
   socket.on('sync:pointer', ({ roomId, x, y }) => {
@@ -223,6 +237,10 @@ function registerHandlers(socket, io) {
     const room = getRoom(roomId);
     if (!room || room.hostId !== socket.id) return;
 
+    const targetParticipant = room.participants.get(targetId);
+    if (!targetParticipant) return;
+    const kickedName = targetParticipant.name;
+
     const result = leaveRoom(roomId, targetId);
     if (!result) return;
 
@@ -231,10 +249,16 @@ function registerHandlers(socket, io) {
 
     io.to(roomId).emit('room:user-left', {
       socketId: targetId,
-      name: 'Someone',
+      name: kickedName,
       participants: getParticipants(roomId),
-      newHostId: null,
+      newHostId: result.newHostId,
     });
+
+    if (result.newHostId) {
+      io.to(result.newHostId).emit('room:promoted-to-host', {
+        message: 'You are now the host.',
+      });
+    }
   });
 
   // ─── Transfer Host ──────────────────────────────────────────────────────────
@@ -249,9 +273,6 @@ function registerHandlers(socket, io) {
   // ─── Disconnect ─────────────────────────────────────────────────────────────
   socket.on('disconnect', (reason) => {
     try {
-      // Clean up rate limiter entries for this socket
-      cleanupSocket(socket);
-
       const found = findRoomBySocket(socket.id);
       if (!found) return;
 

@@ -115,10 +115,10 @@ export function ChatSidebar({
               </div>
             )}
             {messages.map((msg) => {
-              const isImage =
+              const isImageUrl =
                 !msg.system &&
                 typeof msg.text === 'string' &&
-                msg.text.match(/^https:\/\/[^'"><]+?\.(gif|jpe?g|png|webp)(\?.*)?$/i);
+                msg.text.match(/^https:\/\/[^'"><\s]+?\.(gif|jpe?g|png|webp)(\?.*)?$/i);
 
               return (
                 <div key={msg.id} className={`chat-message ${msg.system ? 'system' : ''}`}>
@@ -129,15 +129,15 @@ export function ChatSidebar({
                     </div>
                   )}
                   <div className="chat-message-text">
-                    {isImage ? (
-                      <img
-                        src={msg.text}
-                        alt="Shared chat media"
-                        loading="lazy"
-                        width="320"
-                        height="240"
-                        style={{ maxWidth: '100%', borderRadius: 'var(--radius-md)', marginTop: 4 }}
-                      />
+                    {isImageUrl ? (
+                      <a
+                        href={msg.text}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="chat-image-link"
+                      >
+                        Open image
+                      </a>
                     ) : (
                       <span>{msg.text}</span>
                     )}

@@ -1,15 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // roomId.js — Generate and validate room IDs
+// Uses crypto.getRandomValues() for secure randomness.
 // ─────────────────────────────────────────────────────────────────────────────
 
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const ROOM_ID_LENGTH = 10;
+
 /**
- * Generate a random 8-char alphanumeric room ID (e.g. "x7k2m9qp")
+ * Generate a cryptographically secure 10-char alphanumeric room ID.
+ * Uses crypto.getRandomValues() instead of Math.random().
  */
 export function generateRoomId() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  return Array.from({ length: 8 }, () =>
-    chars[Math.floor(Math.random() * chars.length)]
-  ).join('');
+  const bytes = new Uint8Array(ROOM_ID_LENGTH);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => CHARS[b % CHARS.length]).join('');
 }
 
 /**

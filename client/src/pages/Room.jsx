@@ -65,6 +65,9 @@ export default function Room() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [statsVisible, setStatsVisible]       = useState(false);
   const [drawModeActive, setDrawModeActive]   = useState(false);
+  const [hostDisconnected, setHostDisconnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
   // ─── Fullscreen state ─────────────────────────────────────────────────────
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -78,22 +81,38 @@ export default function Room() {
   const { playJoinChime, playLeaveChime, playMessagePing, playReactionPop } = useSoundEffects();
 
   // ─── Refs ─────────────────────────────────────────────────────────────────
-  const socketRef   = useRef(null);
+  const [socket, setSocket] = useState(null);
   const videoRef    = useRef(null);
   const roomRef     = useRef(null);
 
   // ─── Socket.io Connection ────────────────────────────────────────────────
   useEffect(() => {
-    const socket = io(SERVER_URL, {
+    const s = io(SERVER_URL, {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 15,
       transports: ['websocket', 'polling'],
     });
-    socketRef.current = socket;
-    socket.on('connect',    () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
-    return () => socket.disconnect();
+    setSocket(s);
+    s.on('connect',    () => {
+      setConnected(true);
+      setReconnecting(false);
+      setReconnectAttempt(0);
+    });
+    s.on('disconnect', () => setConnected(false));
+    s.on('reconnect_attempt', (attempt) => {
+      setReconnecting(true);
+      setReconnectAttempt(attempt);
+    });
+    s.on('reconnect', () => {
+      setReconnecting(false);
+      setReconnectAttempt(0);
+    });
+    s.on('reconnect_failed', () => {
+      setReconnecting(false);
+      addToast('❌ Could not reconnect. Please refresh.');
+    });
+    return () => s.disconnect();
   }, []);
 
   // ─── WebRTC Engine ───────────────────────────────────────────────────────
@@ -102,7 +121,7 @@ export default function Room() {
     handleOffer, handleAnswer, handleIce,
     stopScreenShare, localStream, peers,
   } = useWebRTC({
-    socket: socketRef.current,
+    socket,
     isHost: isActualHost,
     onStream: (stream) => setRemoteStream(stream),
     onTrackEnded: () => setIsSharing(false),
@@ -122,7 +141,7 @@ export default function Room() {
     toasts, chatMessages, hostOnlyControls,
     emitSync, sendChatMessage, addToast,
   } = useRoom({
-    socket: socketRef.current,
+    socket,
     roomId, myName, isHost: isActualHost, roomKey,
     onInitiateOffer: useCallback(async (viewerId) => {
       if (isActualHost && localStream.current) {
@@ -151,7 +170,6 @@ export default function Room() {
 
   // ─── WebRTC Signaling Listeners ──────────────────────────────────────────
   useEffect(() => {
-    const socket = socketRef.current;
     if (!socket) return;
     socket.on('webrtc:offer',  handleOffer);
     socket.on('webrtc:answer', handleAnswer);
@@ -162,21 +180,26 @@ export default function Room() {
     });
     socket.on('room:closed', ({ message }) => {
       addToast(`🛑 ${message}`);
+      setHostDisconnected(true);
       setTimeout(() => {
         window.location.href = '/';
       }, 3000);
+    });
+    socket.on('room:host-disconnected', () => {
+      setHostDisconnected(true);
+      addToast('⚠️ Host disconnected — waiting for reconnection…');
     });
     return () => {
       socket.off('webrtc:offer',  handleOffer);
       socket.off('webrtc:answer', handleAnswer);
       socket.off('webrtc:ice',    handleIce);
       socket.off('room:closed');
+      socket.off('room:host-disconnected');
     };
   }, [handleOffer, handleAnswer, handleIce, addToast]);
 
   // ─── Room Join Events ─────────────────────────────────────────────────────
   useEffect(() => {
-    const socket = socketRef.current;
     if (!socket) return;
     const onJoined = ({ participants: p, isHost: h, hostId }) => {
       setParticipants(p);
@@ -268,7 +291,6 @@ export default function Room() {
 
   // ─── Room Actions ─────────────────────────────────────────────────────────
   const handleJoin = useCallback(({ name, pin, gender }) => {
-    const socket = socketRef.current;
     if (!socket) {
       setModalError('Not connected to server. Please wait or refresh.');
       return;
@@ -281,7 +303,7 @@ export default function Room() {
     } else {
       socket.emit('room:join', { roomId, name, pin, gender });
     }
-  }, [intendedHost, roomId]);
+  }, [intendedHost, roomId, socket]);
 
   const handleShareScreen = useCallback(async (quality = '1080p') => {
     try {
@@ -305,23 +327,23 @@ export default function Room() {
 
   const handleReaction = useCallback((emoji) => {
     playReactionPop();
-    socketRef.current?.emit('room:reaction', { roomId, name: myName, emoji });
-  }, [roomId, myName, playReactionPop]);
+    socket?.emit('room:reaction', { roomId, emoji });
+  }, [roomId, socket, playReactionPop]);
 
   const handleKick = useCallback((targetId) => {
-    socketRef.current?.emit('room:kick', { roomId, targetId });
+    socket?.emit('room:kick', { roomId, targetId });
     playLeaveChime();
-  }, [roomId, playLeaveChime]);
+  }, [roomId, socket, playLeaveChime]);
 
   const handleTransferHost = useCallback((newHostId) => {
-    socketRef.current?.emit('room:transfer-host', { roomId, newHostId });
+    socket?.emit('room:transfer-host', { roomId, newHostId });
     stopScreenShare();
     setIsSharing(false);
     setIsActualHost(false);
-  }, [roomId, stopScreenShare]);
+  }, [roomId, socket, stopScreenShare]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
-  if (!socketRef.current && phase === 'joining') {
+  if (!socket && phase === 'joining') {
     return <LoaderPage text="Connecting to server…" />;
   }
 
@@ -337,7 +359,7 @@ export default function Room() {
     );
   }
 
-  const mySocketId = socketRef.current?.id;
+  const mySocketId = socket?.id;
   const stream = isActualHost ? localStream.current : remoteStream;
 
   return (
@@ -380,7 +402,7 @@ export default function Room() {
 
           {/* Screen Annotation Drawing Canvas */}
           <AnnotationCanvas
-            socket={socketRef.current}
+            socket={socket}
             isHost={isActualHost}
             roomId={roomId}
             active={drawModeActive}
@@ -389,9 +411,9 @@ export default function Room() {
 
           {/* Overlays that sit over the video area */}
           {!drawModeActive && (
-            <CursorOverlay socket={socketRef.current} isHost={isActualHost} roomId={roomId} />
+            <CursorOverlay socket={socket} isHost={isActualHost} roomId={roomId} />
           )}
-          <ReactionOverlay socket={socketRef.current} />
+          <ReactionOverlay socket={socket} />
 
           {/* Telemetry Diagnostics HUD */}
           <StatsOverlay
@@ -443,6 +465,27 @@ export default function Room() {
         roomId={roomId}
         roomKey={roomKey}
       />
+
+      {/* Reconnection Overlay */}
+      {reconnecting && (
+        <div className="reconnection-overlay" role="alert" aria-live="assertive">
+          <div className="reconnection-card">
+            <div className="reconnection-spinner" />
+            <p>Reconnecting… (attempt {reconnectAttempt}/15)</p>
+          </div>
+        </div>
+      )}
+
+      {/* Host Disconnected Overlay */}
+      {hostDisconnected && !isActualHost && (
+        <div className="host-disconnected-overlay" role="alert" aria-live="assertive">
+          <div className="host-disconnected-card">
+            <div className="host-disconnected-icon">⚠️</div>
+            <h3>Host Disconnected</h3>
+            <p>The host has left the room. Waiting for reconnection…</p>
+          </div>
+        </div>
+      )}
 
       {/* Toast notifications */}
       <ToastContainer toasts={toasts} />

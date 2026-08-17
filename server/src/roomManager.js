@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // roomManager.js — In-memory room state management
 // No database needed. Rooms live as long as the server is running.
-// Includes capacity enforcement and room validation.
+// Includes capacity enforcement, room validation, and auto-cleanup.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -15,7 +15,8 @@
  * }
  */
 
-const MAX_PARTICIPANTS = 10;
+const MAX_PARTICIPANTS = parseInt(process.env.MAX_PARTICIPANTS, 10) || 10;
+const ROOM_TTL_MS = parseInt(process.env.ROOM_TTL_MS, 10) || (30 * 60 * 1000);
 const rooms = new Map();
 
 /**
@@ -76,21 +77,22 @@ function leaveRoom(roomId, socketId) {
   if (!room) return null;
 
   const wasHost = room.hostId === socketId;
-  
-  if (wasHost) {
-    rooms.delete(roomId);
-    return { room: null, wasHost: true, newHostId: null, roomClosed: true };
-  }
-
   room.participants.delete(socketId);
 
   if (room.participants.size === 0) {
-    // Room is empty — clean it up
     rooms.delete(roomId);
-    return { room: null, wasHost: false, newHostId: null, roomClosed: true };
+    return { room: null, wasHost, newHostId: null, roomClosed: wasHost };
   }
 
-  return { room, wasHost: false, newHostId: null, roomClosed: false };
+  let newHostId = null;
+  if (wasHost) {
+    const [nextId] = room.participants.keys();
+    room.hostId = nextId;
+    room.participants.get(nextId).isHost = true;
+    newHostId = nextId;
+  }
+
+  return { room, wasHost, newHostId, roomClosed: false };
 }
 
 /**
@@ -133,6 +135,24 @@ function transferHost(roomId, currentHostId, newHostId) {
   return true;
 }
 
+/**
+ * Delete rooms that have exceeded the TTL.
+ */
+function sweepExpiredRooms() {
+  const now = Date.now();
+  for (const [roomId, room] of rooms.entries()) {
+    if (now - room.createdAt > ROOM_TTL_MS) {
+      rooms.delete(roomId);
+    }
+  }
+}
+
+const roomSweepTimer = setInterval(sweepExpiredRooms, 5 * 60 * 1000);
+
+function stopRoomSweep() {
+  clearInterval(roomSweepTimer);
+}
+
 module.exports = {
   createRoom,
   getRoom,
@@ -142,4 +162,6 @@ module.exports = {
   getParticipants,
   transferHost,
   MAX_PARTICIPANTS,
+  sweepExpiredRooms,
+  stopRoomSweep,
 };
