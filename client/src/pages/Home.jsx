@@ -122,7 +122,7 @@ export default function Home() {
             className="btn btn-ghost btn-sm github-link"
             aria-label="View Screenloop on GitHub"
           >
-            <GitHubLogo size={18} /> GitHub
+            <GithubLogo size={18} /> GitHub
           </a>
         </motion.div>
       </header>
