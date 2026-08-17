@@ -55,7 +55,5 @@ logs/
 .gemini/
 .agents/
 
-# AI Planning Files
-PLAN.md
-DESIGNPLAN.md
-AI_OVERVIEW.md
+# Private Docs
+GIT_CHEATSHEET.md
