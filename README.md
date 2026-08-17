@@ -1,172 +1,220 @@
 <div align="center">
-  
-  # 🎬 Screenloop Pro
-  
-  **Ultra-HD Peer-to-Peer Screen Sharing & Synchronized Watch Party Web Platform**
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-  [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://reactjs.org/)
-  [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-  [![Socket.io](https://img.shields.io/badge/Socket.io-4.x-010101?logo=socketdotio&logoColor=white)](https://socket.io/)
-  [![WebRTC](https://img.shields.io/badge/WebRTC-Enabled-FF6F00?logo=webrtc&logoColor=white)](https://webrtc.org/)
+# Screenloop Pro
 
-  *Zero signups. Zero media storage. 48kHz uncompressed cinema audio. AES-GCM 256-bit End-to-End Encryption.*
+**Zero-Friction Peer-to-Peer Watch Party & Screen Sharing Platform**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Socket.io](https://img.shields.io/badge/Socket.io-4.x-010101?logo=socketdotio&logoColor=white)](https://socket.io/)
+[![WebRTC](https://img.shields.io/badge/WebRTC-Enabled-FF6F00?logo=webrtc&logoColor=white)](https://webrtc.org/)
+
+_Zero signups. Zero media storage. 48kHz uncompressed cinema audio. AES-GCM 256-bit End-to-End Encryption._
 
 </div>
 
 ---
 
-## 🌟 Key Features
+## Features
 
-- 🖥 **Peer-to-Peer Screen Sharing**: WebRTC direct mesh stream up to 1440p 2K resolution at 30/60 fps.
-- 🔊 **48 kHz Uncompressed Cinema Audio**: Dynamic range preserving stereo sound tuned specifically for movies (echo cancellation & noise suppression turned OFF).
-- 🔒 **AES-GCM 256-bit End-to-End Encryption**: Chat is encrypted client-side using a key stored in the URL hash fragment (`#key`). The server acts purely as a blind relay.
-- ✏️ **Live Screen Drawing & Annotations**: Host can draw over the live stream with Pen, Highlighter, and Eraser tools synchronized in real-time.
-- ⚡ **Web Audio Dialogue & Volume Booster**: Built-in dynamic range compressor and gain booster (up to 200%) for quiet movie dialogue.
-- 📊 **Real-Time Telemetry HUD**: Monitor live stream FPS, bitrate (kbps), round-trip latency (ms), and packet loss diagnostics.
-- 📱 **1-Tap QR Code Mobile Join**: Scan with any smartphone camera to immediately enter the watch room with encryption keys intact.
-- 📲 **Native Web Share API**: 1-tap sharing via native AirDrop, WhatsApp, Messages, or Email on iOS, Android, and macOS.
-- 👁️ **Screen Wake Lock API**: Automatically prevents user displays from sleeping or dimming during movie playback.
-- 🎨 **Obsidian Glassmorphic Design**: Curated premium themes including Midnight Obsidian, OLED Black, Cyber Ocean, and Crimson Noir.
+- **Peer-to-Peer Screen Sharing**: WebRTC direct mesh stream up to 1440p 2K resolution at 30/60 fps
+- **48 kHz Uncompressed Cinema Audio**: Dynamic range preserving stereo sound tuned for movies (echo cancellation & noise suppression OFF)
+- **AES-GCM 256-bit End-to-End Encryption**: Chat encrypted client-side using a key in the URL hash fragment. Server acts as blind relay
+- **Live Screen Drawing & Annotations**: Host draws over the live stream with Pen, Highlighter, and Eraser tools synchronized in real-time
+- **Web Audio Dialogue & Volume Booster**: Built-in dynamic range compressor and gain booster (up to 200%)
+- **Real-Time Telemetry HUD**: Live stream FPS, bitrate (kbps), round-trip latency (ms), and packet loss
+- **Dynamic Avatars**: Users select their gender to generate distinct, harmonious avatar styles using the DiceBear API
+- **Strict Room Lifecycle**: The watch party automatically and safely shuts down for all users when the host leaves
+- **1-Tap QR Code Mobile Join**: Locally generated QR codes (no third-party API, no data leakage)
+- **Native Web Share API**: 1-tap sharing via AirDrop, WhatsApp, Messages, or Email
+- **Screen Wake Lock API**: Prevents display from sleeping during playback
+- **Obsidian Glassmorphic Design**: Midnight Obsidian, OLED Black, Cyber Ocean, Crimson Noir themes
 
 ---
 
-## 📐 Architecture & Data Flow
+## Architecture
 
-Our system employs a hybrid architecture, combining a lightweight signaling server for connection orchestration and WebRTC for direct peer-to-peer heavy media transmission.
+Screenloop employs a hybrid architecture: a lightweight signaling server for connection orchestration and WebRTC for direct peer-to-peer media transmission.
 
-```mermaid
-graph TD
-    subgraph Signaling Server
-        S[Node.js + Socket.io]
-        S -->|WebRTC SDP Handshake & ICE Relay| S
-        S -->|Room State & Rate Limiting| S
-    end
-
-    subgraph Host Client
-        HC[React 18 Host]
-        HC -->|Capture Display & Audio| HC
-    end
-
-    subgraph Viewer Client
-        VC[React 18 Viewer]
-    end
-
-    HC <-->|WebSocket Signaling| S
-    VC <-->|WebSocket Signaling| S
-    
-    HC ===>|1080p/1440p Video + 48kHz Audio| VC
-    HC ===>|AES-256 E2EE Chat Ciphertext| VC
-    
-    style S fill:#2C3E50,stroke:#34495E,stroke-width:2px,color:#fff
-    style HC fill:#2980B9,stroke:#2980B9,stroke-width:2px,color:#fff
-    style VC fill:#27AE60,stroke:#27AE60,stroke-width:2px,color:#fff
+```
+                        +------------------------------------------+
+                        |        Signaling Server (Control Plane)  |
+                        |     Node.js + Express + Socket.io        |
+                        | - Room lifecycle & host hierarchy        |
+                        | - WebRTC SDP handshake & ICE relay       |
+                        | - Anti-spam & PIN brute-force protection  |
+                        +--------------------+---------------------+
+                                             |
+                          Signaling & State  | Socket.io (WebSocket)
+                                             |
+           +---------------------------------+---------------------------------+
+           |                                                                   |
+           v                                                                   v
++-----------------------------+             +-----------------------------+
+|         Host Client         |   WebRTC    |        Viewer Client        |
+|      (React 18 + Vite)      |============>|      (React 18 + Vite)      |
+| - getDisplayMedia() capture |   P2P Mesh  | - HTML5 MediaStream playback|
+| - Web Audio dialogue boost  |  1080p/1440p| - Web Audio dialogue boost  |
+| - AES-GCM key generator     |  Video +   | - E2EE local decryptor      |
+| - Screen annotation broadcast|  48kHz     | - Screen annotation renderer|
+| - Telemetry gatherer        |  Audio      | - Telemetry display HUD     |
++-----------------------------+             +-----------------------------+
 ```
 
-### System Components:
-1. **Signaling Server**: Handles the initial WebRTC SDP Handshake & ICE Relay. It tracks room state but **never** processes or stores the media stream.
-2. **Host Client**: Captures the screen via `getDisplayMedia()`, processes audio, and establishes the mesh network.
-3. **Viewer Client**: Receives the decrypted media stream directly from the Host, decrypts text chat locally using the shared URL hash key.
+### Key Principle
+
+**Media never touches the server.** The signaling server handles room state and WebRTC negotiation only. Screen pixels, audio, and chat plaintext never reach the application server.
 
 ---
 
-## 🛠️ Environments Setup
+## Security
 
-The project enforces a strict separation between **Development** and **Production** environments to ensure security, performance, and clear debugging processes.
-
-### 💻 Local Development
-
-Ideal for testing features, debugging, and contributing.
-
-**Prerequisites**: **Node.js 18+** and **npm**
-
-1. **Start the Signaling Server**:
-   ```bash
-   cd server
-   npm install
-   # Uses .env.development (or default fallback)
-   npm run dev
-   ```
-   *Runs at `http://localhost:4000` (listening on all interfaces `0.0.0.0:4000` for LAN access).*
-
-2. **Start the Frontend Client**:
-   Open a new terminal window:
-   ```bash
-   cd client
-   npm install
-   # Connects to localhost:4000
-   npm run dev
-   ```
-   *Runs at `http://localhost:5173`.*
-
-### 🚀 Production Deployment
-
-Optimized builds with minification, tree-shaking, and secure HTTPS enforced communication.
-
-**Backend (Signaling Server):**
-- **Hosting**: Render, Railway, or VPS.
-- **Environment Variables**:
-  - `PORT=4000`
-  - `ALLOWED_ORIGIN=https://your-frontend-domain.com` (Strict CORS policy)
-- **Command**: `npm install && node src/index.js`
-
-**Frontend (Client):**
-- **Hosting**: Vercel, Netlify, or Cloudflare Pages.
-- **Environment Variables**:
-  - `VITE_SERVER_URL=https://your-backend-domain.com`
-- **Command**: `npm run build`
-- **Output Directory**: `dist`
+- **Zero Media Storage**: Streams are peer-to-peer over WebRTC. Media never touches any database or server
+- **Client-Side Key Derivation**: Room keys reside exclusively in the `#key` URL hash fragment, never sent in HTTP requests
+- **Local QR Generation**: QR codes are generated client-side. Invite URLs never leave the browser
+- **Signaling Authorization**: All socket events validate room membership before processing
+- **IP-Based Rate Limiting**: Anti-spam protection keyed by IP address, preventing bypass via reconnect
+- **Room Capacity Enforcement**: Server-side limit of 10 participants per room
+- **XSS Sanitization**: User inputs and chat payloads are scrubbed before DOM presentation
+- **CSP Headers**: Content Security Policy deployed at the deployment boundary
+- **Data Anonymity**: No personal data, email addresses, or user profiles collected
 
 ---
 
-## 🔒 Security & Privacy
+## Local Development
 
-Privacy is the core pillar of Screenloop Pro:
+**Prerequisites**: Node.js 18+ and npm
 
-- **Zero Media Storage**: Streams are peer-to-peer over WebRTC. Media never touches any database or server.
-- **Client-Side Key Derivation**: Room keys reside exclusively in the `#key` URL hash fragment, which is never sent in HTTP request headers.
-- **XSS Sanitization**: User inputs and chat payloads are scrubbed before DOM presentation.
-- **Anti-Spam**: Socket handlers implement sliding-window rate limits and PIN brute-force lockouts.
-- **Data Anonymity**: No personal data, email addresses, or user profiles are required or collected.
+### 1. Start the Signaling Server
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+Runs at `http://localhost:4000` (listening on all interfaces for LAN access).
+
+### 2. Start the Frontend Client
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Runs at `http://localhost:5173`.
 
 ---
 
-## 📂 Repository Structure
+## Production Deployment
 
-```text
-Screenshare/
-├── .github/workflows/   # CI/CD pipelines
-├── client/              # React 18 SPA Frontend
-│   ├── src/
-│   │   ├── components/  # Reusable UI components
-│   │   ├── hooks/       # Custom React hooks (WebRTC, Audio, etc.)
-│   │   ├── pages/       # Route level components
-│   │   └── utils/       # Helpers (Crypto, formatters, etc.)
-│   ├── .env.example     # Client env template
-│   └── package.json     
-└── server/              # Node.js Signaling Backend
-    ├── src/             # Socket.io handlers, Room logic, Rate Limiting
-    ├── .env.example     # Server env template
-    └── package.json
+### Frontend: Vercel (Recommended)
+
+1. Push to GitHub
+2. Import repository on [Vercel](https://vercel.com)
+3. Set **Root Directory** to `client`
+4. Framework Preset: **Vite**
+5. Environment Variable: `VITE_SERVER_URL=https://your-backend.onrender.com`
+6. Deploy
+
+### Backend: Render (Recommended - Free Tier)
+
+1. Create a new **Web Service** on [Render](https://render.com)
+2. **Root Directory**: `server`
+3. **Build Command**: `npm install`
+4. **Start Command**: `node src/index.js`
+5. Environment Variables:
+   - `PORT=4000`
+   - `ALLOWED_ORIGIN=https://your-frontend.vercel.app`
+
+### Backend: Railway
+
+1. Create a new project on [Railway](https://railway.app)
+2. Add a new service from your GitHub repo
+3. Set **Root Directory** to `server`
+4. Start Command: `node src/index.js`
+5. Environment Variables:
+   - `PORT=4000`
+   - `ALLOWED_ORIGIN=https://your-frontend.vercel.app`
+
+### Backend: Fly.io
+
+1. Install Fly CLI: `curl -L https://fly.io/install.sh | sh`
+2. `fly launch` in the `server/` directory
+3. Set environment variables via `fly secrets set`
+
+### Backend: Koyeb
+
+1. Create a free account on [Koyeb](https://koyeb.com)
+2. Import your GitHub repo
+3. Set build command: `cd server && npm install`
+4. Set run command: `cd server && node src/index.js`
+5. Add environment variables
+
+---
+
+## Repository Structure
+
+```
+screenloop/
++-- client/                 # React 18 SPA Frontend
+|   +-- src/
+|       +-- components/     # Reusable UI components (14 components)
+|       +-- hooks/          # Custom React hooks (WebRTC, Audio, etc.)
+|       +-- pages/          # Route-level components (Home, Room)
+|       +-- utils/          # Helpers (Crypto, formatters, QR, etc.)
+|   +-- .env.example        # Client env template
+|   +-- vercel.json         # SPA rewrites + security headers + CSP
+|   +-- package.json
++-- server/                 # Node.js Signaling Backend
+|   +-- src/
+|       +-- index.js        # Express + Socket.io + graceful shutdown
+|       +-- socketHandlers.js # Secure event handlers with validation
+|       +-- roomManager.js  # Room state with capacity enforcement
+|       +-- rateLimiter.js  # IP-based rate limiting + brute-force protection
+|   +-- .env.example        # Server env template
+|   +-- package.json
++-- .github/workflows/      # CI/CD pipelines
++-- LICENSE                 # MIT License
++-- README.md
++-- PLAN.md                 # Master engineering plan
 ```
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## Keyboard Shortcuts
 
 | Shortcut | Action |
-|:---:|:---|
+|:--------:|:-------|
 | <kbd>M</kbd> | Toggle Audio Mute / Unmute |
 | <kbd>F</kbd> | Toggle Fullscreen Cinema Mode |
 | <kbd>Esc</kbd> | Exit Fullscreen / Close Overlays |
 
 ---
 
-## 📄 License & Author
+## Tech Stack
 
-Distributed under the MIT License. See `LICENSE` for more information.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite 5, React Router 6, Framer Motion, Phosphor Icons |
+| Backend | Node.js 18+, Express 4, Socket.io 4 |
+| Transport | WebRTC (P2P Mesh), Socket.io (Signaling) |
+| Security | AES-GCM 256-bit E2EE, CSP, IP-based rate limiting |
+| Audio | Web Audio API, DynamicsCompressor, GainNode |
+| PWA | vite-plugin-pwa, Service Worker, Web Manifest |
+| Deployment | Vercel (client), Render/Railway/Fly.io (server) |
+
+---
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+---
 
 <div align="center">
   <p>Engineered and developed by <strong>Himanshu</strong>.</p>
-  <p>Built with ❤️ for seamless sharing and immersive experiences.</p>
+  <p>Built with care for seamless sharing and immersive experiences.</p>
 </div>
