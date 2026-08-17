@@ -76,22 +76,21 @@ function leaveRoom(roomId, socketId) {
   if (!room) return null;
 
   const wasHost = room.hostId === socketId;
+  
+  if (wasHost) {
+    rooms.delete(roomId);
+    return { room: null, wasHost: true, newHostId: null, roomClosed: true };
+  }
+
   room.participants.delete(socketId);
 
   if (room.participants.size === 0) {
+    // Room is empty — clean it up
     rooms.delete(roomId);
-    return { room: null, wasHost, newHostId: null };
+    return { room: null, wasHost: false, newHostId: null, roomClosed: true };
   }
 
-  let newHostId = null;
-  if (wasHost) {
-    const [nextId] = room.participants.keys();
-    room.hostId = nextId;
-    room.participants.get(nextId).isHost = true;
-    newHostId = nextId;
-  }
-
-  return { room, wasHost, newHostId };
+  return { room, wasHost: false, newHostId: null, roomClosed: false };
 }
 
 /**

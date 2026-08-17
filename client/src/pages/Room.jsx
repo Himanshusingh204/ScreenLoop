@@ -160,10 +160,17 @@ export default function Room() {
       setIsActualHost(true);
       addToast('👑 You have been promoted to Host!');
     });
+    socket.on('room:closed', ({ message }) => {
+      addToast(`🛑 ${message}`);
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+    });
     return () => {
       socket.off('webrtc:offer',  handleOffer);
       socket.off('webrtc:answer', handleAnswer);
       socket.off('webrtc:ice',    handleIce);
+      socket.off('room:closed');
     };
   }, [handleOffer, handleAnswer, handleIce, addToast]);
 
@@ -355,6 +362,7 @@ export default function Room() {
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
           onOpenShare={() => setShareModalOpen(true)}
+          isHost={isActualHost}
         />
       )}
 

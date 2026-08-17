@@ -14,6 +14,7 @@ import { FilmStrip, ShareNetwork, Users, GithubLogo } from './icons';
  * @param {boolean} props.sidebarOpen
  * @param {Function} props.onToggleSidebar
  * @param {Function} props.onOpenShare
+ * @param {boolean} props.isHost
  */
 export function TopBar({
   roomId,
@@ -23,6 +24,7 @@ export function TopBar({
   sidebarOpen,
   onToggleSidebar,
   onOpenShare,
+  isHost,
 }) {
   const navigate = useNavigate();
 
@@ -106,14 +108,17 @@ export function TopBar({
           type="button"
           className="btn btn-sm leave-room-btn"
           onClick={() => {
-            if (window.confirm('Are you sure you want to leave the room?')) {
+            const msg = isHost 
+              ? 'Are you sure you want to stop the room? Everyone will be disconnected.' 
+              : 'Are you sure you want to leave the room?';
+            if (window.confirm(msg)) {
               navigate('/');
             }
           }}
-          title="Leave Watch Room"
-          aria-label="Leave Watch Room"
+          title={isHost ? "Stop Room" : "Leave Watch Room"}
+          aria-label={isHost ? "Stop Room" : "Leave Watch Room"}
         >
-          Leave
+          {isHost ? "Stop Room" : "Leave"}
         </button>
       </div>
     </header>
