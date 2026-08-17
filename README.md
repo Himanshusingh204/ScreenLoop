@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://via.placeholder.com/150" alt="Screenloop Pro Logo" width="150"/>
   
   # 🎬 Screenloop Pro
   
@@ -13,7 +12,6 @@
 
   *Zero signups. Zero media storage. 48kHz uncompressed cinema audio. AES-GCM 256-bit End-to-End Encryption.*
 
-  [View Demo](#) · [Report Bug](#) · [Request Feature](#)
 </div>
 
 ---
@@ -37,15 +35,38 @@
 
 Our system employs a hybrid architecture, combining a lightweight signaling server for connection orchestration and WebRTC for direct peer-to-peer heavy media transmission.
 
-<div align="center">
-  <!-- Replace the placeholder URL with an actual architecture diagram image when available -->
-  <img src="https://via.placeholder.com/800x400?text=Architecture+Diagram+Placeholder" alt="System Architecture Diagram" width="800"/>
-</div>
+```mermaid
+graph TD
+    subgraph Signaling Server
+        S[Node.js + Socket.io]
+        S -->|WebRTC SDP Handshake & ICE Relay| S
+        S -->|Room State & Rate Limiting| S
+    end
+
+    subgraph Host Client
+        HC[React 18 Host]
+        HC -->|Capture Display & Audio| HC
+    end
+
+    subgraph Viewer Client
+        VC[React 18 Viewer]
+    end
+
+    HC <-->|WebSocket Signaling| S
+    VC <-->|WebSocket Signaling| S
+    
+    HC ===>|1080p/1440p Video + 48kHz Audio| VC
+    HC ===>|AES-256 E2EE Chat Ciphertext| VC
+    
+    style S fill:#2C3E50,stroke:#34495E,stroke-width:2px,color:#fff
+    style HC fill:#2980B9,stroke:#2980B9,stroke-width:2px,color:#fff
+    style VC fill:#27AE60,stroke:#27AE60,stroke-width:2px,color:#fff
+```
 
 ### System Components:
-1. **Signaling Server (Node.js + Socket.io)**: Handles the initial WebRTC SDP Handshake & ICE Relay. It tracks room state but **never** processes or stores the media stream.
-2. **Host Client (React)**: Captures the screen via `getDisplayMedia()`, processes audio, and establishes the mesh network.
-3. **Viewer Client (React)**: Receives the decrypted media stream directly from the Host, decrypts text chat locally using the shared URL hash key.
+1. **Signaling Server**: Handles the initial WebRTC SDP Handshake & ICE Relay. It tracks room state but **never** processes or stores the media stream.
+2. **Host Client**: Captures the screen via `getDisplayMedia()`, processes audio, and establishes the mesh network.
+3. **Viewer Client**: Receives the decrypted media stream directly from the Host, decrypts text chat locally using the shared URL hash key.
 
 ---
 
@@ -141,10 +162,11 @@ Screenshare/
 
 ---
 
-## 📄 License
+## 📄 License & Author
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
+  <p>Engineered and developed by <strong>Himanshu</strong>.</p>
   <p>Built with ❤️ for seamless sharing and immersive experiences.</p>
 </div>
