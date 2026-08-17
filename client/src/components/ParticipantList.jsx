@@ -29,14 +29,13 @@ export const ParticipantList = memo(function ParticipantList({
         return (
           <div key={p.socketId} className="participant-item" role="listitem">
             {/* Avatar */}
-            <div
+            <img
               className="avatar"
-              style={{ background: avatarColor(p.name) }}
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.name)}`}
+              alt={`${p.name} avatar`}
               title={p.name}
-              aria-hidden="true"
-            >
-              {p.name.charAt(0).toUpperCase()}
-            </div>
+              style={{ background: avatarColor(p.name), objectFit: 'cover' }}
+            />
 
             {/* Name */}
             <span className="participant-name" title={p.name}>

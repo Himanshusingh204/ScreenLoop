@@ -10,8 +10,8 @@ import {
   PencilSimple,
   LockSimple,
   BarChart,
-  ArrowSquareOut,
-  ArrowSquareIn,
+  CornersOut,
+  CornersIn,
   PictureInPicture,
 } from '../components/icons';
 import { QUALITY_PRESETS } from '../hooks/useWebRTC';
@@ -91,7 +91,8 @@ export function ControlBar({
   }, []);
 
   const togglePiP = useCallback(async () => {
-    const el = videoRef?.current;
+    // Fallback to getElementById if ref isn't attached properly
+    const el = videoRef?.current || document.getElementById('main-video');
     if (!el) return;
     try {
       if (document.pictureInPictureElement) {
@@ -334,7 +335,7 @@ export function ControlBar({
           aria-label={isFullscreen ? 'Exit Fullscreen (F)' : 'Enter Fullscreen (F)'}
           aria-pressed={isFullscreen}
         >
-          {isFullscreen ? <ArrowSquareIn size={18} /> : <ArrowSquareOut size={18} />}
+          {isFullscreen ? <CornersIn size={18} /> : <CornersOut size={18} />}
         </button>
       </div>
 
