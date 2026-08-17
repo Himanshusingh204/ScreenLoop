@@ -54,3 +54,7 @@ logs/
 *.bak
 .gemini/
 .agents/
+
+# AI Planning Files
+PLAN.md
+DESIGNPLAN.md
