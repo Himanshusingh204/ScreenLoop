@@ -1,0 +1,12 @@
+# Client .gitignore
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env
+.env.local
+.env.production.local
+!.env.example
+.DS_Store
+*.log
+.vercel
