@@ -59,9 +59,7 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-[himanshusingh7755@gmail.com](mailto:himanshusingh7755@gmail.com) or by opening a private
-inquiry with the repository maintainers.
+reported to the project maintainer via [GitHub Security Advisories](https://github.com/Himanshusingh204/ScreenLoop/security/advisories/new) or directly via [GitHub @Himanshusingh204](https://github.com/Himanshusingh204).
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
