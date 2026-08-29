@@ -42,7 +42,7 @@ Instead, please report vulnerabilities via one of the following methods:
 1. **GitHub Private Vulnerability Reporting**:
    Use the **"Report a vulnerability"** button under the [Security tab](https://github.com/Himanshusingh204/ScreenLoop/security/advisories/new) of our repository.
 2. **Direct Email**:
-   Send an encrypted or detailed report to [himanshusingh7755@gmail.com](mailto:himanshusingh7755@gmail.com) with the subject line:  
+   Send an encrypted or detailed report to [himanshusingh7755@gmail.com](mailto:himanshusingh21361@gmail.com) with the subject line:  
    `[SECURITY] Vulnerability in ScreenLoop: <Summary>`.
 
 ### What to Include
