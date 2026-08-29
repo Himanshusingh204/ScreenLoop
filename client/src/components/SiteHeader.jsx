@@ -8,11 +8,11 @@ import { generateRoomId, generateRoomKey } from '../utils';
 
 const NAV_LINKS = [
   { path: '/', label: 'Home' },
+  { path: '/meet', label: 'Video Meet', badge: 'New' },
   { path: '/features', label: 'Features' },
-  { path: '/security', label: 'Security' },
   { path: '/about', label: 'About' },
   { path: '/help', label: 'Help & FAQ' },
-  { path: '/changelog', label: "What's New", badge: 'New' },
+  { path: '/changelog', label: "What's New" },
 ];
 
 export function SiteHeader() {
