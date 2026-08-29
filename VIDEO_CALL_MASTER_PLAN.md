@@ -1,218 +1,343 @@
-# 🚀 Master Plan: Google Meet-Style Video Conferencing for ScreenLoop
+# 🚀 Master Engineering Blueprint: Google Meet Video Conferencing (`/meet`)
 
-> **Document Type**: Architecture & Engineering Master Plan  
-> **Status**: Approved for Design — Pending AI Implementation  
-> **Objective**: Introduce a dedicated, Google Meet-inspired multi-user video calling system (`/meet`) alongside existing watch party rooms, and update navigation to prioritize Video Meet over the Security tab.
-
----
-
-## 1. Executive Summary
-
-ScreenLoop currently excels at **peer-to-peer screen sharing and watch parties** where one primary host streams their display and audio to connected viewers. 
-
-This master plan introduces a dedicated **Google Meet-style Video Calling Experience** on a separate route (`/meet` and `/meet/:meetId`). Instead of a 1-to-many broadcast, this mode offers a **many-to-many interactive video conference** where all participants can share their webcams, microphones, and screens in a dynamic, responsive video grid with active speaker spotlighting, pre-call lobby testing, and floating bottom controls.
+> **Authoritative Specification Document**  
+> **Target Audience**: AI Engineering Agents & Frontend Developers  
+> **Status**: Ready for AI-Directed Implementation  
+> **Architecture Standard**: Pure WebRTC Mesh • Vanilla CSS Design Tokens • React 18 • Socket.IO Signaling
 
 ---
 
-## 2. Navigation & Routing Updates
+## 📌 Table of Contents
 
-### 2.1 Navigation Bar Changes (`client/src/components/SiteHeader.jsx`)
-- **Remove**: The `Security` tab link from primary desktop and mobile navigation (`NAV_LINKS`).
-- **Retain**: The `/security` route and link inside the footer (`SiteFooter.jsx`) so users and audits can still access compliance and encryption documentation.
-- **Add**: `Video Meet` to `NAV_LINKS` with a `New` highlight badge:
+1. [High-Level Vision & Objectives](#1-high-level-vision--objectives)
+2. [Navbar & Navigation Integration (Completed)](#2-navbar--navigation-integration-completed)
+3. [Google Meet UI & UX Specifications](#3-google-meet-ui--ux-specifications)
+   - [3.1 Color Palette & Design Tokens](#31-color-palette--design-tokens)
+   - [3.2 Pre-Join Green Room (Lobby Preview)](#32-pre-join-green-room-lobby-preview)
+   - [3.3 Responsive Auto-Sizing Video Grid](#33-responsive-auto-sizing-video-grid)
+   - [3.4 Active Speaker Spotlight & Detection](#34-active-speaker-spotlight--detection)
+   - [3.5 Floating Bottom Control Pill](#35-floating-bottom-control-pill)
+   - [3.6 In-Call Drawers (People & Chat)](#36-in-call-drawers-people--chat)
+   - [3.7 Self-View Picture-in-Picture](#37-self-view-picture-in-picture)
+4. [WebRTC Multi-Stream Mesh Architecture](#4-webrtc-multi-stream-mesh-architecture)
+   - [4.1 Multi-Track Signaling Protocol](#41-multi-track-signaling-protocol)
+   - [4.2 Track Muting vs Renegotiation](#42-track-muting-vs-renegotiation)
+   - [4.3 Socket.IO Meet Event Contracts](#43-socketio-meet-event-contracts)
+5. [File Structure & Component Directory](#5-file-structure--component-directory)
+6. [Step-by-Step Implementation Phasing for AI](#6-step-by-step-implementation-phasing-for-ai)
+7. [AI Prompt Injection Template](#7-ai-prompt-injection-template)
+
+---
+
+## 1. High-Level Vision & Objectives
+
+ScreenLoop's primary watch party room (`/room/:roomId`) is engineered for **1-to-many screen broadcasting** (one presenter streaming high-bitrate video and lossless stereo movie audio to viewers).
+
+**The Video Meet Feature (`/meet` and `/meet/:meetId`)** introduces a **Google Meet-identical multi-party video call platform** designed for:
+- 👥 Multi-user interactive group calls (2 to 8+ simultaneous webcams).
+- 🎤 Individual mic streams with active speaker auto-detection.
+- 🖥️ Simultaneous or shared screen presenting alongside webcam feeds.
+- 🔒 100% Peer-to-Peer media transmission with zero server-side recording or transcoding.
+
+---
+
+## 2. Navbar & Navigation Integration (Completed)
+
+The top navigation bar in [SiteHeader.jsx](file:///i:/Web%20devlopment/Screenshare/client/src/components/SiteHeader.jsx) has been updated:
+- **Removed**: The `Security` link from primary header navigation.
+- **Added**: `Video Meet` (`/meet`) with a glowing `New` badge.
+- **Preserved**: The `/security` link remains in the footer ([SiteFooter.jsx](file:///i:/Web%20devlopment/Screenshare/client/src/components/SiteFooter.jsx)) for compliance and technical review.
+
+```javascript
+// client/src/components/SiteHeader.jsx
+const NAV_LINKS = [
+  { path: '/', label: 'Home' },
+  { path: '/meet', label: 'Video Meet', badge: 'New' },
+  { path: '/features', label: 'Features' },
+  { path: '/about', label: 'About' },
+  { path: '/help', label: 'Help & FAQ' },
+  { path: '/changelog', label: "What's New" },
+];
+```
+
+---
+
+## 3. Google Meet UI & UX Specifications
+
+### 3.1 Color Palette & Design Tokens (`meet.css`)
+
+```css
+:root {
+  --meet-bg: #202124;              /* Google Meet dark stage background */
+  --meet-surface: #2d2e30;         /* Video tile card surface */
+  --meet-surface-hover: #3c4043;   /* Tile hover border & controls */
+  --meet-pill-bg: #303134;         /* Bottom control bar surface */
+  --meet-pill-button: #3c4043;     /* Floating round action buttons */
+  --meet-pill-button-hover: #474a4d;
+  --meet-danger: #ea4335;          /* Muted state & Hang Up button */
+  --meet-danger-hover: #d93025;
+  --meet-accent: #8ab4f8;          /* Google Meet blue highlight */
+  --meet-speaker-green: #34a853;   /* Active speaker glowing ring */
+  --meet-hand-yellow: #fbbc04;     /* Hand raised badge */
+  --meet-radius-tile: 16px;        /* Smooth modern card corners */
+  --meet-radius-pill: 9999px;      /* Pill shape */
+}
+```
+
+---
+
+### 3.2 Pre-Join Green Room (Lobby Preview)
+
+Before entering an active meeting, users land on the **Google Meet Green Room**:
+
+```
++========================================================================================+
+| ScreenLoop Meet                                                                        |
++========================================================================================+
+|                                                                                        |
+|         [ Live Webcam Preview ]                      Ready to join?                    |
+|      +---------------------------+                   Room: abc-defg-hij                |
+|      |                           |                                                     |
+|      |    (User Camera Feed)     |                   [ Your Name Input           ]     |
+|      |                           |                                                     |
+|      |   [🎤 Level: |||||||    ] |                   [ Avatar Gender: Male/Female]     |
+|      +---------------------------+                                                     |
+|           [ 🎤 Mic ] [ 📹 Cam ]                      [ Join Now ]  [ Present Screen ]  |
+|                                                                                        |
+|         ⚙️ Audio & Video Settings                    No one else is here yet           |
+|                                                                                        |
++========================================================================================+
+```
+
+#### Lobby Checklist for AI:
+- `video` element mirroring the local webcam (`transform: scaleX(-1)`).
+- Real-time microphone audio visualizer (horizontal pill with animated green bars powered by `AudioContext` and `AnalyserNode`).
+- Quick toggle buttons: Mic (Mute/Unmute) and Camera (On/Off).
+- Device selector dropdowns: Camera source, Mic source, Speaker output (`navigator.mediaDevices.enumerateDevices`).
+- Display Name text field with character counter.
+- **"Join Now"** primary button and **"Present"** direct screen share button.
+
+---
+
+### 3.3 Responsive Auto-Sizing Video Grid
+
+The layout engine dynamically computes tile dimensions based on window viewport and participant count:
+
+| Participants | Layout Grid | Aspect Ratio | Behavior |
+| :---: | :---: | :---: | :--- |
+| **1** | `1 × 1` (Centered) | `16:9` | Dominates screen, max-width 1100px |
+| **2** | `2 × 1` (Side-by-Side) | `16:9` or `4:3` | 50% / 50% split (vertical on mobile) |
+| **3 – 4** | `2 × 2` (Balanced Grid) | `16:9` | Equal quadrant sizing |
+| **5 – 6** | `3 × 2` (Standard Grid) | `16:9` | 3 tiles top row, 3 tiles bottom row |
+| **7 – 8+** | `4 × 2` or Paginated | `16:9` | Auto-scaled with active speaker prioritization |
+| **Spotlight / Presentation** | `75% Stage + 25% Strip` | Varied | Presentation dominates; webcam thumbnails dock into right vertical filmstrip |
+
+#### Video Tile Component Structure (`MeetTile.jsx`):
+```html
+<div class="meet-tile {isSpeaking ? 'active-speaker' : ''} {isCameraOff ? 'cam-off' : ''}">
+  <video autoplay playsinline muted={isSelf}></video>
+  <div class="meet-tile-avatar-fallback">
+    <!-- Visible only when camera is disabled -->
+    <img src={avatarUrl} alt={name} />
+    <span>{initials}</span>
+  </div>
+  
+  <!-- Top Right Action Overlay (Appears on Hover) -->
+  <div class="meet-tile-hover-actions">
+    <button title="Pin to screen"><Thumbtack size={16} /></button>
+  </div>
+
+  <!-- Bottom Badges -->
+  <div class="meet-tile-footer">
+    <span class="meet-tile-name">{name} {isSelf && '(You)'}</span>
+    <span class="meet-tile-mic-badge {isMuted ? 'muted' : ''}">
+      {isMuted ? <MicrophoneSlash size={14} /> : <Microphone size={14} />}
+    </span>
+  </div>
+
+  <!-- Hand Raised Badge -->
+  {isHandRaised && <div class="meet-hand-badge">✋ Hand raised</div>}
+</div>
+```
+
+---
+
+### 3.4 Active Speaker Spotlight & Detection (`useActiveSpeaker.js`)
+
+- Each connected audio stream feeds into an `AudioContext` and `AnalyserNode`.
+- Computes volume amplitude every 100ms:
   ```javascript
-  const NAV_LINKS = [
-    { path: '/', label: 'Watch Party' },
-    { path: '/meet', label: 'Video Meet', badge: 'New' },
-    { path: '/features', label: 'Features' },
-    { path: '/about', label: 'About' },
-    { path: '/help', label: 'Help & FAQ' },
-    { path: '/changelog', label: "What's New" },
-  ];
+  const rms = Math.sqrt(values / arrayLength);
+  if (rms > 0.04) {
+    // User is actively speaking
+    setActiveSpeaker(participantId);
+  }
   ```
-
-### 2.2 Route Architecture (`client/src/App.jsx`)
-- `/meet` — **Meet Landing & Instant Launch Page**: Instant meeting creation, schedule/join by code, and device permission check.
-- `/meet/:meetId` — **Active Video Call Room**:
-  - Pre-join Green Room / Lobby (if not yet joined).
-  - Main Google Meet grid stage once admitted.
+- **Visual Feedback**: The active speaker's tile immediately gains a pulsing green border (`box-shadow: 0 0 0 3px #34a853`).
+- **Priority Re-ordering**: When 5+ users are present, active speakers are moved to the top-left slots.
 
 ---
 
-## 3. Google Meet User Experience (UX/UI Breakdown)
+### 3.5 Floating Bottom Control Pill (`MeetControlBar.jsx`)
+
+The control bar floats above the bottom margin in Google Meet's classic 3-section layout:
 
 ```
-+========================================================================================+
-| ScreenLoop Meet                                               [Room ID: abc-defg-hij]  |
-+========================================================================================+
-|                                                                                        |
-|  +--------------------------------+  +--------------------------------+  +-----------+ |
-|  | [Webcam: Alex]                 |  | [Webcam: Sarah (Speaking)]     |  | In-Call   | |
-|  |                                |  |     ==================         |  | Drawer    | |
-|  |                                |  |     | Active Speaker |         |  |           | |
-|  |                                |  |     | Glowing Border |         |  | • People  | |
-|  |                                |  |     ==================         |  | • Chat    | |
-|  | (Mic ON)            (Name Tag) |  | (Mic ON)            (Name Tag) |  |           | |
-|  +--------------------------------+  +--------------------------------+  | [Message] | |
-|                                                                          | [Send]    | |
-|  +--------------------------------+  +--------------------------------+  |           | |
-|  | [Webcam: Jordan (Camera Off)]  |  | [Screen Share / Presentation]  |  |           | |
-|  |       [Avatar Initial]         |  |                                |  |           | |
-|  |                                |  |                                |  |           | |
-|  | (Mic Muted)         (Name Tag) |  | (HD Stream)         (Presenter)|  |           | |
-|  +--------------------------------+  +--------------------------------+  +-----------+ |
-|                                                                                        |
-+========================================================================================+
-|  10:42 AM | abc-defg-hij   [ 🎤 ] [ 📹 ] [ ✋ ] [ 🖥️ ] [ 😊 ] [ 📞 Leave ]  |  [👥 4] [💬] |
-+========================================================================================+
++-----------------------------------------------------------------------------------------------+
+|  10:45 AM | abc-defg-hij     [ 🎤 ] [ 📹 ] [ ✋ ] [ 🖥️ ] [ 😊 ] [ 📞 Leave ]     [ ℹ️ ] [ 👥 4 ] [ 💬 ] |
++-----------------------------------------------------------------------------------------------+
 ```
 
-### 3.1 Pre-Join Green Room (Lobby Preview)
-Before jumping into the call, participants see a pre-flight lobby identical to Google Meet:
-1. **Live Camera Preview**: Real-time mirror video feed.
-2. **Microphone Audio Visualizer**: Animated green level meter verifying input volume.
-3. **Quick Device Toggles**: Easy buttons to turn camera/mic ON/OFF before entering.
-4. **Device Selectors**: Dropdown selection for camera, microphone, and output speakers.
-5. **Display Name & Gender Avatar Selector**: Sets the user's participant card.
-6. **"Join Now" / "Present Screen First" Buttons**.
+#### Left Section:
+- Live digital clock (`10:45 AM`).
+- Formatted room code (`abc-defg-hij`) with a 1-click clipboard copy button.
 
-### 3.2 Dynamic Video Grid Layout
-Google Meet’s hallmark is its fluid, auto-sizing grid:
-- **1 Participant**: Full-stage video centered with 16:9 ratio.
-- **2 Participants**: Side-by-side (50% / 50%) or vertical split on mobile.
-- **3–4 Participants**: 2 × 2 balanced grid.
-- **5–6 Participants**: 3 × 2 grid.
-- **7–12 Participants**: Responsive dynamic tile layout with active speaker auto-reordering.
-- **Screen Share Active (Spotlight Mode)**: The shared screen occupies 75% of the stage width; webcam tiles dock into a neat vertical filmstrip on the right or bottom.
+#### Center Section (Floating Action Dock):
+1. **Mic Toggle**: Circular button. Grey when live; `#ea4335` red with slash when muted.
+2. **Camera Toggle**: Circular button. Grey when live; `#ea4335` red with slash when turned off.
+3. **Raise Hand**: Circular button. Broadcasts hand raise state to all participants with a subtle chime.
+4. **Screen Share**: Circular button. Launches display media picker.
+5. **Emoji Reactions**: Opens a popover menu (`💖`, `👍`, `👏`, `😂`, `😮`, `🎉`). Clicking emits floating reactions that drift upward from the participant's video card.
+6. **More Options (`...`)**: Device switcher settings modal and fullscreen toggle.
+7. **End Call**: High-contrast elongated red pill button (`#ea4335`) with phone hang-up icon.
 
-### 3.3 Active Speaker Detection
-- Uses `AudioContext` and `AnalyserNode` to compute root-mean-square (RMS) microphone levels.
-- The person currently speaking gets an animated **accent glow border** around their video tile.
-- When multiple people are present, the active speaker's tile is prioritized on the main screen.
-
-### 3.4 Floating Bottom Control Bar (Google Meet Style)
-A sleek, floating pill-shaped bar anchored at the bottom:
-- **Time & Meeting Code**: Left section displaying clock and clickable room code.
-- **Center Action Controls**:
-  - `Microphone`: Toggle mute/unmute (with red indicator when muted).
-  - `Camera`: Toggle video on/off (with avatar fallback when off).
-  - `Raise Hand`: Broadcast hand raise animation and chime to host.
-  - `Screen Share`: Toggle entire screen / application window sharing.
-  - `Reactions`: Floating emoji popups (❤️, 👏, 😂, 🎉, 👍).
-  - `End Call`: Distinct red pill button with confirmation modal.
-- **Right Utility Toggles**:
-  - `Meeting Info`: Quick link copy, dial-in/PIN details.
-  - `People (Count)`: Opens participant drawer with pin/mute options.
-  - `In-Call Chat`: Opens real-time encrypted messaging drawer.
-  - `Settings`: Audio/video hardware selector modal.
+#### Right Section (Drawer Toggles):
+- **Meeting Info (`ℹ️`)**: Opens call sharing details and join link.
+- **People (`👥`)**: Opens participant drawer with badge count.
+- **Chat (`💬`)**: Opens encrypted in-call text drawer with unread message notification dot.
 
 ---
 
-## 4. Technical & WebRTC Architecture
+### 3.6 In-Call Drawers (People & Chat)
 
-### 4.1 Multi-Stream Mesh Topology
-For lightweight groups (up to 6–8 participants), ScreenLoop's peer-to-peer mesh architecture offers zero-cost, zero-server-transcoding performance:
+A smooth slide-over drawer docking on the right side of the screen (`360px` width) with two tabs:
 
-```
-                  ┌───────────────────────────────┐
-                  │    Signaling Server (Node)    │
-                  │   Socket.IO Room Coordinator  │
-                  └───────────────┬───────────────┘
-                                  │
-         ┌────────────────────────┼────────────────────────┐
-         │ SDP / ICE Signaling    │ SDP / ICE Signaling    │ SDP / ICE Signaling
-         ▼                        ▼                        ▼
-  ┌──────────────┐         WebRTC Mesh P2P          ┌──────────────┐
-  │  Peer Alpha  │◄────────────────────────────────►│   Peer Beta  │
-  │ (Cam + Mic)  │                                  │ (Cam + Mic)  │
-  └──────┬───────┘                                  └──────┬───────┘
-         │                                                 │
-         │                  WebRTC Mesh P2P                │
-         └────────────────►┌──────────────┐◄───────────────┘
-                           │  Peer Gamma  │
-                           │(Cam+Mic+Scr) │
-                           └──────────────┘
-```
+#### Tab 1: People (`MeetPeopleDrawer.jsx`)
+- Participant count and search filter.
+- List of connected peers with name, avatar, audio status indicator, and hand-raise status.
+- Host privileges: Pin participant to screen, Mute participant, or Kick participant.
 
-### 4.2 Simultaneous Media Tracks per Peer
-Unlike the watch party room (which sends 1 display stream), each video call peer maintains:
-1. **Audio Track**: Local microphone input (with optional noise suppression for voices).
-2. **Video Track**: Local webcam (720p / 360p adaptive).
-3. **Auxiliary Display Track**: Optional screen share track added via `RTCPeerConnection.addTrack`.
-
-### 4.3 Track Management (Muting without Re-negotiation)
-- **Mute Mic**: `audioTrack.enabled = false` (stops audio packets instantly without teardown).
-- **Disable Camera**: `videoTrack.enabled = false` (freezes/stops sending video frames, UI shows user avatar).
-- **Toggle Screen Share**: Adds/removes the display stream track via `replaceTrack` or renegotiation offer.
-
-### 4.4 Socket.IO Signaling Events for Meet
-Extend `server/src/socketHandlers.js` with meeting-specific events:
-- `meet:join`: `{ meetId, name, avatar, micOn, cameraOn }`
-- `meet:signal`: `{ to, from, signalData }` (SDP Offers/Answers & ICE candidates)
-- `meet:peer-state-change`: `{ micOn, cameraOn, isSharing, handRaised }`
-- `meet:active-speaker`: `{ socketId, audioLevel }`
-- `meet:reaction`: `{ emoji, from }`
-- `meet:leave`: Clean disconnection and tile removal
+#### Tab 2: In-Call Messages (`MeetChatDrawer.jsx`)
+- Real-time encrypted text chat.
+- "Messages can be seen only by people in the call and are deleted when the call ends."
+- Markdown / URL auto-linkification.
 
 ---
 
-## 5. File System & Component Implementation Plan
+### 3.7 Self-View Picture-in-Picture
 
-### 5.1 New Files to Create
+- Users have a toggle to collapse their own camera feed into a floating, draggable mini-card in the corner of the screen.
+- This frees up maximum screen real estate for other participants and presentations.
+
+---
+
+## 4. WebRTC Multi-Stream Mesh Architecture
+
+### 4.1 Multi-Track Signaling Protocol
+
+Unlike watch party rooms which stream only 1 display track, Video Meet manages **multiple tracks per peer**:
+
+```
+Local Device               WebRTC PeerConnection                Remote Peer
+Microphone Track --------> [ addTrack(audioTrack) ] ----------> <audio autoplay>
+Webcam Video Track ------> [ addTrack(videoTrack) ] ----------> <video autoplay>
+Display Screen Track ----> [ addTrack(screenTrack)] ----------> <video class="presentation">
+```
+
+### 4.2 Track Muting vs Renegotiation
+- **Mic Mute**: `audioTrack.enabled = false` (stops audio transport instantly without SDP renegotiation).
+- **Camera Off**: `videoTrack.enabled = false` (stops video frames; peer receives black frame, UI switches to user avatar).
+- **Screen Share**: Dynamically calls `peerConnection.addTrack` or `sender.replaceTrack` with SDP offer/answer exchange.
+
+### 4.3 Socket.IO Meet Event Contracts (`server/src/socketHandlers.js`)
+
+| Event | Direction | Payload |
+| :--- | :---: | :--- |
+| `meet:join` | Client ➔ Server | `{ meetId, name, gender, micOn, cameraOn }` |
+| `meet:user-joined` | Server ➔ Peers | `{ socketId, name, gender, micOn, cameraOn }` |
+| `meet:signal` | Bidirectional | `{ to, from, signalData: { sdp \| candidate } }` |
+| `meet:state-change` | Bidirectional | `{ socketId, micOn, cameraOn, isSharing, handRaised }` |
+| `meet:reaction` | Bidirectional | `{ from, name, emoji }` |
+| `meet:leave` | Client ➔ Server | `{ meetId }` |
+| `meet:user-left` | Server ➔ Peers | `{ socketId }` |
+
+---
+
+## 5. File Structure & Component Directory
+
 ```
 client/src/
 ├── pages/
-│   ├── MeetLanding.jsx          # /meet - Create or join video call landing page
-│   └── MeetRoom.jsx             # /meet/:meetId - Google Meet main conference room
+│   ├── MeetLanding.jsx            # /meet - Pre-call landing, instant meet & enter code
+│   └── MeetRoom.jsx               # /meet/:meetId - Main conference stage & orchestrator
 ├── components/meet/
-│   ├── MeetLobby.jsx            # Pre-join green room camera & mic check
-│   ├── MeetGrid.jsx             # Dynamic Google Meet responsive video tile grid
-│   ├── MeetTile.jsx             # Individual participant video tile with badges
-│   ├── MeetControlBar.jsx       # Floating bottom control bar
-│   ├── MeetChatDrawer.jsx       # In-call text messaging sidebar
-│   ├── MeetPeopleDrawer.jsx     # Participant list with host actions
-│   ├── MeetDeviceModal.jsx      # Audio/Video hardware settings selector
-│   └── MeetHandRaiseOverlay.jsx # Hand raised notification alert
-└── hooks/
-    ├── useMediaDevices.js       # Camera/mic permissions, enumeration, device switching
-    ├── useMeetRTC.js            # Multi-peer WebRTC connection mesh coordinator
-    └── useActiveSpeaker.js      # RMS volume calculation and active speaker spotlighting
+│   ├── MeetLobby.jsx              # Green Room preview, mic check, device selectors
+│   ├── MeetGrid.jsx               # Dynamic auto-sizing responsive video grid
+│   ├── MeetTile.jsx               # Individual participant card, badges & fallback avatar
+│   ├── MeetControlBar.jsx         # Google Meet floating bottom dock
+│   ├── MeetChatDrawer.jsx         # In-call encrypted text messages
+│   ├── MeetPeopleDrawer.jsx       # Participant list, pin & host controls
+│   ├── MeetDeviceModal.jsx        # Audio/video hardware input/output settings
+│   └── MeetReactions.jsx          # Floating emoji animation renderer
+├── hooks/
+│   ├── useMediaDevices.js         # Camera & mic hardware acquisition & enumeration
+│   ├── useMeetRTC.js              # Multi-peer WebRTC mesh connection manager
+│   └── useActiveSpeaker.js        # AudioContext RMS active speaker detector
+└── styles/
+    └── meet.css                   # Google Meet dark mode aesthetic, layout grid & pills
 ```
 
-### 5.2 Files to Modify
-- **[client/src/components/SiteHeader.jsx](file:///i:/Web%20devlopment/Screenshare/client/src/components/SiteHeader.jsx)**:
-  - Replace `Security` nav link with `Video Meet` (`/meet`).
-- **[client/src/App.jsx](file:///i:/Web%20devlopment/Screenshare/client/src/App.jsx)**:
-  - Register `/meet` and `/meet/:meetId` routes with lazy loading and error boundaries.
-- **[client/src/styles/](file:///i:/Web%20devlopment/Screenshare/client/src/styles/)**:
-  - Add dedicated `meet.css` stylesheet for Google Meet dark aesthetic, grid math, and floating pill controls.
-- **[server/src/socketHandlers.js](file:///i:/Web%20devlopment/Screenshare/server/src/socketHandlers.js)**:
-  - Add `meet:*` event routing for multi-peer state broadcasting.
+---
+
+## 6. Step-by-Step Implementation Phasing for AI
+
+### Phase 1: Routing & Navigation Setup
+1. Verify `client/src/components/SiteHeader.jsx` has `Video Meet` (`/meet`).
+2. Add route `/meet` and `/meet/:meetId` in `client/src/App.jsx`.
+3. Create placeholder pages `MeetLanding.jsx` and `MeetRoom.jsx`.
+
+### Phase 2: Hardware Acquisition & Lobby Engine
+1. Implement `useMediaDevices.js` (`getUserMedia`, enumerate devices, toggle tracks).
+2. Build `MeetLobby.jsx` with camera mirror, live audio meter, and device selectors.
+
+### Phase 3: Server Signaling Expansion
+1. Add `meet:*` event routing in `server/src/socketHandlers.js`.
+2. Add meet room tracking in `server/src/roomManager.js`.
+
+### Phase 4: WebRTC Multi-Peer Mesh Engine
+1. Build `useMeetRTC.js` handling `RTCPeerConnection` for each joined peer.
+2. Implement audio, video, and screen share track additions.
+
+### Phase 5: Google Meet Video Grid & Controls
+1. Create `meet.css` with exact Google Meet dark tokens and grid layout rules.
+2. Build `MeetGrid.jsx`, `MeetTile.jsx`, and `useActiveSpeaker.js`.
+3. Build floating `MeetControlBar.jsx` with Mic, Cam, Screen Share, Reactions, and Hang Up.
+
+### Phase 6: Drawers, Reactions & Polish
+1. Build `MeetPeopleDrawer.jsx` and `MeetChatDrawer.jsx`.
+2. Implement floating reactions and hand-raise chime sound.
+3. Run `npm test` across client and server to guarantee zero regressions.
 
 ---
 
-## 6. Implementation Phasing Strategy (For AI Execution)
+## 7. AI Prompt Injection Template
 
-| Phase | Milestone | Scope |
-| :---: | :--- | :--- |
-| **Phase 1** | **Navigation & Routes** | Update `SiteHeader.jsx` to replace `Security` with `Video Meet`; configure `/meet` and `/meet/:meetId` in `App.jsx`. |
-| **Phase 2** | **Device Engine & Lobby** | Build `useMediaDevices.js` and `MeetLobby.jsx` with camera preview, mic meter, and device switcher. |
-| **Phase 3** | **WebRTC Multi-Peer Mesh** | Implement `useMeetRTC.js` supporting multi-peer camera, mic, and screen share tracks with signaling. |
-| **Phase 4** | **Google Meet UI Stage** | Build `MeetGrid.jsx`, `MeetTile.jsx`, active speaker spotlighting, and responsive tile resizing. |
-| **Phase 5** | **Control Bar & Drawers** | Build `MeetControlBar.jsx`, floating emoji reactions, hand-raise alerts, chat drawer, and participant management. |
-| **Phase 6** | **Polish & Verification** | Run Vitest suites, verify CSP on Vercel, test cross-browser camera/mic permissions, and verify build. |
+*Use this exact prompt when instructing any AI coding agent to implement Phase 1 through 6:*
 
----
+```text
+You are an expert WebRTC & React frontend architect. We are implementing the Google Meet-style Video Conferencing feature for ScreenLoop.
 
-## 7. Quality & Security Safeguards
+BEFORE WRITING CODE:
+1. Review "PROJECT_MEMORY.md" for global architectural guidelines and styling tokens.
+2. Follow the exact specifications in "VIDEO_CALL_MASTER_PLAN.md".
+3. Maintain zero-account privacy, pure vanilla CSS tokens (no Tailwind), and strict WebRTC mesh standards.
 
-1. **Permissions Graceful Fallbacks**: If a user denies camera or microphone access, the lobby provides clear on-screen instructions without crashing.
-2. **Hardware Disconnect Handling**: Automatically listens to `navigator.mediaDevices.ondevicechange` to handle unplugged webcams/microphones.
-3. **No Database / Zero Accounts**: Retains ScreenLoop’s signature privacy model: zero log-ins, ephemeral in-memory rooms, and URL hash-encrypted chat.
-4. **Vercel & Render Compatibility**: Fully compatible with existing root `vercel.json` CSP directives and Render Socket.IO signaling.
+TASK:
+[Insert Phase Number - e.g., "Implement Phase 2: useMediaDevices hook and MeetLobby component"]
+```
 
 ---
 
 <div align="center">
-  <sub>Document generated for ScreenLoop AI Architecture Engine • Ready for staged implementation on command.</sub>
+  <sub>Document locked & approved for development • ScreenLoop Engineering 2026</sub>
 </div>
