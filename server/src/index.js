@@ -12,6 +12,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const { stopRoomSweep, listRooms } = require('./roomManager');
 const { registerHandlers } = require('./socketHandlers');
+const logger = require('./logger');
 
 const MAX_IP_CONNECTIONS = 5;
 const connectedIPs = new Map();
@@ -59,7 +60,7 @@ const corsOptions = {
     if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
-      console.warn(`[cors] Blocked origin: ${origin}`);
+      logger.warn({ origin }, 'Blocked origin');
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -119,14 +120,14 @@ io.on('connection', (socket) => {
   connectedIPs.set(clientIP, ipCount);
 
   if (ipCount > MAX_IP_CONNECTIONS) {
-    console.warn(`[connect] Rate limit exceeded for IP ${clientIP} (${ipCount} connections)`);
+    logger.warn({ clientIP, ipCount }, 'Rate limit exceeded');
     socket.emit('server:error', { message: 'Too many connections from your IP' });
     connectedIPs.set(clientIP, ipCount - 1);
     socket.disconnect(true);
     return;
   }
 
-  console.log(`[connect] Socket ID: ${socket.id} (from ${clientIP})`);
+  logger.info({ socketId: socket.id, clientIP }, 'Socket connected');
   registerHandlers(socket, io);
 
   socket.on('disconnect', () => {
@@ -142,8 +143,11 @@ io.on('connection', (socket) => {
 // ─── Start Server ────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n Screenloop signaling server active on port ${PORT}`);
-  console.log(`   Listening on all interfaces (0.0.0.0:${PORT}) for LAN & Cloud access\n`);
+  logger.info({ port: PORT }, 'Screenloop signaling server active');
+  logger.info(
+    { bindAddress: `0.0.0.0:${PORT}` },
+    'Listening on all interfaces for LAN & Cloud access'
+  );
 });
 
 // ─── Graceful Shutdown ──────────────────────────────────────────────────────
@@ -153,7 +157,7 @@ function gracefulShutdown(signal) {
   if (isShuttingDown) return;
   isShuttingDown = true;
 
-  console.log(`\n[${signal}] Graceful shutdown initiated...`);
+  logger.info({ signal }, 'Graceful shutdown initiated');
 
   stopRoomSweep();
 
@@ -163,9 +167,9 @@ function gracefulShutdown(signal) {
   // Give clients a moment to receive the shutdown message
   setTimeout(() => {
     io.close(() => {
-      console.log('[shutdown] Socket.io connections closed');
+      logger.info('Socket.io connections closed');
       server.close(() => {
-        console.log('[shutdown] HTTP server closed');
+        logger.info('HTTP server closed');
         process.exit(0);
       });
     });
@@ -173,7 +177,7 @@ function gracefulShutdown(signal) {
 
   // Force exit after 10 seconds if graceful shutdown hangs
   setTimeout(() => {
-    console.error('[shutdown] Forced exit after timeout');
+    logger.error('Forced exit after shutdown timeout');
     process.exit(1);
   }, 10000);
 }
@@ -183,16 +187,16 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // ─── Uncaught Exception / Unhandled Rejection Handlers ──────────────────────
 process.on('uncaughtException', (err) => {
-  console.error('[FATAL] Uncaught Exception:', err);
+  logger.fatal({ err }, 'Uncaught Exception');
   gracefulShutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[FATAL] Unhandled Rejection:', reason);
+  logger.fatal({ reason }, 'Unhandled Rejection');
 });
 
 // ─── Express Error Handler (must be last) ───────────────────────────────────
 app.use((err, req, res, _next) => {
-  console.error('[express] Error:', err.message);
+  logger.error({ err: err.message }, 'Express error');
   res.status(500).json({ error: 'Internal server error' });
 });

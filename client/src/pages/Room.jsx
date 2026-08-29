@@ -26,6 +26,7 @@ import {
   useWakeLock,
   useSoundEffects,
   useNetworkStatus,
+  useScreenRecording,
 } from '../hooks';
 
 import { fireRoomLaunchConfetti, addRecentRoom } from '../utils';
@@ -69,6 +70,10 @@ export default function Room() {
   const [hostDisconnected, setHostDisconnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+
+  // ─── Audio-only mode & Quality state ──────────────────────────────────────────
+  const [audioOnly, setAudioOnly] = useState(false);
+  const [currentQuality, setCurrentQuality] = useState('1080p');
 
   // ─── Fullscreen state ─────────────────────────────────────────────────────
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -155,6 +160,15 @@ export default function Room() {
     onStream: (stream) => setRemoteStream(stream),
     onTrackEnded: () => setIsSharing(false),
   });
+
+  // ─── Screen Recording Hook ──────────────────────────────────────────────
+  const recordingStream = isActualHost ? localStream.current : remoteStream;
+  const {
+    isRecording,
+    recordingTime,
+    startRecording,
+    stopRecording,
+  } = useScreenRecording(recordingStream);
 
   // ─── Telemetry Hook ───────────────────────────────────────────────────────
   const streamStats = useWebRTCStats({
@@ -357,6 +371,19 @@ export default function Room() {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleFullscreen, shareModalOpen, isFullscreen, sidebarOpen]);
 
+  // ─── Auto-downgrade quality on poor connection ──────────────────────────────
+  useEffect(() => {
+    if (!streamStats || !isActualHost || audioOnly) return;
+
+    const { packetLoss, fps } = streamStats;
+
+    // If packet loss > 5% or fps < 15, downgrade to 720p
+    if ((packetLoss > 5 || (fps > 0 && fps < 15)) && currentQuality !== '720p') {
+      setCurrentQuality('720p');
+      addToast('⚠️ Connection quality dropped. Switched to 720p.');
+    }
+  }, [streamStats, isActualHost, audioOnly, currentQuality, addToast]);
+
   // ─── Room Actions ─────────────────────────────────────────────────────────
   const handleJoin = useCallback(({ name, pin, gender }) => {
     if (!socket) {
@@ -410,6 +437,32 @@ export default function Room() {
     playReactionPop();
     socket?.emit('room:reaction', { roomId, emoji });
   }, [roomId, socket, playReactionPop]);
+
+  const handleToggleAudioOnly = useCallback(() => {
+    setAudioOnly((prev) => {
+      const next = !prev;
+      // If turning on audio-only, stop video tracks on the local stream
+      if (next && localStream.current) {
+        localStream.current.getVideoTracks().forEach((t) => {
+          t.enabled = false;
+        });
+        addToast('🔇 Video disabled — audio-only mode');
+      } else if (!next) {
+        // Re-enable video tracks (user must re-share for new capture)
+        if (localStream.current) {
+          localStream.current.getVideoTracks().forEach((t) => {
+            t.enabled = true;
+          });
+        }
+        addToast('🎥 Video re-enabled');
+      }
+      return next;
+    });
+  }, [addToast, localStream]);
+
+  const handleQualityChange = useCallback((newQuality) => {
+    setCurrentQuality(newQuality);
+  }, []);
 
   const handleKick = useCallback((targetId) => {
     socket?.emit('room:kick', { roomId, targetId });
@@ -523,6 +576,10 @@ export default function Room() {
             onSync={emitSync}
             onToggleFullscreen={toggleFullscreen}
             onReaction={handleReaction}
+            audioOnly={audioOnly}
+            onToggleAudioOnly={handleToggleAudioOnly}
+            currentQuality={currentQuality}
+            onQualityChange={handleQualityChange}
           />
 
           {/* Persistent Exit button — always visible in fullscreen, the rest only on hover */}

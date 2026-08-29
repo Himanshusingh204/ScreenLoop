@@ -13,6 +13,8 @@ import {
   CornersOut,
   CornersIn,
   PictureInPicture,
+  Microphone,
+  MicrophoneSlash,
 } from '../components/icons';
 import { QUALITY_PRESETS } from '../hooks/useWebRTC';
 import { audioBooster, fireReactionPop } from '../utils';
@@ -34,6 +36,13 @@ import { audioBooster, fireReactionPop } from '../utils';
  * @param {Function} props.onSync
  * @param {Function} props.onToggleFullscreen
  * @param {Function} props.onReaction
+ * @param {boolean}  props.isRecording
+ * @param {number}   props.recordingTime
+ * @param {Function} props.onToggleRecording
+ * @param {boolean}  props.audioOnly
+ * @param {Function} props.onToggleAudioOnly
+ * @param {string}   props.currentQuality
+ * @param {Function} props.onQualityChange
  */
 export function ControlBar({
   isActualHost,
@@ -50,13 +59,22 @@ export function ControlBar({
   onSync,
   onToggleFullscreen,
   onReaction,
+  isRecording,
+  recordingTime,
+  onToggleRecording,
+  audioOnly,
+  onToggleAudioOnly,
+  currentQuality,
+  onQualityChange,
 }) {
   const [muted, setMuted]           = useState(false);
   const [volume, setVolume]         = useState(1);
   const [boostLevel, setBoostLevel] = useState(1); // 1 = 100%, 1.5 = 150%, 2.0 = 200%
   const [isPiP, setIsPiP]           = useState(false);
   const [hostOnlyOn, setHostOnlyOn] = useState(false);
-  const [quality, setQuality]       = useState('1080p');
+
+  // Use controlled quality from parent (Room.jsx), fallback to '1080p'
+  const quality = currentQuality || '1080p';
 
   // ─── Sync volume & audio boost to video ───────────────────────────────────
   useEffect(() => {
@@ -192,7 +210,7 @@ export function ControlBar({
               id="quality-select"
               className="quality-select"
               value={quality}
-              onChange={(e) => setQuality(e.target.value)}
+              onChange={(e) => onQualityChange?.(e.target.value)}
               disabled={isSharing}
               title={isSharing ? 'Stop sharing to change quality' : 'Select capture quality'}
               aria-label="Select stream capture resolution"
@@ -280,6 +298,50 @@ export function ControlBar({
       {/* ── RIGHT: Telemetry + Reactions + PiP + Fullscreen ──────────────── */}
       <div className="controlbar-right">
         
+        {/* Audio-Only Mode Toggle */}
+        <button
+          type="button"
+          className={`ctrl-btn ${audioOnly ? 'active' : ''}`}
+          onClick={onToggleAudioOnly}
+          title={audioOnly ? 'Enable Video' : 'Audio Only Mode'}
+          aria-label={audioOnly ? 'Enable Video' : 'Audio Only Mode'}
+          aria-pressed={audioOnly}
+        >
+          {audioOnly ? <MicrophoneSlash size={18} /> : <Microphone size={18} />}
+        </button>
+
+        {/* Recording Toggle */}
+        {onToggleRecording && (
+          <>
+            {isRecording ? (
+              <div className="recording-indicator" title="Recording in progress — click to stop">
+                <span className="recording-dot" />
+                <span>{String(Math.floor(recordingTime / 60)).padStart(2, '0')}:{String(recordingTime % 60).padStart(2, '0')}</span>
+                <button
+                  type="button"
+                  className="ctrl-btn danger"
+                  onClick={onToggleRecording}
+                  title="Stop recording"
+                  aria-label="Stop screen recording"
+                  style={{ width: '28px', height: '28px', marginLeft: '2px' }}
+                >
+                  <Square size={12} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="ctrl-btn"
+                onClick={onToggleRecording}
+                title="Record screen"
+                aria-label="Start screen recording"
+              >
+                <Record size={18} />
+              </button>
+            )}
+          </>
+        )}
+
         {/* Stream Telemetry HUD Button */}
         <button
           type="button"

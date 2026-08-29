@@ -1146,6 +1146,19 @@
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
 }
 
+/* ─── Audio-Only Mode Button ────────────────────────────────────────────────── */
+.ctrl-btn.audio-only-active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+  box-shadow: 0 0 10px rgba(124, 92, 252, 0.3);
+}
+
+.ctrl-btn.audio-only-active:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* ─── Telemetry HUD (StatsOverlay) ───────────────────────────────────────── */
 .stats-overlay-card {
   position: absolute;
@@ -1682,4 +1695,30 @@
   margin: 0;
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
+}
+
+/* ─── Recording Indicator ───────────────────────────────────────────────── */
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.recording-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: recording-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }

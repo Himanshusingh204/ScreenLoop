@@ -4,9 +4,9 @@
 // Uses expiry-based cleanup to avoid memory leaks.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const spamLimits = new Map();    // IP -> { count, firstEvent }
+const spamLimits = new Map(); // IP -> { count, firstEvent }
 const reactionLimits = new Map(); // socketId -> { count, firstEvent }
-const pinAttempts = new Map();   // IP -> { count, firstFail }
+const pinAttempts = new Map(); // IP -> { count, firstFail }
 
 const SPAM_WINDOW_MS = 1000;
 const SPAM_MAX_EVENTS = parseInt(process.env.SPAM_MAX_EVENTS, 10) || 20;
@@ -104,7 +104,7 @@ function checkPinBruteForce(socket) {
 function recordFailedPin(socket) {
   const key = getClientKey(socket);
   const now = Date.now();
-  let record = pinAttempts.get(key);
+  const record = pinAttempts.get(key);
 
   if (!record || now - record.firstFail > PIN_WINDOW_MS) {
     pinAttempts.set(key, { count: 1, firstFail: now });
