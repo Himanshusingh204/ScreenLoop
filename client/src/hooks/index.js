@@ -5,3 +5,4 @@ export { useWebRTCStats } from './useWebRTCStats';
 export { useWakeLock } from './useWakeLock';
 export { useSoundEffects } from './useSoundEffects';
 export { useNetworkStatus } from './useNetworkStatus';
+export { useScreenRecording } from './useScreenRecording';

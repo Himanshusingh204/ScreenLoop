@@ -31,7 +31,7 @@ export const ParticipantList = memo(function ParticipantList({
             {/* Avatar */}
             <img
               className="avatar"
-              src={`https://api.dicebear.com/7.x/${getAvatarCollection(p.gender)}/svg?seed=${encodeURIComponent(p.name)}`}
+              src={`https://api.dicebear.com/7.x/${getAvatarCollection(p.gender)}/svg?seed=${encodeURIComponent(p.name)}&gender=${p.gender || 'neutral'}`}
               alt={`${p.name} avatar`}
               title={p.name}
               style={{ background: avatarColor(p.name), objectFit: 'cover' }}

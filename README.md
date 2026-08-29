@@ -1,219 +1,320 @@
 <div align="center">
 
   <br />
-  <img src="./client/public/logo.svg" alt="Screenloop Logo" width="80" height="80" />
+  <img src="./client/public/logo.svg" alt="ScreenLoop Logo" width="88" height="88" />
   <br />
 
-  # Screenloop
+  # ScreenLoop
 
-  **Peer-to-peer screen sharing with encrypted chat.**
+  **Zero-friction, peer-to-peer watch party & screen sharing platform with end-to-end encrypted chat.**
 
   <p align="center">
-    <a href="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/ci.yml"><img src="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
-    <a href="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/codeql.yml"><img src="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
-    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT" /></a>
-    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 18" /></a>
-    <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 5" /></a>
+    <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FHimanshusingh204%2FScreenLoop"><img src="https://vercel.com/button" alt="Deploy with Vercel" /></a>
+  </p>
+
+  <p align="center">
+    <a href="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/ci.yml"><img src="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/ci.yml/badge.svg" alt="CI Build Status" /></a>
+    <a href="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/codeql.yml"><img src="https://github.com/Himanshusingh204/ScreenLoop/actions/workflows/codeql.yml/badge.svg" alt="CodeQL Security Scan" /></a>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-6366F1.svg?style=flat-square" alt="License: MIT" /></a>
+    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 18" /></a>
+    <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.4-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 5" /></a>
+    <a href="https://webrtc.org/"><img src="https://img.shields.io/badge/WebRTC-P2P%20Mesh-333333?style=flat-square&logo=webrtc&logoColor=white" alt="WebRTC" /></a>
+    <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.io-4.7-010101?style=flat-square&logo=socketdotio&logoColor=white" alt="Socket.io" /></a>
   </p>
 
 </div>
 
 ---
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Why ScreenLoop?](#why-screenloop)
+- [Key Features](#key-features)
+- [Architecture & Data Flow](#architecture--data-flow)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Local Development](#local-development)
+- [Deployment](#deployment)
+  - [Frontend Deployment (Vercel)](#frontend-deployment-vercel)
+  - [Backend Signaling Deployment (Render / Railway)](#backend-signaling-deployment-render--railway)
+  - [Environment Variables](#environment-variables)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
+- [Testing & Quality Assurance](#testing--quality-assurance)
+- [Repository Structure](#repository-structure)
+- [Security & Privacy](#security--privacy)
+- [Contributing & Community](#contributing--community)
+- [License](#license)
+
+---
+
 ## Overview
 
-Screenloop is a web app for watching movies or sharing your screen with friends. There's no server involved in the actual streaming — video and audio go directly between browsers via WebRTC. The server only helps devices find each other (signaling).
+**ScreenLoop** is a modern, privacy-focused watch party and screen sharing platform designed for seamless group watching, remote collaboration, and live presentations.
 
-Most screen-sharing tools compress audio with voice-isolation filters designed for work calls. Screenloop skips that, so movie audio comes through the way it was mixed. Chat messages are encrypted in the browser using AES-256-GCM, and the decryption key lives in the URL hash — the server never sees it.
+Unlike conventional video conferencing tools that route video through heavy media servers or aggressively compress stereo sound with vocal noise filters, ScreenLoop connects viewers directly over a **WebRTC peer-to-peer mesh**. Audio is streamed cleanly with high fidelity, while chat messages are encrypted client-side using **AES-256-GCM** via the Web Crypto API.
 
-No accounts. No downloads. No video data touching a server.
-
-```
-Host Browser ────── WebRTC P2P ──────> Viewer Browsers
-     │                                     │
-     └────── Signaling only (Node.js) ─────┘
-```
+- **No accounts or signups required**
+- **No software or extension downloads**
+- **Zero video/audio data touches the server**
+- **Decryption keys never leave the browser URL fragment**
 
 ---
 
-## Features
+## Why ScreenLoop?
 
-**Streaming & Audio**
-- Peer-to-peer screen sharing up to 1080p60 (higher on strong connections)
-- Echo cancellation disabled so movie audio isn't processed like voice chat
-- Volume booster for quiet dialogue scenes
-- Adaptive quality presets (1080p, 720p, 480p)
-
-**Privacy & Encryption**
-- Chat encrypted with AES-256-GCM in the browser (`window.crypto.subtle`)
-- Room key in URL hash fragment — browsers never send it to the server (RFC 3986)
-- No accounts, no database, no analytics
-- Room destroyed when host leaves
-
-**Collaboration**
-- Live drawing and laser pointer over the stream
-- Generated avatars (male/female/neutral) — no profile data stored
-- QR code for mobile joining (generated client-side)
-- Connection quality dashboard (FPS, bitrate, packet loss, ping)
-- Picture-in-picture and fullscreen modes
-- Screen Wake Lock to prevent sleep during long movies
-- 5 color themes
+| Feature | Standard Meeting Tools (Zoom, Meet, Discord) | ScreenLoop |
+| :--- | :--- | :--- |
+| **Media Routing** | Centralized media servers (SFU/MCU) | **100% Peer-to-Peer (WebRTC Mesh)** |
+| **Movie Audio Quality** | Aggressive noise suppression downsamples stereo audio | **Lossless, uncompressed stereo pass-through** |
+| **Chat Encryption** | Server-side or readable by service host | **End-to-End Encrypted (AES-256-GCM in browser)** |
+| **Account Required** | Yes (email, OAuth, or phone verification) | **None (Zero registration, instant ephemeral rooms)** |
+| **Decryption Key Storage** | Server databases / Key management services | **URL Hash Fragment (Never transmitted over network)** |
+| **Installation** | Client downloads or browser extensions | **Pure Web Standards (Works out-of-the-box)** |
 
 ---
 
-## Quick Start
+## Key Features
 
-**Requirements:** Node.js 18+
+### 🎬 High-Fidelity Streaming & Audio
+- **Direct WebRTC P2P Mesh**: Stream up to 1080p60 directly between peers without server bottlenecks.
+- **Cinema-Grade Audio**: Echo cancellation and speech filters disabled so music, cinematic soundtracks, and movie audio play exactly as mastered.
+- **Web Audio Volume Booster**: Built-in gain node amplification for movies with quiet dialogue.
+- **Dynamic Resolution Controls**: Adaptive quality presets (1080p, 720p, 480p) with connection fallback.
 
-```bash
-git clone https://github.com/Himanshusingh204/ScreenLoop.git
-cd ScreenLoop
-```
+### 🔒 Privacy & Cryptographic Security
+- **In-Browser AES-256-GCM**: Every message is encrypted and decrypted on the client using `window.crypto.subtle`.
+- **RFC 3986 URL Hash Isolation**: The cryptographic room key resides in the URL `#hash` fragment and is never sent to the signaling server in HTTP requests.
+- **Optional Room PIN Protection**: Salted/hashed PIN protection prevents unauthorized room entry.
+- **Strict Content-Security-Policy**: Hardened headers prevent XSS, clickjacking, and unauthorized origin framing.
 
-Start the signaling server:
-```bash
-cd server
-npm install
-npm run dev
-```
-
-In a second terminal, start the client:
-```bash
-cd client
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173` in your browser.
+### 🤝 Real-Time Collaboration & Room Control
+- **Live Canvas Annotations**: Freehand drawing tools and synchronized laser pointer overlay directly on the stream.
+- **Interactive Reactions**: Animated emoji reactions and confetti bursts powered by Canvas Confetti.
+- **Live Diagnostics Dashboard**: Real-time telemetry monitoring FPS, bitrate (kbps), packet loss, and round-trip time (RTT).
+- **Host Privileges**: Manage participant access, kick unauthorized users, or transfer room ownership.
+- **Picture-in-Picture (PiP)**: Keep watch parties playing in a floating desktop overlay while multitasking.
+- **Screen Wake Lock**: Prevents screens from sleeping or dimming during long movie sessions.
 
 ---
 
-## Architecture
+## Architecture & Data Flow
+
+ScreenLoop separates the **signaling plane** from the **media plane** to guarantee maximum performance and absolute privacy:
 
 ```
-                         ┌──────────────────────────────────┐
-                         │     Signaling Server              │
-                         │     Node.js + Socket.io           │
-                         │  - Room lifecycle                 │
-                         │  - WebRTC SDP/ICE relay           │
-                         │  - Rate limiting                  │
-                         └───────────────┬──────────────────┘
-                                         │
-                        Signaling only   │  WebSocket
-                                         │
-              ┌──────────────────────────┴──────────────────────────┐
-              │                                                     │
-              ▼                                                     ▼
-┌──────────────────────────────┐         WebRTC         ┌──────────────────────────────┐
-│         Host Client          │════════════════════════>│        Viewer Client          │
-│       (React 18 + Vite)      │        P2P Mesh         │       (React 18 + Vite)       │
-│  - getDisplayMedia()         │   Video + Audio direct  │  - MediaStream player         │
-│  - Web Audio boost           │                         │  - Web Audio boost            │
-│  - AES-GCM encryption        │                         │  - AES-GCM decryption         │
-│  - Annotation broadcast      │                         │  - Annotation sync            │
-└──────────────────────────────┘                         └──────────────────────────────┘
+                          ┌─────────────────────────────────────────┐
+                          │         Signaling Coordinator           │
+                          │          Node.js + Socket.IO            │
+                          │   - Ephemeral room session state        │
+                          │   - SDP Offer/Answer negotiation        │
+                          │   - ICE candidate exchange              │
+                          │   - Rate limiting & room protection     │
+                          └────────────────────┬────────────────────┘
+                                               │
+                                 WebSocket     │     WebSocket
+                                 Signaling     │     Signaling
+                                               │
+               ┌───────────────────────────────┴───────────────────────────────┐
+               │                                                               │
+               ▼                                                               ▼
+  ┌─────────────────────────┐         Encrypted WebRTC P2P Mesh      ┌─────────────────────────┐
+  │       Host Client       │═══════════════════════════════════════>│      Viewer Client      │
+  │    (React 18 + Vite)    │        Direct Video & Audio Tracks     │    (React 18 + Vite)    │
+  │                         │                                        │                         │
+  │ • getDisplayMedia()     │< - - - - - - - - - - - - - - - - - - - │ • MediaStream rendering │
+  │ • Web Audio Gain Boost  │     End-to-End Encrypted Chat Data     │ • Web Audio Gain Boost  │
+  │ • AES-256-GCM Encrypt   │ - - - - - - - - - - - - - - - - - - - >│ • AES-256-GCM Decrypt   │
+  │ • Laser & Draw Canvas   │       Real-Time Sync Annotations       │ • Canvas Sync Render    │
+  └─────────────────────────┘                                        └─────────────────────────┘
 ```
 
-### Encryption Flow
+### Encryption Protocol Lifecycle
 
-```
-1. Host generates 256-bit AES-GCM key (window.crypto.subtle)
-2. Key embedded in URL hash: /room/abc123#SECRET_KEY
-3. Key never sent to server (browsers skip hash fragments per RFC 3986)
-4. Chat messages encrypted before sending, decrypted on receive
-```
+1. **Key Generation**: When a room is created, the host browser generates a cryptographically secure 256-bit AES-GCM key via `crypto.subtle.generateKey`.
+2. **Zero-Knowledge URL Sharing**: The key is serialized and appended to the URL fragment (`/room/ROOM_ID#ROOM_KEY`). Per RFC 3986, browser user agents **never** transmit the hash fragment across the network to HTTP or WebSocket servers.
+3. **Payload Encryption**: Chat messages and sensitive annotations are encrypted with AES-256-GCM and a unique 12-byte initialization vector (IV) before transmission.
+4. **Decryption**: Connected peers extract the key from their local URL hash to decrypt payloads in memory.
 
 ---
 
-## Routes
+## Getting Started
 
-| Route | Page | Purpose |
-|---|---|---|
-| `/` | Home | Room launcher, PIN setup, recent rooms |
-| `/room/:roomId` | Watch Room | Video player, chat, annotations, controls |
-| `/features` | Features | Feature list with category filters |
-| `/security` | Security | Encryption details and architecture |
-| `/about` | About | Project background and tech stack |
-| `/help` | Help | FAQ and troubleshooting |
-| `/privacy` | Privacy | Data handling policy |
-| `/terms` | Terms | Acceptable use |
-| `/contact` | Contact | Bug reports and feature requests |
-| `/roadmap` | Roadmap | Public development roadmap |
-| `/changelog` | Changelog | Release history |
-| `/accessibility` | Accessibility | WCAG 2.1 AA commitment |
-| `*` | 404 | Not found with auto-redirect |
+### Prerequisites
 
----
+- **Node.js**: `v18.0.0` or higher (`v20.x` LTS recommended)
+- **npm**: `v9.0.0` or higher
+- Modern Chromium, Gecko, or WebKit browser with WebRTC support (Chrome, Edge, Firefox, Brave, Safari 15+)
 
-## Keyboard Shortcuts
+### Local Development
 
-| Key | Action | Where |
-|:---:|---|---|
-| <kbd>F</kbd> | Toggle fullscreen | In room |
-| <kbd>M</kbd> | Mute/unmute audio | In room |
-| <kbd>Esc</kbd> | Exit fullscreen / close overlays | Global |
-| <kbd>Enter</kbd> | Send chat message | Chat |
-| <kbd>Shift</kbd>+<kbd>Enter</kbd> | New line in chat | Chat |
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Himanshusingh204/ScreenLoop.git
+   cd ScreenLoop
+   ```
 
----
+2. **Install root, client, and server dependencies:**
+   ```bash
+   # Install root dependencies
+   npm install
 
-## Testing
+   # Install client and server dependencies
+   cd client && npm install
+   cd ../server && npm install
+   cd ..
+   ```
 
-```bash
-# Client tests
-cd client && npm run test
+3. **Start the backend signaling server (port 4000):**
+   ```bash
+   cd server
+   npm run dev
+   ```
 
-# Lint
-cd client && npm run lint
+4. **In a separate terminal, start the frontend Vite client (port 5173):**
+   ```bash
+   cd client
+   npm run dev
+   ```
 
-# Build
-cd client && npm run build
-```
+5. Visit `http://localhost:5173` in your browser. Open a secondary browser or incognito window to simulate multiple participants.
 
 ---
 
 ## Deployment
 
-**Frontend (Vercel):**
-1. Import repo on [vercel.com](https://vercel.com)
-2. Root directory: `client`, framework: Vite
-3. Set `VITE_SERVER_URL` to your backend URL
+ScreenLoop is engineered for zero-config production deployment.
 
-**Backend (Render):**
-1. New Web Service on [render.com](https://render.com)
-2. Root directory: `server`, start command: `node src/index.js`
-3. Set `PORT=4000` and `ALLOWED_ORIGIN` to your frontend URL
+### Frontend Deployment (Vercel)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FHimanshusingh204%2FScreenLoop)
+
+The repository includes a production-ready [vercel.json](vercel.json) at the root level and in the [client/](client/vercel.json) directory:
+
+1. Click the **Deploy with Vercel** button above, or import your GitHub repository on [vercel.com](https://vercel.com).
+2. Configure the following Environment Variable in your Vercel Project Settings:
+   - `VITE_SERVER_URL`: URL of your deployed signaling server (e.g. `https://screenloop-server.onrender.com`).
+3. Deploy! Single-page app routing, WebRTC media policies, and immutable asset caching are handled automatically.
+
+### Backend Signaling Deployment (Render / Railway)
+
+Because ScreenLoop only requires signaling (lightweight WebSocket messages), the server can run on free or low-cost cloud tiers.
+
+#### Deploy to Render:
+1. Create a new **Web Service** on [render.com](https://render.com).
+2. Connect your repository.
+3. Configure the service settings:
+   - **Root Directory**: `server`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node src/index.js`
+4. Set Environment Variables:
+   - `PORT`: `4000`
+   - `ALLOWED_ORIGIN`: Your deployed Vercel frontend URL (e.g., `https://screenloop.vercel.app`).
+
+### Environment Variables
+
+#### Client (`client/.env`)
+| Variable | Description | Default (Dev) |
+| :--- | :--- | :--- |
+| `VITE_SERVER_URL` | Base URL of the Socket.IO signaling server | `http://localhost:4000` |
+
+#### Server (`server/.env`)
+| Variable | Description | Default (Dev) |
+| :--- | :--- | :--- |
+| `PORT` | Listening port for the Express/Socket.IO server | `4000` |
+| `ALLOWED_ORIGIN` | CORS allowed origin for HTTP and WebSocket connections | `http://localhost:5173` |
 
 ---
 
-## Tech Stack
+## Keyboard Shortcuts
 
-- **Frontend:** React 18, Vite 5, React Router v6, Framer Motion
-- **Backend:** Node.js, Express, Socket.io 4
-- **Streaming:** WebRTC P2P mesh
-- **Encryption:** AES-256-GCM via Web Crypto API
-- **Testing:** Vitest
-- **Styling:** Vanilla CSS with CSS variables
+| Shortcut | Action | Scope |
+| :---: | :--- | :--- |
+| <kbd>F</kbd> | Toggle Fullscreen mode | Active Room |
+| <kbd>M</kbd> | Mute / Unmute stream audio | Active Room |
+| <kbd>Esc</kbd> | Close overlays, sidebars, or exit fullscreen | Global |
+| <kbd>Enter</kbd> | Send chat message | Chat Panel |
+| <kbd>Shift</kbd> + <kbd>Enter</kbd> | Insert new line in chat | Chat Panel |
+
+---
+
+## Testing & Quality Assurance
+
+Comprehensive unit and integration test suites cover signaling logic, room state, crypto sanitization, and UI utilities.
+
+```bash
+# Run server test suite (Vitest)
+cd server
+npm test
+
+# Run client test suite (Vitest)
+cd client
+npm test
+
+# Run client production build verification
+cd client
+npm run build
+```
+
+---
+
+## Repository Structure
+
+```
+ScreenLoop/
+├── .github/
+│   ├── ISSUE_TEMPLATE/        # Structured Bug Report & Feature Request templates
+│   ├── workflows/             # CI Build matrix & CodeQL security scans
+│   ├── PULL_REQUEST_TEMPLATE  # Standardized PR checklist
+│   └── dependabot.yml         # Automated dependency updates
+├── client/                    # React 18 frontend application (Vite)
+│   ├── public/                # Static assets, SVG icons, manifest
+│   ├── src/
+│   │   ├── components/        # Reusable UI components & dialogs
+│   │   ├── hooks/             # WebRTC, WebSocket, wake lock, & screen recording hooks
+│   │   ├── pages/             # Route pages (Home, Room, Security, Roadmap, etc.)
+│   │   ├── styles/            # Vanilla CSS design tokens & component styles
+│   │   └── utils/             # AES crypto, audio booster, linkifier, sanitizers
+│   └── vercel.json            # Client-specific Vercel routing & headers
+├── server/                    # Node.js Socket.IO signaling service
+│   ├── src/
+│   │   ├── index.js           # Server bootstrap & health check endpoints
+│   │   ├── roomManager.js     # Ephemeral in-memory room state
+│   │   ├── socketHandlers.js  # WebRTC signaling event router
+│   │   └── rateLimiter.js     # IP & socket connection rate limiting
+│   └── __tests__/             # Server vitest test suites
+├── vercel.json                # Root zero-config Vercel deployment configuration
+├── CONTRIBUTING.md            # Contributor setup & branching guides
+├── CODE_OF_CONDUCT.md         # Contributor Covenant Code of Conduct
+├── SECURITY.md                # Security policy & private vulnerability reporting
+└── LICENSE                    # MIT License
+```
+
+---
+
+## Security & Privacy
+
+- **Zero Data Collection**: ScreenLoop maintains no persistent databases, logs no user accounts, and stores no analytical tracking scripts.
+- **Ephemeral State**: Rooms and connection metadata exist only in memory on the signaling server and are immediately garbage-collected when the host disconnects.
+- **DTLS-SRTP Encryption**: Direct audio/video tracks are encrypted under mandatory WebRTC DTLS-SRTP specifications.
+- **Vulnerability Disclosures**: If you discover a security vulnerability, please report it via [GitHub Security Advisories](https://github.com/Himanshusingh204/ScreenLoop/security/advisories/new) as detailed in our [Security Policy](SECURITY.md).
 
 ---
 
 ## Contributing & Community
 
-Contributions are welcome! Please check out the following guides before getting started:
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security Policy](SECURITY.md)
+Contributions make open-source software incredible. We welcome bug fixes, documentation improvements, and feature contributions!
+
+- Review our [Contributing Guide](CONTRIBUTING.md) to get started with branching and testing.
+- Please review and adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
+- Open discussions and feature suggestions in our [GitHub Issues](https://github.com/Himanshusingh204/ScreenLoop/issues).
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
----
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 <div align="center">
-
-  Built with ❤️ by <a href="https://github.com/Himanshusingh204">Himanshu</a>
-
+  <sub>Built with ❤️ for watch parties, privacy, and seamless peer-to-peer collaboration.</sub>
 </div>

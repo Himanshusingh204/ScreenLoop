@@ -17,7 +17,7 @@
 
 const MAX_PARTICIPANTS = parseInt(process.env.MAX_PARTICIPANTS, 10) || 10;
 const MAX_ROOMS = parseInt(process.env.MAX_ROOMS, 10) || 100;
-const ROOM_TTL_MS = parseInt(process.env.ROOM_TTL_MS, 10) || (30 * 60 * 1000);
+const ROOM_TTL_MS = parseInt(process.env.ROOM_TTL_MS, 10) || 30 * 60 * 1000;
 
 // Valid avatar genders. Anything else falls back to DEFAULT_GENDER.
 const VALID_GENDERS = ['male', 'female', 'neutral'];
@@ -48,7 +48,11 @@ function createRoom(roomId, hostSocketId, hostName, pin = null, gender = DEFAULT
     participants: new Map(),
     createdAt: Date.now(),
   };
-  room.participants.set(hostSocketId, { name: hostName, isHost: true, gender: normalizeGender(gender) });
+  room.participants.set(hostSocketId, {
+    name: hostName,
+    isHost: true,
+    gender: normalizeGender(gender),
+  });
   rooms.set(roomId, room);
   return room;
 }

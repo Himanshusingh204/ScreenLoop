@@ -2,6 +2,7 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import GradientBackground from './components/GradientBackground';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
@@ -60,17 +61,17 @@ export default function App() {
         <Suspense fallback={<RouteLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/room/:roomId" element={<Room />} />
-            <Route path="/features" element={<Features />} />
-            <Route path="/security" element={<Security />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/roadmap" element={<Roadmap />} />
-            <Route path="/changelog" element={<Changelog />} />
-            <Route path="/accessibility" element={<Accessibility />} />
+            <Route path="/room/:roomId" element={<RouteErrorBoundary><Room /></RouteErrorBoundary>} />
+            <Route path="/features" element={<RouteErrorBoundary><Features /></RouteErrorBoundary>} />
+            <Route path="/security" element={<RouteErrorBoundary><Security /></RouteErrorBoundary>} />
+            <Route path="/about" element={<RouteErrorBoundary><About /></RouteErrorBoundary>} />
+            <Route path="/help" element={<RouteErrorBoundary><Help /></RouteErrorBoundary>} />
+            <Route path="/privacy" element={<RouteErrorBoundary><Privacy /></RouteErrorBoundary>} />
+            <Route path="/terms" element={<RouteErrorBoundary><Terms /></RouteErrorBoundary>} />
+            <Route path="/contact" element={<RouteErrorBoundary><Contact /></RouteErrorBoundary>} />
+            <Route path="/roadmap" element={<RouteErrorBoundary><Roadmap /></RouteErrorBoundary>} />
+            <Route path="/changelog" element={<RouteErrorBoundary><Changelog /></RouteErrorBoundary>} />
+            <Route path="/accessibility" element={<RouteErrorBoundary><Accessibility /></RouteErrorBoundary>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

@@ -11,7 +11,7 @@ export {
   Crown, PaperPlaneRight, ShieldCheck, DeviceMobile,
   CornersIn, CornersOut, FileText, Key, Sparkle,
   ArrowsClockwise, Scales, EyeSlash, Broadcast, Sliders,
-  Shield, CheckFat, Clock, Smiley
+  Shield, CheckFat, Clock, Smiley, Microphone, MicrophoneSlash
 } from '@phosphor-icons/react';
 
 export { ChartBar as BarChart } from '@phosphor-icons/react';
