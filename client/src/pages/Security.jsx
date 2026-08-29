@@ -95,20 +95,22 @@ export default function Security() {
             </p>
           </motion.section>
 
-          {/* Security Pillars */}
+          {/* Security Pillars — Timeline Layout */}
           <motion.section className="security-pillars-section" variants={fadeInUp}>
-            <div className="security-pillars-grid">
+            <div className="security-pillars-timeline">
               {SECURITY_PILLARS.map((pillar, idx) => (
-                <motion.div key={idx} className="security-pillar-card" variants={fadeInUp}>
-                  <div className="security-pillar-icon">{pillar.icon}</div>
-                  <h2 className="security-pillar-title">{pillar.title}</h2>
-                  <p className="security-pillar-desc">{pillar.desc}</p>
+                <motion.div key={idx} className="security-pillar-timeline-node" variants={fadeInUp}>
+                  <div className="security-pillar-timeline-icon">{pillar.icon}</div>
+                  <div className="security-pillar-timeline-content">
+                    <h2 className="security-pillar-timeline-title">{pillar.title}</h2>
+                    <p className="security-pillar-timeline-desc">{pillar.desc}</p>
+                  </div>
                 </motion.div>
               ))}
             </div>
           </motion.section>
 
-          {/* Step-by-Step Cryptographic Flow */}
+          {/* Step-by-Step Cryptographic Flow — Timeline Layout */}
           <motion.section className="crypto-flow-section" variants={fadeInUp}>
             <div className="section-header-centered">
               <span className="section-eyebrow">Cryptographic Protocol</span>
@@ -118,16 +120,14 @@ export default function Security() {
               </p>
             </div>
 
-            <div className="crypto-timeline">
+            <div className="security-timeline">
               {CRYPTO_STEPS.map((step, idx) => (
-                <motion.div key={idx} className="crypto-timeline-card" variants={fadeInUp}>
-                  <div className="timeline-badge">{step.step}</div>
-                  <div className="timeline-body">
-                    <h3 className="timeline-title">{step.title}</h3>
-                    <p className="timeline-desc">{step.desc}</p>
-                    <div className="timeline-code-box">
-                      <code>{step.code}</code>
-                    </div>
+                <motion.div key={idx} className="security-timeline-step glass-card" variants={fadeInUp}>
+                  <div className="security-timeline-badge">{step.step}</div>
+                  <h3 className="security-timeline-title">{step.title}</h3>
+                  <p className="security-timeline-desc">{step.desc}</p>
+                  <div className="security-timeline-code">
+                    <code>{step.code}</code>
                   </div>
                 </motion.div>
               ))}
@@ -136,7 +136,7 @@ export default function Security() {
 
           {/* Security Guarantees & Verification */}
           <motion.section className="security-checklist-section" variants={fadeInUp}>
-            <div className="checklist-card">
+            <div className="checklist-card glass-card">
               <h2 className="checklist-title">What the Server Can and Can't Do</h2>
               <ul className="checklist-items">
                 <li>

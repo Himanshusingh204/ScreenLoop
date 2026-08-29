@@ -152,14 +152,14 @@ export default function Features() {
             ))}
           </motion.div>
 
-          {/* Features Grid */}
-          <motion.div className="features-grid" variants={fadeInUp}>
+          {/* Features Bento Grid */}
+          <motion.div className="features-bento-grid" variants={staggerContainer}>
             {filteredFeatures.map((feature, idx) => (
               <motion.div
                 key={idx}
-                className="feature-card-pro"
+                className="feature-card-pro glass-card"
                 variants={fadeInUp}
-                whileHover={{ y: -3 }}
+                whileHover={{ y: -4 }}
               >
                 <div className="feature-card-header">
                   <div className="feature-icon-box">{feature.icon}</div>

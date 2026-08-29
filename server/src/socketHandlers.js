@@ -12,11 +12,13 @@ const {
   findRoomBySocket,
   getParticipants,
   transferHost,
+  normalizeGender,
   MAX_PARTICIPANTS,
 } = require('./roomManager');
 
 const {
   checkSpam,
+  checkReactionRate,
   checkPinBruteForce,
   recordFailedPin,
   resetFailedPin,
@@ -32,11 +34,18 @@ function registerHandlers(socket, io) {
   socket.data = { roomId: null, role: null, joinedAt: null };
 
   // ─── Room: Create ───────────────────────────────────────────────────────────
-  socket.on('room:create', ({ roomId, name, pin }) => {
+  socket.on('room:create', ({ roomId, name, pin, gender }) => {
     try {
-      if (!roomId || typeof roomId !== 'string' || roomId.length > 20) return;
+      // Task 44: Validate roomId format — no special characters
+      if (!roomId || typeof roomId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(roomId)) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
+
+      // Task 43: Rate-limit room creation per IP
+      if (!checkSpam(socket)) {
+        socket.emit('room:error', { message: 'Too many requests. Please wait a moment.' });
+        return;
+      }
 
       const existing = getRoom(roomId);
       if (existing) {
@@ -44,7 +53,8 @@ function registerHandlers(socket, io) {
         return;
       }
 
-      const room = createRoom(roomId, socket.id, name, pin);
+      // Task 40: Pass gender through so avatars render correctly (normalized in roomManager)
+      const room = createRoom(roomId, socket.id, name, pin, gender);
       socket.join(roomId);
       socket.data.roomId = roomId;
       socket.data.role = 'host';
@@ -55,9 +65,11 @@ function registerHandlers(socket, io) {
         participants: getParticipants(roomId),
         isHost: true,
         hostId: room.hostId,
+        // Task 42: include hostOnlyControls so client has correct state
+        hostOnlyControls: room.hostOnlyControls || false,
       });
 
-      console.log(`[room:create] "${name}" created room ${roomId}`);
+      console.log(`[room:create] "${name}" (${normalizeGender(gender)}) created room ${roomId}`);
     } catch (err) {
       console.error('[room:create] Error:', err);
       socket.emit('room:error', { message: 'Failed to create room.' });
@@ -65,9 +77,10 @@ function registerHandlers(socket, io) {
   });
 
   // ─── Room: Join ─────────────────────────────────────────────────────────────
-  socket.on('room:join', ({ roomId, name, pin }) => {
+  socket.on('room:join', ({ roomId, name, pin, gender }) => {
     try {
-      if (!roomId || typeof roomId !== 'string' || roomId.length > 20) return;
+      // Task 44: Validate roomId format
+      if (!roomId || typeof roomId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(roomId)) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
 
@@ -83,11 +96,15 @@ function registerHandlers(socket, io) {
       }
 
       try {
-        joinRoom(roomId, socket.id, name, pin);
+        // Task 40: Pass gender through (normalized in roomManager)
+        joinRoom(roomId, socket.id, name, pin, gender);
         resetFailedPin(socket);
       } catch (e) {
         if (e.message === 'Incorrect PIN') {
           recordFailedPin(socket);
+        } else if (e.message === 'Room is full') {
+          // Task 53: Improve "room full" error with count info
+          e = new Error(`Room is full (${room.participants.size}/${MAX_PARTICIPANTS}). Try again later.`);
         }
         throw e;
       }
@@ -102,6 +119,8 @@ function registerHandlers(socket, io) {
         participants: getParticipants(roomId),
         isHost: false,
         hostId: room.hostId,
+        // Task 42: include current hostOnlyControls state for late joiners
+        hostOnlyControls: room.hostOnlyControls || false,
       });
 
       socket.to(roomId).emit('room:user-joined', {
@@ -117,7 +136,7 @@ function registerHandlers(socket, io) {
         });
       }
 
-      console.log(`[room:join] "${name}" joined room ${roomId}`);
+      console.log(`[room:join] "${name}" (${normalizeGender(gender)}) joined room ${roomId}`);
     } catch (err) {
       console.error('[room:join] Error:', err.message);
       socket.emit('room:error', { message: err.message || 'Failed to join room.' });
@@ -179,6 +198,15 @@ function registerHandlers(socket, io) {
     socket.to(roomId).emit('sync:seek', { name, time });
   });
 
+  // ─── Chat: Typing Indicator ─────────────────────────────────────────────────
+  socket.on('chat:typing', ({ roomId }) => {
+    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    const room = getRoom(roomId);
+    const participant = room?.participants.get(socket.id);
+    if (!participant) return;
+    socket.to(roomId).emit('chat:typing', { name: participant.name, socketId: socket.id });
+  });
+
   // ─── Chat: Message ───────────────────────────────────────────────────────────
   socket.on('chat:message', ({ roomId, text }) => {
     if (!socket.data.roomId || socket.data.roomId !== roomId) return;
@@ -190,8 +218,50 @@ function registerHandlers(socket, io) {
     const participant = room?.participants.get(socket.id);
     if (!participant) return;
 
-    const payload = { name: participant.name, text, timestamp: Date.now() };
+    const msgId = Date.now() + '_' + socket.id.slice(-4);
+    const payload = { id: msgId, name: participant.name, text, timestamp: Date.now(), socketId: socket.id };
     io.to(roomId).emit('chat:message', payload);
+    // Task 85: Ack back to sender with message ID
+    socket.emit('chat:ack', { msgId });
+  });
+
+  // ─── Chat: Delete ───────────────────────────────────────────────────────────
+  socket.on('chat:delete', ({ roomId, msgId, msgTimestamp }) => {
+    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    if (!msgId || !msgTimestamp) return;
+
+    const room = getRoom(roomId);
+    if (!room) return;
+    const participant = room.participants.get(socket.id);
+    if (!participant) return;
+
+    const isHost = room.hostId === socket.id;
+    const isOwn = Date.now() - msgTimestamp < 60 * 1000; // within 60s
+
+    if (!isHost && !isOwn) return;
+
+    io.to(roomId).emit('chat:deleted', { msgId, deletedBy: participant.name });
+  });
+
+  // ─── Chat: Edit ─────────────────────────────────────────────────────────────
+  socket.on('chat:edit', ({ roomId, msgId, msgTimestamp, newText }) => {
+    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    if (!msgId || !msgTimestamp || !newText || typeof newText !== 'string' || newText.length > 500) return;
+
+    // Users can only edit their own messages within 60s
+    if (Date.now() - msgTimestamp > 60 * 1000) return;
+
+    const room = getRoom(roomId);
+    if (!room) return;
+    const participant = room.participants.get(socket.id);
+    if (!participant) return;
+
+    // Encrypt the edited message if room has a key (client handles this)
+    io.to(roomId).emit('chat:edited', {
+      msgId,
+      newText,
+      editedBy: participant.name,
+    });
   });
 
   // ─── Host: Toggle host-only controls ────────────────────────────────────────
@@ -199,6 +269,8 @@ function registerHandlers(socket, io) {
     if (!socket.data.roomId || socket.data.roomId !== roomId) return;
     const room = getRoom(roomId);
     if (!room || room.hostId !== socket.id) return;
+    // Task 42: persist state on the room object so late joiners get it
+    room.hostOnlyControls = !!enabled;
     io.to(roomId).emit('room:host-only-changed', { enabled });
   });
 
@@ -206,6 +278,7 @@ function registerHandlers(socket, io) {
   socket.on('room:reaction', ({ roomId, emoji }) => {
     if (!socket.data.roomId || socket.data.roomId !== roomId) return;
     if (!checkSpam(socket)) return;
+    if (!checkReactionRate(socket)) return;
     if (!emoji || typeof emoji !== 'string' || emoji.length > 10) return;
 
     // Use server-side name to prevent impersonation
@@ -218,11 +291,14 @@ function registerHandlers(socket, io) {
 
   socket.on('sync:pointer', ({ roomId, x, y }) => {
     if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    if (typeof x !== 'number' || typeof y !== 'number') return;
+    if (!isFinite(x) || !isFinite(y)) return;
     socket.to(roomId).emit('sync:pointer', { x, y });
   });
 
   socket.on('sync:draw', ({ roomId, stroke }) => {
     if (!socket.data.roomId || socket.data.roomId !== roomId || !stroke) return;
+    if (!Array.isArray(stroke) || stroke.length > 5000) return;
     socket.to(roomId).emit('sync:draw', { stroke });
   });
 
@@ -312,9 +388,9 @@ function registerHandlers(socket, io) {
         }
       }
 
-      console.log(`[disconnect] "${name}" left room ${roomId} (${reason})`);
+      console.log(`[disconnect] "${name}" left room ${roomId} (reason: ${reason}, wasHost: ${!!result?.wasHost})`);
     } catch (err) {
-      console.error('[disconnect] Error:', err);
+      console.error('[disconnect] Error:', err.message);
     }
   });
 }

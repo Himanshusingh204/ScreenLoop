@@ -21,7 +21,7 @@ export default function NotFound() {
       <SiteHeader />
 
       <main className="not-found-page-content">
-        <div className="not-found-card">
+        <div className="not-found-card glass-card">
           <div className="not-found-illustration">
             <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="60" cy="60" r="58" stroke="var(--border-strong)" strokeWidth="2" strokeDasharray="8 4" />

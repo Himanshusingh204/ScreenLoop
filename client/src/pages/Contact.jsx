@@ -65,14 +65,13 @@ export default function Contact() {
             </p>
           </motion.section>
 
-          {/* Contact Channels */}
-          <motion.div className="help-quick-cards" variants={fadeInUp}>
-            <h2 className="section-title">How to Reach Us</h2>
+          {/* Contact Channels — 2x2 Grid */}
+          <motion.div className="contact-channels-grid" variants={staggerContainer}>
             {CHANNELS.map((channel) => (
-              <div key={channel.title} className="quick-guide-card">
-                <div className="guide-icon">{channel.icon}</div>
-                <h3>{channel.title}</h3>
-                <p>{channel.desc}</p>
+              <motion.div key={channel.title} className="contact-channel-card glass-card" variants={fadeInUp}>
+                <div className="contact-channel-icon">{channel.icon}</div>
+                <h3 className="contact-channel-title">{channel.title}</h3>
+                <p className="contact-channel-desc">{channel.desc}</p>
                 {channel.internal ? (
                   <Link to={channel.href} className="card-inline-link">
                     {channel.label} →
@@ -87,7 +86,7 @@ export default function Contact() {
                     {channel.label} →
                   </a>
                 )}
-              </div>
+              </motion.div>
             ))}
           </motion.div>
 

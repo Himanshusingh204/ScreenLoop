@@ -10,7 +10,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const { stopRoomSweep } = require('./roomManager');
+const { stopRoomSweep, listRooms } = require('./roomManager');
 const { registerHandlers } = require('./socketHandlers');
 
 const MAX_IP_CONNECTIONS = 5;
@@ -104,6 +104,12 @@ app.get('/health', (req, res) => {
     timestamp: Date.now(),
     version: process.env.npm_package_version || '1.0.0',
   });
+});
+
+// ─── Room Listing ───────────────────────────────────────────────────────────
+app.get('/api/rooms', (req, res) => {
+  const rooms = listRooms();
+  res.json({ count: rooms.length, rooms });
 });
 
 // ─── Socket.io Connection ────────────────────────────────────────────────────

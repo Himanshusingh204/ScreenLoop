@@ -19,12 +19,16 @@ const PHASE_ICONS = {
 
 export default function Roadmap() {
   const totalItems = ROADMAP_PHASES.reduce((sum, p) => sum + p.items.length, 0);
-  const doneItems = ROADMAP_PHASES.reduce(
+  const doneCount = ROADMAP_PHASES.reduce(
     (sum, p) => sum + p.items.filter((i) => i.status === 'done').length,
     0
   );
-  const plannedItems = totalItems - doneItems;
-  const donePercent = Math.round((doneItems / totalItems) * 100);
+  const plannedCount = totalItems - doneCount;
+  const donePercent = Math.round((doneCount / totalItems) * 100);
+
+  const allItems = ROADMAP_PHASES.flatMap(phase => phase.items);
+  const doneItems = allItems.filter(i => i.status === 'done');
+  const plannedItems = allItems.filter(i => i.status === 'planned');
 
   return (
     <div className="page-wrapper">
@@ -53,13 +57,13 @@ export default function Roadmap() {
           <motion.div className="roadmap-overview" variants={fadeInUp}>
             <div className="roadmap-stat-card">
               <div className="roadmap-stat-value">
-                <CheckFat size={18} /> {doneItems}
+                <CheckFat size={18} /> {doneCount}
               </div>
               <div className="roadmap-stat-label">Shipped</div>
             </div>
             <div className="roadmap-stat-card">
               <div className="roadmap-stat-value">
-                <Clock size={18} /> {plannedItems}
+                <Clock size={18} /> {plannedCount}
               </div>
               <div className="roadmap-stat-label">In Queue</div>
             </div>
@@ -73,50 +77,35 @@ export default function Roadmap() {
             </div>
           </motion.div>
 
-          {/* Phases */}
-          {ROADMAP_PHASES.map((phase) => {
-            const phaseDone = phase.items.filter((i) => i.status === 'done').length;
-            const phasePercent = Math.round((phaseDone / phase.items.length) * 100);
-            return (
-              <motion.section key={phase.id} className="roadmap-phase" variants={fadeInUp}>
-                <div className="roadmap-phase-header">
-                  <h2 className="roadmap-phase-title">
-                    <span className="roadmap-phase-icon">{PHASE_ICONS[phase.id]}</span>
-                    {phase.title}
-                  </h2>
-                  <span className="roadmap-phase-meta">
-                    {phaseDone}/{phase.items.length} done · {phasePercent}%
-                  </span>
-                </div>
-                <p className="roadmap-phase-tagline">{phase.tagline}</p>
+          {/* Kanban Board */}
+          <motion.div className="roadmap-kanban" variants={staggerContainer}>
+            <motion.div className="roadmap-kanban-col done-col" variants={fadeInUp}>
+              <div className="roadmap-kanban-col-header">
+                <CheckFat size={16} /> Done <span className="kanban-count">{doneItems.length}</span>
+              </div>
+              {doneItems.map((item, i) => (
+                <div key={i} className="roadmap-kanban-card glass-card">{item.title}</div>
+              ))}
+            </motion.div>
 
-                <div
-                  className="roadmap-progress-track"
-                  role="img"
-                  aria-label={`${phase.title}: ${phasePercent}% complete`}
-                >
-                  <div
-                    className="roadmap-progress-fill"
-                    style={{ width: `${phasePercent}%` }}
-                  />
-                </div>
+            <motion.div className="roadmap-kanban-col progress-col" variants={fadeInUp}>
+              <div className="roadmap-kanban-col-header">
+                <Clock size={16} /> In Progress <span className="kanban-count">0</span>
+              </div>
+              <div className="roadmap-kanban-card glass-card" style={{ opacity: 0.5, fontStyle: 'italic' }}>
+                Check back soon
+              </div>
+            </motion.div>
 
-                <ul className="roadmap-task-list">
-                  {phase.items.map((item) => {
-                    const done = item.status === 'done';
-                    return (
-                      <li key={item.title} className={`roadmap-task ${done ? 'done' : ''}`}>
-                        <span className={`roadmap-task-marker ${done ? '' : 'pending'}`}>
-                          <Check size={13} weight={done ? 'bold' : 'regular'} />
-                        </span>
-                        {item.title}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </motion.section>
-            );
-          })}
+            <motion.div className="roadmap-kanban-col planned-col" variants={fadeInUp}>
+              <div className="roadmap-kanban-col-header">
+                <RocketLaunch size={16} /> Planned <span className="kanban-count">{plannedItems.length}</span>
+              </div>
+              {plannedItems.map((item, i) => (
+                <div key={i} className="roadmap-kanban-card glass-card">{item.title}</div>
+              ))}
+            </motion.div>
+          </motion.div>
 
           {/* CTA */}
           <motion.section className="help-section" variants={fadeInUp}>

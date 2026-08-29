@@ -10,19 +10,37 @@
  *   id: string,
  *   hostId: string,          // socket.id of the host
  *   pin: string|null,        // optional room password
- *   participants: Map<socketId, { name, isHost }>,
+ *   participants: Map<socketId, { name, isHost, gender }>,
  *   createdAt: number        // timestamp
  * }
  */
 
 const MAX_PARTICIPANTS = parseInt(process.env.MAX_PARTICIPANTS, 10) || 10;
+const MAX_ROOMS = parseInt(process.env.MAX_ROOMS, 10) || 100;
 const ROOM_TTL_MS = parseInt(process.env.ROOM_TTL_MS, 10) || (30 * 60 * 1000);
+
+// Valid avatar genders. Anything else falls back to DEFAULT_GENDER.
+const VALID_GENDERS = ['male', 'female', 'neutral'];
+const DEFAULT_GENDER = 'neutral';
+
+/**
+ * Coerce an arbitrary client-supplied gender into a known value.
+ * All normalization lives here so callers never repeat the allow-list.
+ */
+function normalizeGender(gender) {
+  return VALID_GENDERS.includes(gender) ? gender : DEFAULT_GENDER;
+}
+
 const rooms = new Map();
 
 /**
  * Create a new room with the given ID and host.
  */
-function createRoom(roomId, hostSocketId, hostName, pin = null, gender = 'other') {
+function createRoom(roomId, hostSocketId, hostName, pin = null, gender = DEFAULT_GENDER) {
+  if (rooms.size >= MAX_ROOMS) {
+    throw new Error('Server is at capacity. Try again later.');
+  }
+
   const room = {
     id: roomId,
     hostId: hostSocketId,
@@ -30,7 +48,7 @@ function createRoom(roomId, hostSocketId, hostName, pin = null, gender = 'other'
     participants: new Map(),
     createdAt: Date.now(),
   };
-  room.participants.set(hostSocketId, { name: hostName, isHost: true, gender });
+  room.participants.set(hostSocketId, { name: hostName, isHost: true, gender: normalizeGender(gender) });
   rooms.set(roomId, room);
   return room;
 }
@@ -46,7 +64,7 @@ function getRoom(roomId) {
  * Add a participant to a room.
  * Enforces MAX_PARTICIPANTS limit.
  */
-function joinRoom(roomId, socketId, name, pin = null, gender = 'other') {
+function joinRoom(roomId, socketId, name, pin = null, gender = DEFAULT_GENDER) {
   const room = rooms.get(roomId);
   if (!room) throw new Error('Room not found');
 
@@ -62,7 +80,7 @@ function joinRoom(roomId, socketId, name, pin = null, gender = 'other') {
     throw new Error('Already in room');
   }
 
-  room.participants.set(socketId, { name, isHost: false });
+  room.participants.set(socketId, { name, isHost: false, gender: normalizeGender(gender) });
   return room;
 }
 
@@ -117,7 +135,19 @@ function getParticipants(roomId) {
     socketId: id,
     name: data.name,
     isHost: data.isHost,
-    gender: data.gender || 'other',
+    gender: data.gender || DEFAULT_GENDER,
+  }));
+}
+
+/**
+ * Get summary of all active rooms (for the /api/rooms endpoint).
+ */
+function listRooms() {
+  return Array.from(rooms.values()).map((room) => ({
+    id: room.id,
+    participantCount: room.participants.size,
+    hasPin: !!room.pin,
+    createdAt: room.createdAt,
   }));
 }
 
@@ -160,8 +190,11 @@ module.exports = {
   leaveRoom,
   findRoomBySocket,
   getParticipants,
+  listRooms,
   transferHost,
+  normalizeGender,
   MAX_PARTICIPANTS,
+  MAX_ROOMS,
   sweepExpiredRooms,
   stopRoomSweep,
 };

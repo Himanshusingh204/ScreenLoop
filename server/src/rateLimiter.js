@@ -5,10 +5,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const spamLimits = new Map();    // IP -> { count, firstEvent }
+const reactionLimits = new Map(); // socketId -> { count, firstEvent }
 const pinAttempts = new Map();   // IP -> { count, firstFail }
 
 const SPAM_WINDOW_MS = 1000;
 const SPAM_MAX_EVENTS = parseInt(process.env.SPAM_MAX_EVENTS, 10) || 20;
+
+const REACTION_WINDOW_MS = 1000;
+const REACTION_MAX_PER_SEC = 5;
 
 const PIN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const PIN_MAX_ATTEMPTS = parseInt(process.env.PIN_MAX_ATTEMPTS, 10) || 5;
@@ -45,6 +49,31 @@ function checkSpam(socket) {
 
   record.count++;
   return record.count <= SPAM_MAX_EVENTS;
+}
+
+/**
+ * Checks if a client is sending too many reactions.
+ * Returns true if allowed, false if blocked.
+ */
+function checkReactionRate(socket) {
+  const key = socket.id;
+  const now = Date.now();
+  let record = reactionLimits.get(key);
+
+  if (!record) {
+    record = { count: 1, firstEvent: now };
+    reactionLimits.set(key, record);
+    return true;
+  }
+
+  if (now - record.firstEvent > REACTION_WINDOW_MS) {
+    record.count = 1;
+    record.firstEvent = now;
+    return true;
+  }
+
+  record.count++;
+  return record.count <= REACTION_MAX_PER_SEC;
 }
 
 /**
@@ -102,6 +131,11 @@ function sweepExpiredEntries() {
       spamLimits.delete(key);
     }
   }
+  for (const [key, record] of reactionLimits.entries()) {
+    if (now - record.firstEvent > REACTION_WINDOW_MS) {
+      reactionLimits.delete(key);
+    }
+  }
   for (const [key, record] of pinAttempts.entries()) {
     if (now - record.firstFail > PIN_WINDOW_MS) {
       pinAttempts.delete(key);
@@ -121,6 +155,7 @@ function stopSweep() {
 
 module.exports = {
   checkSpam,
+  checkReactionRate,
   checkPinBruteForce,
   recordFailedPin,
   resetFailedPin,

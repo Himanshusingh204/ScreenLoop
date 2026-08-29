@@ -21,6 +21,21 @@ describe('createRoom', () => {
     const room = createRoom('test2', 'host-socket', 'Host', '1234');
     expect(room.pin).toBe('1234');
   });
+
+  it('stores the host gender', () => {
+    const room = createRoom('gender-host', 'host-1', 'Host', null, 'male');
+    expect(room.participants.get('host-1').gender).toBe('male');
+  });
+
+  it('normalizes an invalid host gender to neutral', () => {
+    const room = createRoom('gender-host-bad', 'host-1', 'Host', null, 'attack');
+    expect(room.participants.get('host-1').gender).toBe('neutral');
+  });
+
+  it('defaults the host gender to neutral', () => {
+    const room = createRoom('gender-host-default', 'host-1', 'Host');
+    expect(room.participants.get('host-1').gender).toBe('neutral');
+  });
 });
 
 describe('joinRoom', () => {
@@ -46,6 +61,27 @@ describe('joinRoom', () => {
   it('rejects duplicate join', () => {
     createRoom('dup-test', 'host-1', 'Host');
     expect(() => joinRoom('dup-test', 'host-1', 'Host Again')).toThrow('Already in room');
+  });
+
+  it('stores and normalizes the joining gender', () => {
+    createRoom('gender-join', 'host-1', 'Host');
+    joinRoom('gender-join', 'viewer-1', 'Viewer', null, 'female');
+    expect(getRoom('gender-join').participants.get('viewer-1').gender).toBe('female');
+
+    joinRoom('gender-join', 'viewer-2', 'Viewer', null, 'hax');
+    expect(getRoom('gender-join').participants.get('viewer-2').gender).toBe('neutral');
+
+    joinRoom('gender-join', 'viewer-3', 'Viewer');
+    expect(getRoom('gender-join').participants.get('viewer-3').gender).toBe('neutral');
+  });
+
+  it('exposes normalized gender in getParticipants', () => {
+    createRoom('gender-list', 'host-1', 'Host', null, 'female');
+    joinRoom('gender-list', 'viewer-1', 'Viewer', null, 'unknown');
+    const list = getParticipants('gender-list');
+    const byId = Object.fromEntries(list.map((p) => [p.socketId, p.gender]));
+    expect(byId['host-1']).toBe('female');
+    expect(byId['viewer-1']).toBe('neutral');
   });
 });
 

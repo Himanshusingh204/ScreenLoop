@@ -141,21 +141,20 @@ export default function Help() {
             </div>
           </motion.section>
 
-          {/* Quick Guides Grid */}
-          <motion.section className="help-quick-cards" variants={fadeInUp}>
-            <h2 className="section-title">Quick Guides</h2>
-            <div className="quick-guide-card">
+          {/* Quick Guides Row */}
+          <motion.section className="help-quick-guides-row" variants={fadeInUp}>
+            <div className="quick-guide-card glass-card">
               <div className="guide-icon"><SpeakerSimpleHigh size={24} /></div>
               <h3>Sharing System Audio</h3>
               <p>Check "Share tab audio" in the browser screen-share picker to include movie or music audio.</p>
             </div>
-            <div className="quick-guide-card">
+            <div className="quick-guide-card glass-card">
               <div className="guide-icon"><LockSimple size={24} /></div>
               <h3>Encrypted Chat</h3>
               <p>Keep the full URL (including the #key part) intact when sharing invite links — that's the decryption key.</p>
               <Link to="/security" className="card-inline-link">How encryption works →</Link>
             </div>
-            <div className="quick-guide-card">
+            <div className="quick-guide-card glass-card">
               <div className="guide-icon"><MonitorPlay size={24} /></div>
               <h3>Best Connection Quality</h3>
               <p>For smoother streaming, use a wired connection or 5 GHz Wi-Fi, and try the 720p quality preset.</p>
@@ -163,67 +162,79 @@ export default function Help() {
             </div>
           </motion.section>
 
-          {/* FAQ Sections */}
-          <div className="help-faq-container">
-            {filtered.length === 0 && (
-              <div className="help-no-results">
-                <p>No questions matched your search query "{search}".</p>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setSearch('')}
-                >
-                  View All Questions
-                </button>
-              </div>
-            )}
+          {/* FAQ Layout: Sidebar + Content */}
+          <div className="help-layout">
+            <nav className="help-sidebar">
+              {filtered.map((section, i) => (
+                <a key={i} href={`#${section.id || section.title.toLowerCase().replace(/\s/g, '-')}`}
+                   className="help-sidebar-link">
+                  {section.title}
+                </a>
+              ))}
+              <a href="#compatibility" className="help-sidebar-link">Compatibility</a>
+            </nav>
 
-            {filtered.map((section, si) => (
-              <motion.section
-                key={si}
-                id={section.id || undefined}
-                className="help-faq-section"
-                variants={fadeInUp}
-              >
-                <h2 className="help-faq-section-title">{section.title}</h2>
-                {section.items.map((item, ii) => {
-                  const globalIndex = `${si}-${ii}`;
-                  const isOpen = openIndex === globalIndex;
-                  return (
-                    <div
-                      key={ii}
-                      className={`help-faq-item ${isOpen ? 'open' : ''}`}
-                    >
-                      <button
-                        type="button"
-                        className="help-faq-question"
-                        onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
-                        aria-expanded={isOpen}
+            <div className="help-faq-container">
+              {filtered.length === 0 && (
+                <div className="help-no-results">
+                  <p>No questions matched your search query "{search}".</p>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setSearch('')}
+                  >
+                    View All Questions
+                  </button>
+                </div>
+              )}
+
+              {filtered.map((section, si) => (
+                <motion.section
+                  key={si}
+                  id={section.id || undefined}
+                  className="help-faq-section"
+                  variants={fadeInUp}
+                >
+                  <h2 className="help-faq-section-title">{section.title}</h2>
+                  {section.items.map((item, ii) => {
+                    const globalIndex = `${si}-${ii}`;
+                    const isOpen = openIndex === globalIndex;
+                    return (
+                      <div
+                        key={ii}
+                        className={`help-faq-item glass-card ${isOpen ? 'open' : ''}`}
                       >
-                        <span>{item.q}</span>
-                        <span className="help-faq-chevron" aria-hidden="true">
-                          {isOpen ? '−' : '+'}
-                        </span>
-                      </button>
-                      {isOpen && (
-                        <div className="help-faq-answer">
-                          <p>{item.a}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </motion.section>
-            ))}
+                        <button
+                          type="button"
+                          className="help-faq-question"
+                          onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
+                          aria-expanded={isOpen}
+                        >
+                          <span>{item.q}</span>
+                          <span className="help-faq-chevron" aria-hidden="true">
+                            {isOpen ? '−' : '+'}
+                          </span>
+                        </button>
+                        {isOpen && (
+                          <div className="help-faq-answer">
+                            <p>{item.a}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </motion.section>
+              ))}
+            </div>
           </div>
 
           {/* Browser Compatibility */}
-          <motion.section className="help-section" variants={fadeInUp}>
+          <motion.section className="help-section" variants={fadeInUp} id="compatibility">
             <div className="section-header-centered">
               <span className="section-eyebrow">Compatibility</span>
               <h2 className="section-title">Tested Web Browsers</h2>
             </div>
-            <div className="help-compat-table">
+            <div className="help-compat-table glass-card">
               <div className="help-compat-row help-compat-header">
                 <span>Browser</span>
                 <span>Screen Sharing</span>

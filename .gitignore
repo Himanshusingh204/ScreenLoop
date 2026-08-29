@@ -54,7 +54,11 @@ logs/
 *.bak
 .gemini/
 .agents/
+.memory/
+.opencode/
 
 # Private Docs
 GIT_CHEATSHEET.md
 AI_OVERVIEW.md
+handoff.md
+BRAIN.md

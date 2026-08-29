@@ -32,25 +32,29 @@ export default function Changelog() {
             </p>
           </motion.section>
 
-          {/* Releases */}
+          {/* Magazine-style Releases */}
           {RELEASES.map((release) => (
-            <motion.section key={release.version} className="changelog-entry" variants={fadeInUp}>
-              <div className="changelog-entry-header">
+            <motion.section key={release.version} className="changelog-magazine-entry glass-card" variants={fadeInUp}>
+              <div className="changelog-magazine-header">
                 <div className="changelog-version-row">
                   <span className="changelog-version">{release.version}</span>
                   <span className="changelog-tag">{release.tag}</span>
                 </div>
                 <span className="changelog-date">{release.date}</span>
               </div>
-              <p className="changelog-summary">{release.summary}</p>
-              <ul className="changelog-list">
-                {release.items.map((item) => (
-                  <li key={item}>
-                    <Check size={14} weight="bold" className="changelog-check" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              <div className="changelog-magazine-summary">
+                <p className="changelog-summary">{release.summary}</p>
+              </div>
+              <div className="changelog-magazine-list">
+                <ul className="changelog-list">
+                  {release.items.map((item) => (
+                    <li key={item}>
+                      <Check size={14} weight="bold" className="changelog-check" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </motion.section>
           ))}
 

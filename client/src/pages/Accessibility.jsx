@@ -1,4 +1,4 @@
-// Accessibility.jsx — Accessibility statement page (legal-style layout, matches Privacy/Terms)
+// Accessibility.jsx — Accessibility statement page (dashboard-style layout)
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -27,6 +27,23 @@ export default function Accessibility() {
             </p>
           </motion.section>
 
+          {/* Dashboard Status Row */}
+          <motion.div className="a11y-status-grid" variants={staggerContainer}>
+            <motion.div className="a11y-status-card glass-card" variants={fadeInUp}>
+              <div className="a11y-status-value">AA</div>
+              <div className="a11y-status-label">Conformance Target</div>
+            </motion.div>
+            <motion.div className="a11y-status-card glass-card" variants={fadeInUp}>
+              <div className="a11y-status-value">Aug 2026</div>
+              <div className="a11y-status-label">Last Updated</div>
+            </motion.div>
+            <motion.div className="a11y-status-card glass-card" variants={fadeInUp}>
+              <div className="a11y-status-value">Active</div>
+              <div className="a11y-status-label">Project Status</div>
+            </motion.div>
+          </motion.div>
+
+          {/* Legal Content */}
           <motion.div className="legal-content-card" variants={fadeInUp}>
             <div className="legal-section">
               <h2>Our Commitment</h2>
