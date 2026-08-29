@@ -20,13 +20,9 @@ export default function Terms() {
         >
           {/* Header */}
           <motion.section className="page-hero" variants={fadeInUp}>
-            <div className="hero-pill">
-              <Scales size={14} className="pill-icon" />
-              <span>Legal Guidelines & Acceptable Use</span>
-            </div>
             <h1 className="page-hero-title">Terms of Service</h1>
             <p className="page-hero-subtitle">
-              Last updated: August 2026. Please read these terms carefully before using Screenloop.
+              Last updated: August 2026. Please read these terms before using Screenloop.
             </p>
           </motion.section>
 

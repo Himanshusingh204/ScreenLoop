@@ -60,6 +60,39 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     [socket, roomId, myName, roomKey]
   );
 
+  // ─── Delete a chat message ───────────────────────────────────────────────
+  const deleteChatMessage = useCallback(
+    (msgId, msgTimestamp) => {
+      if (!socket) return;
+      socket.emit('chat:delete', { roomId, msgId, msgTimestamp });
+    },
+    [socket, roomId]
+  );
+
+  // ─── Edit a chat message ─────────────────────────────────────────────────
+  const editChatMessage = useCallback(
+    async (msgId, msgTimestamp, newText) => {
+      if (!socket || !newText.trim()) return;
+      let payload = newText.trim();
+      if (roomKey) {
+        const encrypted = await encryptMessage(payload, roomKey);
+        if (encrypted) payload = encrypted;
+      }
+      socket.emit('chat:edit', { roomId, msgId, msgTimestamp, newText: payload });
+    },
+    [socket, roomId, roomKey]
+  );
+
+  // ─── Typing indicator ──────────────────────────────────────────────────
+  const lastTypingEmit = useRef(0);
+  const emitTyping = useCallback(() => {
+    if (!socket) return;
+    const now = Date.now();
+    if (now - lastTypingEmit.current < 2000) return;
+    lastTypingEmit.current = now;
+    socket.emit('chat:typing', { roomId });
+  }, [socket, roomId]);
+
   // ─── Toggle host-only controls ────────────────────────────────────────────
   const toggleHostOnly = useCallback(
     (enabled) => {
@@ -68,6 +101,9 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     },
     [socket, roomId]
   );
+
+  // ─── Typing indicator state ────────────────────────────────────────────
+  const [typingUsers, setTypingUsers] = useState({});
 
   // ─── Socket event listeners ───────────────────────────────────────────────
   useEffect(() => {
@@ -104,12 +140,10 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
       addToast(`⏩ ${name} seeked to ${Math.floor(time)}s`);
     };
 
-    const onChatMessage = async ({ name, text, timestamp }) => {
+    const onChatMessage = async ({ id, name, text, timestamp, socketId }) => {
       let decryptedText = text;
       
       if (roomKey && text.length > 30) {
-        // Simple heuristic: AES-GCM base64 output is usually long.
-        // Attempt to decrypt it.
         const decrypted = await decryptMessage(text, roomKey);
         if (decrypted) {
           decryptedText = decrypted;
@@ -120,8 +154,22 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
 
       setChatMessages((prev) => [
         ...prev,
-        { id: Date.now() + Math.random(), name, text: decryptedText, timestamp, system: false },
+        { id: id || Date.now() + Math.random(), name, text: decryptedText, timestamp, system: false, socketId },
       ]);
+    };
+
+    const onChatDeleted = ({ msgId }) => {
+      setChatMessages((prev) => prev.filter((m) => m.id !== msgId));
+    };
+
+    const onChatEdited = ({ msgId, newText }) => {
+      setChatMessages((prev) =>
+        prev.map((m) => (m.id === msgId ? { ...m, text: newText, edited: true } : m))
+      );
+    };
+
+    const onChatTyping = ({ name, socketId }) => {
+      setTypingUsers((prev) => ({ ...prev, [socketId]: { name, ts: Date.now() } }));
     };
 
     const onHostOnlyChanged = ({ enabled }) => {
@@ -156,6 +204,9 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     socket.on('sync:pause', onSyncPause);
     socket.on('sync:seek', onSyncSeek);
     socket.on('chat:message', onChatMessage);
+    socket.on('chat:deleted', onChatDeleted);
+    socket.on('chat:edited', onChatEdited);
+    socket.on('chat:typing', onChatTyping);
     socket.on('room:host-only-changed', onHostOnlyChanged);
     socket.on('room:promoted-to-host', onPromotedToHost);
     socket.on('room:participants-updated', onParticipantsUpdated);
@@ -169,6 +220,9 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
       socket.off('sync:pause', onSyncPause);
       socket.off('sync:seek', onSyncSeek);
       socket.off('chat:message', onChatMessage);
+      socket.off('chat:deleted', onChatDeleted);
+      socket.off('chat:edited', onChatEdited);
+      socket.off('chat:typing', onChatTyping);
       socket.off('room:host-only-changed', onHostOnlyChanged);
       socket.off('room:promoted-to-host', onPromotedToHost);
       socket.off('room:participants-updated', onParticipantsUpdated);
@@ -184,10 +238,15 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     setHostId,
     toasts,
     chatMessages,
+    typingUsers,
     hostOnlyControls,
+    setHostOnlyControls,
     isActualHost,
     emitSync,
     sendChatMessage,
+    deleteChatMessage,
+    editChatMessage,
+    emitTyping,
     toggleHostOnly,
     addToast,
   };

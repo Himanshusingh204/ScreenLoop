@@ -1,7 +1,8 @@
 // JoinModal.jsx — Glassmorphic participant name & PIN entry modal
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Loader } from './Loader';
-import { FilmStrip, RocketLaunch, ArrowRight } from './icons';
+import { FilmStrip, RocketLaunch, ArrowRight, ArrowLeft } from './icons';
 
 /**
  * @param {object} props
@@ -11,10 +12,10 @@ import { FilmStrip, RocketLaunch, ArrowRight } from './icons';
  * @param {string|null} props.error
  * @param {boolean} props.loading
  */
-export function JoinModal({ roomId, isCreating, onJoin, error, loading }) {
+export function JoinModal({ roomId, isCreating, onJoin, error, loading, showGoHome = false }) {
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
-  const [gender, setGender] = useState('female');
+  const [gender, setGender] = useState('neutral');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -51,6 +52,12 @@ export function JoinModal({ roomId, isCreating, onJoin, error, loading }) {
               autoComplete="nickname"
               required
             />
+            <span
+              className={`name-counter ${name.length >= 30 ? 'at-limit' : ''}`}
+              aria-live="polite"
+            >
+              {name.length}/30
+            </span>
           </div>
 
           <div>
@@ -81,14 +88,25 @@ export function JoinModal({ roomId, isCreating, onJoin, error, loading }) {
             >
               <option value="female">Female</option>
               <option value="male">Male</option>
-              <option value="other">Other</option>
+              <option value="neutral">Neutral</option>
             </select>
           </div>
 
           {error && (
-            <p className="card-error-text" role="alert">
-              ⚠️ {error}
-            </p>
+            <div>
+              <p className="card-error-text" role="alert">
+                ⚠️ {error}
+              </p>
+              {showGoHome && (
+                <Link
+                  to="/"
+                  className="btn btn-ghost btn-sm"
+                  style={{ marginTop: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <ArrowLeft size={14} /> Go Home
+                </Link>
+              )}
+            </div>
           )}
 
           <button

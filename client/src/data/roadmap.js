@@ -1,0 +1,65 @@
+// roadmap.js — Public roadmap data for the /roadmap page.
+// Sourced from PLAN.md Phases 8–11. `status` is 'done' or 'planned'.
+export const ROADMAP_PHASES = [
+  {
+    id: 'chat',
+    title: 'Chat Improvements',
+    tagline: 'Make the live chat richer and easier to use for every participant.',
+    items: [
+      { title: 'URL auto-linkification in chat', status: 'done' },
+      { title: 'Copy message button', status: 'done' },
+      { title: 'Message timestamps ("2m ago")', status: 'planned' },
+      { title: 'Chat message search & filter', status: 'planned' },
+      { title: 'Unread messages badge', status: 'planned' },
+      { title: 'Auto-growing chat textarea', status: 'planned' },
+      { title: 'Emoji picker', status: 'planned' },
+      { title: 'Message edit & delete', status: 'planned' },
+    ],
+  },
+  {
+    id: 'a11y',
+    title: 'Keyboard & Accessibility',
+    tagline: 'Reaching WCAG 2.1 AA across every button, overlay, and screen reader.',
+    items: [
+      { title: 'Escape key handling (modals, fullscreen, sidebar)', status: 'planned' },
+      { title: 'Volume slider screen-reader labels', status: 'planned' },
+      { title: 'Annotation tool pressed-state announcements', status: 'planned' },
+      { title: 'Live reaction announcements (aria-live)', status: 'planned' },
+      { title: 'Share modal QR code alt text', status: 'planned' },
+      { title: 'Fullscreen shortcut hints', status: 'planned' },
+      { title: 'Tooltips on every ControlBar button', status: 'planned' },
+    ],
+  },
+  {
+    id: 'polish',
+    title: 'Polish & Performance',
+    tagline: 'Faster loads, smoother playback, and saved preferences across sessions.',
+    items: [
+      { title: 'Recent rooms history', status: 'done' },
+      { title: 'Name character counter', status: 'done' },
+      { title: 'Share modal host note', status: 'done' },
+      { title: 'Route-level error boundaries', status: 'planned' },
+      { title: 'Code splitting (faster first paint)', status: 'planned' },
+      { title: 'Theme preference persistence', status: 'planned' },
+      { title: 'AudioContext leak fix', status: 'planned' },
+      { title: 'Auto-downgrade quality on poor connections', status: 'planned' },
+      { title: 'Session persistence (rejoin after refresh)', status: 'planned' },
+      { title: 'Picture-in-Picture button on the video', status: 'planned' },
+    ],
+  },
+  {
+    id: 'server',
+    title: 'Server Hardening',
+    tagline: 'Production-grade reliability, observability, and abuse protection.',
+    items: [
+      { title: 'Active room listing endpoint', status: 'planned' },
+      { title: 'Structured logging', status: 'planned' },
+      { title: 'Typing indicator relay', status: 'planned' },
+      { title: 'Message delivery acknowledgment', status: 'planned' },
+      { title: 'Maximum rooms cap', status: 'planned' },
+      { title: 'Separate reaction rate limit', status: 'planned' },
+      { title: 'Sync event data validation', status: 'planned' },
+      { title: 'Disconnect reason tracking', status: 'planned' },
+    ],
+  },
+];

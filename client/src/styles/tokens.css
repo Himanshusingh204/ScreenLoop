@@ -15,8 +15,8 @@
   --border: #EAEAEA;
   --border-strong: rgba(0,0,0,0.06);
   --text-primary: #111111;
-  --text-secondary: #787774;
-  --text-muted: #A8A8A4;
+  --text-secondary: #555552;
+  --text-muted: #767672;
 
   /* Muted Pastel Accents */
   --accent-red-bg: #FDEBEC;   --accent-red-text: #9F2F2D;
@@ -67,8 +67,8 @@
   --danger-hover: #dc2626;
 
   --text-primary: #f0f0f5;
-  --text-secondary: #9090a8;
-  --text-muted: #55556a;
+  --text-secondary: #a0a0b8;
+  --text-muted: #70708a;
   --text-on-accent: #ffffff;
 
   --border: rgba(255, 255, 255, 0.07);
@@ -105,8 +105,8 @@
   --accent-hover: #a38fff;
   --accent-dim: rgba(139, 109, 255, 0.15);
   --text-primary: #f0f0f5;
-  --text-secondary: #9a9ab0;
-  --text-muted: #6a6a7a;
+  --text-secondary: #a4a4ba;
+  --text-muted: #72728a;
   --border: rgba(255,255,255,0.06);
   --border-strong: rgba(255,255,255,0.1);
   --gradient-hero: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,109,255,0.15), transparent);

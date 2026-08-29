@@ -159,6 +159,7 @@ export function ControlBar({
           className="volume-slider"
           title="Local Playback Volume"
           aria-label="Local Playback Volume"
+          aria-valuetext={muted ? 'Muted' : `${Math.round(volume * 100)}% volume`}
         />
 
         <span className="volume-pct" aria-live="polite">

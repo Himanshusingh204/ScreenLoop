@@ -28,7 +28,8 @@ import {
   useNetworkStatus,
 } from '../hooks';
 
-import { fireRoomLaunchConfetti } from '../utils';
+import { fireRoomLaunchConfetti, addRecentRoom } from '../utils';
+import { CornersIn } from '../components/icons';
 
 const SERVER_URL =
   import.meta.env.VITE_SERVER_URL ||
@@ -71,6 +72,7 @@ export default function Room() {
 
   // ─── Fullscreen state ─────────────────────────────────────────────────────
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimer = useRef(null);
 
@@ -84,6 +86,14 @@ export default function Room() {
   const [socket, setSocket] = useState(null);
   const videoRef    = useRef(null);
   const roomRef     = useRef(null);
+
+  // Latest join credentials (name/pin/gender) — used to re-join after a reconnect.
+  const joinInfoRef = useRef({ name: '', pin: '', gender: 'neutral' });
+  // Latest phase — lets error handlers behave differently before/after joining.
+  const phaseRef = useRef(phase);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   // ─── Socket.io Connection ────────────────────────────────────────────────
   useEffect(() => {
@@ -115,6 +125,25 @@ export default function Room() {
     return () => s.disconnect();
   }, []);
 
+  // ─── Auto-rejoin from sessionStorage on refresh ────────────────────────────
+  useEffect(() => {
+    if (!socket) return;
+    try {
+      const saved = sessionStorage.getItem(`room-session-${roomId}`);
+      if (saved) {
+        const { name, pin, gender, isHost } = JSON.parse(saved);
+        joinInfoRef.current = { name, pin: pin || '', gender: gender || 'neutral' };
+        setMyName(name);
+        setModalLoading(true);
+        if (isHost) {
+          socket.emit('room:create', { roomId, name, pin, gender });
+        } else {
+          socket.emit('room:join', { roomId, name, pin, gender });
+        }
+      }
+    } catch { /* ignore corrupt data */ }
+  }, [socket, roomId]);
+
   // ─── WebRTC Engine ───────────────────────────────────────────────────────
   const {
     startScreenShare, sendOfferToViewer,
@@ -138,8 +167,8 @@ export default function Room() {
   // ─── Room State & Crypto Messaging ───────────────────────────────────────
   const {
     participants, setParticipants, setHostId,
-    toasts, chatMessages, hostOnlyControls,
-    emitSync, sendChatMessage, addToast,
+    toasts, chatMessages, hostOnlyControls, setHostOnlyControls,
+    emitSync, sendChatMessage, deleteChatMessage, editChatMessage, emitTyping, typingUsers, addToast,
   } = useRoom({
     socket,
     roomId, myName, isHost: isActualHost, roomKey,
@@ -189,30 +218,60 @@ export default function Room() {
       setHostDisconnected(true);
       addToast('⚠️ Host disconnected — waiting for reconnection…');
     });
+
+    // Task 41/52: Re-join on every successful connect (fires on both the initial
+    // connection and after a reconnect) so the host re-offers a WebRTC stream.
+    // The join payload is replayed from joinInfoRef so PIN-protected rooms and
+    // avatar gender survive a network blip.
+    const handleConnect = () => {
+      const { name, pin, gender } = joinInfoRef.current;
+      if (!name || !roomId) return; // not joined yet
+      addToast('🔄 Reconnected — re-establishing stream…');
+      socket.emit('room:join', { roomId, name, pin, gender });
+    };
+    socket.on('connect', handleConnect);
+
     return () => {
       socket.off('webrtc:offer',  handleOffer);
       socket.off('webrtc:answer', handleAnswer);
       socket.off('webrtc:ice',    handleIce);
       socket.off('room:closed');
       socket.off('room:host-disconnected');
+      socket.off('connect', handleConnect);
     };
-  }, [handleOffer, handleAnswer, handleIce, addToast]);
+  }, [socket, handleOffer, handleAnswer, handleIce, addToast, roomId]);
 
   // ─── Room Join Events ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return;
-    const onJoined = ({ participants: p, isHost: h, hostId }) => {
+    const onJoined = ({ participants: p, isHost: h, hostId, hostOnlyControls: hoc }) => {
       setParticipants(p);
       setHostId(hostId);
       setIsActualHost(h);
+      // Task 42: Apply correct hostOnlyControls state from server for late joiners
+      if (hoc !== undefined) setHostOnlyControls(hoc);
+      // Task 72: Remember this room for the Home "Recent Rooms" section
+      addRecentRoom(roomId);
       setModalLoading(false);
       setPhase('room');
       playJoinChime();
-      fireRoomLaunchConfetti();
+      // Task 55: Only fire confetti for host
+      if (h) fireRoomLaunchConfetti();
     };
     const onError = ({ message }) => {
       setModalError(message);
       setModalLoading(false);
+      // Errors after joining are not shown in the modal — surface them as toasts.
+      // A room that no longer exists (e.g. host-only room deleted on a blip)
+      // is unrecoverable, so send the user back home.
+      if (phaseRef.current !== 'joining') {
+        addToast(`❌ ${message}`);
+        if (/not found/i.test(message)) {
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2500);
+        }
+      }
     };
     socket.on('room:joined', onJoined);
     socket.on('room:error',  onError);
@@ -220,7 +279,7 @@ export default function Room() {
       socket.off('room:joined', onJoined);
       socket.off('room:error',  onError);
     };
-  }, [setParticipants, setHostId, playJoinChime]);
+  }, [socket, roomId, setParticipants, setHostId, setHostOnlyControls, playJoinChime, addToast]);
 
   // ─── Media Session API ───────────────────────────────────────────────────
   useEffect(() => {
@@ -259,9 +318,13 @@ export default function Room() {
   useEffect(() => {
     if (isFullscreen) {
       showControls();
+      setShowFullscreenHint(true);
+      const t = setTimeout(() => setShowFullscreenHint(false), 3000);
+      return () => clearTimeout(t);
     } else {
       clearTimeout(hideTimer.current);
       setControlsVisible(true);
+      setShowFullscreenHint(false);
     }
     return () => clearTimeout(hideTimer.current);
   }, [isFullscreen, showControls]);
@@ -284,10 +347,15 @@ export default function Room() {
     const onKey = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.code === 'KeyF') toggleFullscreen();
+      if (e.code === 'Escape') {
+        if (shareModalOpen) setShareModalOpen(false);
+        else if (isFullscreen) toggleFullscreen();
+        else if (sidebarOpen) setSidebarOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [toggleFullscreen]);
+  }, [toggleFullscreen, shareModalOpen, isFullscreen, sidebarOpen]);
 
   // ─── Room Actions ─────────────────────────────────────────────────────────
   const handleJoin = useCallback(({ name, pin, gender }) => {
@@ -295,6 +363,14 @@ export default function Room() {
       setModalError('Not connected to server. Please wait or refresh.');
       return;
     }
+    // Persist credentials so a later reconnect can re-join the same room.
+    joinInfoRef.current = { name, pin: pin || '', gender: gender || 'neutral' };
+    // Save to sessionStorage for auto-rejoin on refresh
+    try {
+      sessionStorage.setItem(`room-session-${roomId}`, JSON.stringify({
+        name, pin: pin || '', gender: gender || 'neutral', isHost: intendedHost,
+      }));
+    } catch { /* quota exceeded — ignore */ }
     setMyName(name);
     setModalLoading(true);
     setModalError(null);
@@ -313,8 +389,13 @@ export default function Room() {
       for (const viewer of viewers) await sendOfferToViewer(viewer.socketId);
       addToast('🖥 Screen sharing started');
     } catch (err) {
-      if (err.name !== 'NotAllowedError') addToast('❌ Could not start screen share: ' + err.message);
       setIsSharing(false);
+      // Task 56: Show helpful message for permission denied
+      if (err.name === 'NotAllowedError') {
+        addToast('🚫 Screen share blocked — please allow access in your browser settings.');
+      } else {
+        addToast('❌ Could not start screen share: ' + err.message);
+      }
     }
   }, [startScreenShare, participants, sendOfferToViewer, addToast]);
 
@@ -348,6 +429,7 @@ export default function Room() {
   }
 
   if (phase === 'joining') {
+    const isNotFound = modalError && modalError.toLowerCase().includes('not found');
     return (
       <JoinModal
         roomId={roomId}
@@ -355,6 +437,7 @@ export default function Room() {
         onJoin={handleJoin}
         error={modalError}
         loading={modalLoading}
+        showGoHome={isNotFound}
       />
     );
   }
@@ -441,6 +524,20 @@ export default function Room() {
             onToggleFullscreen={toggleFullscreen}
             onReaction={handleReaction}
           />
+
+          {/* Persistent Exit button — always visible in fullscreen, the rest only on hover */}
+          {isFullscreen && (
+            <button
+              type="button"
+              className="fullscreen-exit-btn"
+              onClick={toggleFullscreen}
+              title="Exit fullscreen (F)"
+              aria-label="Exit Fullscreen (F)"
+            >
+              <CornersIn size={18} />
+              <span className="fullscreen-exit-label">Exit</span>
+            </button>
+          )}
         </div>
 
         {/* Sidebar: hidden in fullscreen */}
@@ -451,6 +548,10 @@ export default function Room() {
             mySocketId={mySocketId}
             messages={chatMessages}
             onSendMessage={sendChatMessage}
+            onDeleteMessage={deleteChatMessage}
+            onEditMessage={editChatMessage}
+            onTyping={emitTyping}
+            typingUsers={typingUsers}
             isActualHost={isActualHost}
             onKick={handleKick}
             onTransferHost={handleTransferHost}
@@ -465,6 +566,13 @@ export default function Room() {
         roomId={roomId}
         roomKey={roomKey}
       />
+
+      {/* Fullscreen shortcut hint */}
+      {showFullscreenHint && isFullscreen && (
+        <div className="fullscreen-hint" role="status" aria-live="polite">
+          Press <kbd>Esc</kbd> to exit fullscreen
+        </div>
+      )}
 
       {/* Reconnection Overlay */}
       {reconnecting && (

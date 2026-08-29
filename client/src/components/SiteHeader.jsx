@@ -1,8 +1,9 @@
 // SiteHeader.jsx — Universal navigation bar for all informational pages
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FilmStrip, RocketLaunch, GithubLogo, X, Sliders } from './icons';
+import { RocketLaunch, GithubLogo, X, Sliders } from './icons';
 import { ThemeSelector } from './ThemeSelector';
+import LogoBrand from './LogoBrand';
 import { generateRoomId, generateRoomKey } from '../utils';
 
 const NAV_LINKS = [
@@ -11,6 +12,7 @@ const NAV_LINKS = [
   { path: '/security', label: 'Security' },
   { path: '/about', label: 'About' },
   { path: '/help', label: 'Help & FAQ' },
+  { path: '/changelog', label: "What's New", badge: 'New' },
 ];
 
 export function SiteHeader() {
@@ -39,11 +41,7 @@ export function SiteHeader() {
       <div className="site-header-container">
         {/* Brand */}
         <Link to="/" className="site-header-brand" aria-label="Screenloop Home">
-          <div className="brand-badge-wrapper">
-            <FilmStrip size={22} weight="bold" className="brand-badge-icon" />
-          </div>
-          <span className="brand-title">Screenloop</span>
-          <span className="brand-pro-pill">PRO</span>
+          <LogoBrand size={32} />
         </Link>
 
         {/* Desktop Navigation Links */}
@@ -58,6 +56,7 @@ export function SiteHeader() {
                 aria-current={isActive ? 'page' : undefined}
               >
                 {link.label}
+                {link.badge && <span className="nav-new-badge">{link.badge}</span>}
                 {isActive && <span className="nav-active-indicator" />}
               </Link>
             );
@@ -117,7 +116,8 @@ export function SiteHeader() {
                   className={`mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {link.label}
+{link.label}
+                  {link.badge && <span className="nav-new-badge">{link.badge}</span>}
                 </Link>
               );
             })}

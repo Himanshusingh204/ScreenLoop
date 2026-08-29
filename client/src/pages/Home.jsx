@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { generateRoomId, generateRoomKey, withViewTransition } from '../utils';
+import { generateRoomId, generateRoomKey, withViewTransition, getRecentRooms, clearRecentRooms, formatRelativeTime } from '../utils';
 import { ThemeSelector, SiteHeader, SiteFooter } from '../components';
 import {
   FilmStrip, RocketLaunch, LinkSimple, LockSimple, PencilSimple,
-  Lightning, ChartBar, Phone, GithubLogo, ArrowRight, ShieldCheck
+  Lightning, ChartBar, Phone, GithubLogo, ArrowRight, ShieldCheck, Clock
 } from '../components/icons';
 
 import { staggerContainer, fadeInUp, slideInRight } from '../hooks/useScrollReveal';
@@ -18,6 +18,12 @@ export default function Home() {
   const [joinUrl, setJoinUrl] = useState('');
   const [error, setError] = useState('');
   const [activeFaq, setActiveFaq] = useState(null);
+  const [recentRooms, setRecentRooms] = useState(() => getRecentRooms());
+
+  const clearRooms = () => {
+    clearRecentRooms();
+    setRecentRooms([]);
+  };
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();
@@ -85,8 +91,8 @@ export default function Home() {
       a: 'No accounts. No installs. Just a link. Screenloop runs 100% in any modern browser (Chrome, Edge, Brave, Firefox, Safari) using native WebRTC peer-to-peer protocols.',
     },
     {
-      q: 'How is the chat protected with End-to-End Encryption?',
-      a: 'When a room is created, the host browser generates a 256-bit AES-GCM key and embeds it in the URL fragment (#key). Browsers never send hash fragments to web servers, guaranteeing only invited friends with the link can decrypt messages.',
+      q: 'How is the chat encrypted?',
+      a: 'When you create a room, your browser generates an AES-256 encryption key and puts it in the URL hash (#key). Browsers never send hash fragments to the server, so even we can\'t read your messages. Anyone you share the full link with can decrypt them.',
     },
     {
       q: 'Will my friends hear audio from Netflix, YouTube, or VLC?',
@@ -105,8 +111,6 @@ export default function Home() {
       animate="visible"
       variants={staggerContainer}
     >
-      <div className="ambient-glow glow-top-left" aria-hidden="true" />
-      <div className="ambient-glow glow-bottom-right" aria-hidden="true" />
 
       <SiteHeader />
 
@@ -114,15 +118,15 @@ export default function Home() {
         <motion.div className="hero-content" variants={fadeInUp}>
           <div className="hero-pill">
             <span className="pill-dot" aria-hidden="true" />
-            <span>Peer-to-Peer • 48kHz Movie Audio • AES-256 E2EE</span>
+            <span>Peer-to-Peer • No Accounts • E2E Encrypted Chat</span>
           </div>
 
           <h1 className="hero-title">
-            Watch Movies Together <br />
-            <span className="hero-title-accent">In Pure HD Sync</span>
+            Watch Movies Together, <br />
+            <span className="hero-title-accent">Right From Your Browser</span>
           </h1>
           <p className="hero-description">
-            Share your screen in up to 1440p 2K resolution with uncompressed stereo audio, live drawing annotations, and zero signups or downloads.
+            Share your screen with friends in HD, with full movie audio. No installs, no signups, no video hitting a server — just send a link and press play.
           </p>
         </motion.div>
 
@@ -252,61 +256,93 @@ export default function Home() {
             </motion.div>
           )}
         </motion.div>
+
+        {recentRooms.length > 0 && (
+          <motion.div className="recent-rooms" variants={fadeInUp} aria-label="Recent Rooms">
+            <div className="recent-rooms-header">
+              <span className="recent-rooms-title">
+                <Clock size={14} /> Recent Rooms
+              </span>
+              <button
+                type="button"
+                className="recent-rooms-clear"
+                onClick={clearRooms}
+                aria-label="Clear recent rooms history"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="recent-rooms-list">
+              {recentRooms.map((room) => (
+                <button
+                  key={room.roomId}
+                  type="button"
+                  className="recent-room-chip"
+                  onClick={() => withViewTransition(() => navigate(`/room/${room.roomId}`))}
+                  title={`Join room ${room.roomId}`}
+                >
+                  <span className="recent-room-id">{room.roomId}</span>
+                  <span className="recent-room-time">{formatRelativeTime(room.timestamp)}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </main>
 
       {/* Features Showcase Grid */}
       <section className="home-features" aria-label="Key Features">
         <motion.div className="features-header" variants={fadeInUp}>
-          <h2 className="features-title">Engineered for True Cinema Watch Parties</h2>
-          <p className="features-sub">Built from scratch with zero compromises on quality, audio fidelity, or privacy.</p>
+          <h2 className="features-title">What Screenloop Actually Does</h2>
+          <p className="features-sub">A short list of things that matter when watching movies with friends remotely.</p>
         </motion.div>
 
         <motion.div className="features-grid" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><FilmStrip size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Uncompressed 48kHz Stereo Audio</h3>
+            <h3 className="feature-heading">Full Movie Audio, Not Voice-Chat Audio</h3>
             <p className="feature-text">
-              Echo cancellation and noise suppression are disabled so background film scores and subtle sound effects come through in full dynamic range.
+              Most screen-sharing tools kill your audio quality with echo cancellation. We skip that — film scores and surround sound come through the way they were mixed.
             </p>
           </motion.div>
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><LockSimple size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Zero-Knowledge E2EE Chat</h3>
+            <h3 className="feature-heading">Encrypted Chat, Server Can't Read It</h3>
             <p className="feature-text">
-              Messages are encrypted in the browser with AES-GCM 256-bit. Keys remain strictly in your URL hash fragment and never hit any server.
+              Chat messages are encrypted in your browser. The decryption key lives in the URL hash — browsers never send that to the server, so it's invisible to us.
             </p>
           </motion.div>
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><PencilSimple size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Live Screen Drawing & Laser Pointer</h3>
+            <h3 className="feature-heading">Draw on the Stream Together</h3>
             <p className="feature-text">
-              Annotate key movie moments, draw arrows, or highlight scenes directly on the live video stream synchronized with all viewers.
+              Point at things, draw arrows, highlight scenes — all synchronized live on top of the video. Useful for movie nights and screen-sharing work sessions alike.
             </p>
           </motion.div>
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><Lightning size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Dialogue & Volume Booster</h3>
+            <h3 className="feature-heading">Volume Booster for Quiet Scenes</h3>
             <p className="feature-text">
-              Web Audio dynamics compressor levels out quiet movie whispers and boosts volume up to 200% without distortion.
+              Built-in audio compressor evens out quiet dialogue and loud action scenes so you don't have to keep reaching for the volume slider.
             </p>
           </motion.div>
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><ChartBar size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Stream Telemetry HUD</h3>
+            <h3 className="feature-heading">Connection Quality Dashboard</h3>
             <p className="feature-text">
-              Monitor real-time stream diagnostics including active framerate (FPS), bitrate (kbps), packet loss, and round-trip latency.
+              A small overlay showing framerate, bitrate, and packet loss — handy when something feels off and you want to know why.
             </p>
           </motion.div>
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><Phone size={32} weight="bold" /></div>
-            <h3 className="feature-heading">1-Tap QR Code Mobile Join</h3>
+            <h3 className="feature-heading">QR Code for Quick Mobile Join</h3>
             <p className="feature-text">
-              Friends can point their mobile camera at your screen to join the watch party room in seconds with full encryption keys intact.
+              Friends on their phones can scan a QR code from your screen to join — no typing long room IDs, generated locally in your browser.
             </p>
           </motion.div>
         </motion.div>
@@ -315,8 +351,8 @@ export default function Home() {
       {/* FAQ Section */}
       <section className="home-faq-section" aria-label="Frequently Asked Questions">
         <motion.div className="features-header" variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-          <h2 className="features-title">Frequently Asked Questions</h2>
-          <p className="features-sub">Everything you need to know about privacy and performance.</p>
+          <h2 className="features-title">Common Questions</h2>
+          <p className="features-sub">Quick answers before you create a room.</p>
         </motion.div>
 
         <motion.div className="faq-container" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
@@ -392,9 +428,9 @@ export default function Home() {
       <section className="home-discovery-section" aria-label="Explore Screenloop">
         <motion.div className="discovery-banner" variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
           <div className="discovery-content">
-            <h3 className="discovery-title">Want to explore how Screenloop is built?</h3>
+            <h3 className="discovery-title">Curious about the technical details?</h3>
             <p className="discovery-desc">
-              Discover our zero-knowledge security architecture, uncompressed 48kHz audio pipeline, and transparent open-source code.
+              Read about the encryption model, how peer-to-peer streaming works, and why there's no database.
             </p>
           </div>
           <div className="discovery-actions">

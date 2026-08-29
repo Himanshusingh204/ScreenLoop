@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ThemeSelector } from './ThemeSelector';
 import { ConfirmModal } from './ConfirmModal';
-import { FilmStrip, ShareNetwork, Users } from './icons';
+import LogoBrand from './LogoBrand';
+import { ShareNetwork, Users } from './icons';
 
 /**
  * @param {object} props
@@ -56,8 +57,7 @@ export function TopBar({
         className="topbar-brand-btn"
         aria-label="Screenloop Home"
       >
-        <FilmStrip size={20} weight="bold" className="topbar-brand-icon" />
-        <span className="topbar-brand-title">Screenloop</span>
+        <LogoBrand size={28} />
       </Link>
 
       {/* Room info */}

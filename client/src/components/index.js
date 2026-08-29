@@ -16,3 +16,4 @@ export { ToastContainer } from './Toast';
 export { Loader, LoaderPage } from './Loader';
 export { SiteHeader } from './SiteHeader';
 export { SiteFooter } from './SiteFooter';
+export { default as GradientBackground } from './GradientBackground';

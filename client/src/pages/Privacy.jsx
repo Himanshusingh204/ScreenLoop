@@ -22,11 +22,11 @@ export default function Privacy() {
           <motion.section className="page-hero" variants={fadeInUp}>
             <div className="hero-pill">
               <EyeSlash size={14} className="pill-icon" />
-              <span>Zero-Storage & Zero-Tracking Architecture</span>
+              <span>No Database, No Logs, No Tracking</span>
             </div>
             <h1 className="page-hero-title">Privacy Policy</h1>
             <p className="page-hero-subtitle">
-              Last updated: August 2026. Screenloop is engineered so that your viewing sessions and conversations remain private by mathematical construction.
+              Last updated: August 2026. Screenloop doesn't collect personal data because the architecture doesn't require it.
             </p>
           </motion.section>
 
@@ -35,27 +35,27 @@ export default function Privacy() {
             <section className="legal-section">
               <h2>1. Overview & Core Principle</h2>
               <p>
-                Screenloop was created on a simple premise: <strong>We cannot leak or sell what we do not have.</strong> Unlike traditional watch party and videoconferencing platforms that log user accounts, monitor viewing habits, and proxy video files through cloud servers, Screenloop operates on a decentralized, peer-to-peer model.
+                Screenloop was built around a simple constraint: <strong>if we don't store it, we can't leak or sell it.</strong> Unlike platforms that keep accounts, viewing histories, and server-side video proxies, Screenloop routes everything peer-to-peer and stores nothing on disk.
               </p>
             </section>
 
             <section className="legal-section">
               <h2>2. Data We Do NOT Collect</h2>
               <ul>
-                <li><strong>No Personal Identifiers:</strong> We do not ask for or collect names, email addresses, phone numbers, or passwords.</li>
-                <li><strong>No Chat Logs:</strong> Chat messages are encrypted in your browser using AES-GCM 256-bit keys and are never stored in any database.</li>
-                <li><strong>No Video / Screen Recording Storage:</strong> Video frames and cinema audio flow directly between users via WebRTC mesh channels without passing through server disk storage.</li>
-                <li><strong>No Tracking Cookies or Analytics:</strong> We do not load Google Analytics, Meta Pixels, ad trackers, or third-party behavioral scripts.</li>
+                <li><strong>No personal identifiers:</strong> No names, emails, phone numbers, or passwords.</li>
+                <li><strong>No chat logs:</strong> Messages are encrypted in your browser. They never exist in plaintext on any server.</li>
+                <li><strong>No video or audio recordings:</strong> Streams flow directly between users via WebRTC. Nothing passes through server storage.</li>
+                <li><strong>No tracking or analytics:</strong> No Google Analytics, no Meta Pixels, no third-party scripts of any kind.</li>
               </ul>
             </section>
 
             <section className="legal-section">
               <h2>3. End-to-End Encryption & Hash Fragments</h2>
               <p>
-                Each watch room is assigned a 256-bit symmetric encryption key generated locally with the browser's native <code>window.crypto.subtle</code> API. The key is stored solely in the URL hash fragment (<code>#key</code>).
+                Each room has a 256-bit AES-GCM encryption key, generated in the host's browser using <code>window.crypto.subtle</code>. The key is appended to the URL as a hash fragment (<code>#key</code>).
               </p>
               <p>
-                Under web standards (RFC 3986), browsers never transmit URL hash fragments in HTTP requests. As a result, our web servers only see the room identifier and never possess the cryptographic key required to decipher chat payloads.
+                Per RFC 3986, browsers never send hash fragments in HTTP requests. The server only sees the room ID and never has access to the decryption key.
               </p>
               <div style={{ marginTop: 'var(--space-3)' }}>
                 <Link to="/security" className="card-inline-link">
@@ -67,21 +67,21 @@ export default function Privacy() {
             <section className="legal-section">
               <h2>4. WebRTC Peer-to-Peer Connections</h2>
               <p>
-                When screen sharing is active, media packets travel over encrypted DTLS-SRTP peer-to-peer connections directly between participants. Our signaling server assists only in the initial WebRTC handshake (SDP offers/answers and ICE candidate exchange) and does not inspect media payloads.
+                When you share your screen, media packets travel over encrypted peer-to-peer connections directly between participants. The signaling server helps set up the initial connection (SDP offers/answers and ICE candidates) but never sees the video or audio content.
               </p>
             </section>
 
             <section className="legal-section">
-              <h2>5. Ephemeral In-Memory Server State</h2>
+              <h2>5. Ephemeral Server State</h2>
               <p>
-                Active room references exist purely in the signaling server's RAM. When the host leaves or the watch party ends, the room and its associated session data are instantly purged from memory.
+                Room data lives only in the signaling server's RAM. When the host leaves or the room ends, everything is deleted from memory immediately.
               </p>
             </section>
 
             <section className="legal-section">
-              <h2>6. Open Source Transparency</h2>
+              <h2>6. Open Source</h2>
               <p>
-                We believe in verifiable privacy over corporate promises. All code powering Screenloop is public and auditable on GitHub under the MIT License.
+                All code is public on GitHub under the MIT License. If you want to verify any of the above, you can read the source yourself.
               </p>
               <div style={{ marginTop: 'var(--space-4)' }}>
                 <a

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { buildRoomLink } from '../utils/roomId';
-import { ShareNetwork, X, CopySimple, CheckCircle, DeviceMobile } from './icons';
+import { ShareNetwork, X, CopySimple, CheckCircle, DeviceMobile, Info } from './icons';
 
 /**
  * Renders QR Code onto canvas locally — no third-party API, no data leakage.
@@ -129,6 +129,11 @@ export function ShareModal({ isOpen, onClose, roomId, roomKey }) {
         <p className="share-modal-desc">
           Share this link or scan the QR code to join instantly. The link includes the 256-bit E2EE key.
         </p>
+
+        <div className="share-modal-note" role="note">
+          <Info size={14} />
+          <span>Friends who open the link will join as viewers automatically — no account or install needed.</span>
+        </div>
 
         {/* Native Web Share Button (Mobile & Supported Desktops) */}
         {canNativeShare && (

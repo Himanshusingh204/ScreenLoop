@@ -200,6 +200,8 @@ export function AnnotationCanvas({ socket, isHost, roomId, active, onToggleActiv
               className={`annot-btn ${tool === 'pen' ? 'active' : ''}`}
               onClick={() => setTool('pen')}
               title="Pen Tool"
+              aria-pressed={tool === 'pen'}
+              aria-label="Pen tool"
             >
               <PencilSimple size={14} /> Pen
             </button>
@@ -207,6 +209,8 @@ export function AnnotationCanvas({ socket, isHost, roomId, active, onToggleActiv
               className={`annot-btn ${tool === 'highlighter' ? 'active' : ''}`}
               onClick={() => setTool('highlighter')}
               title="Highlighter"
+              aria-pressed={tool === 'highlighter'}
+              aria-label="Highlighter tool"
             >
               <Palette size={14} /> Highlight
             </button>
@@ -214,6 +218,8 @@ export function AnnotationCanvas({ socket, isHost, roomId, active, onToggleActiv
               className={`annot-btn ${tool === 'eraser' ? 'active' : ''}`}
               onClick={() => setTool('eraser')}
               title="Eraser"
+              aria-pressed={tool === 'eraser'}
+              aria-label="Eraser tool"
             >
               <Eraser size={14} /> Eraser
             </button>

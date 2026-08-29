@@ -58,7 +58,7 @@ const faqSections = [
     items: [
       {
         q: 'How does End-to-End Encryption work in Screenloop?',
-        a: 'When a room is created, your browser generates a 256-bit AES-GCM key and places it in the URL hash fragment (#key). Browsers never send hash fragments to web servers, guaranteeing only users with the full link can decrypt chat messages.',
+        a: 'When a room is created, the host browser generates an AES-256-GCM key and embeds it in the URL hash fragment (#key). Since browsers never send hash fragments to servers, the server only sees the room ID — it can\'t decrypt your messages. Anyone you share the full link with (including the #key part) can decrypt.',
       },
       {
         q: 'Can the server owner see my screen or messages?',
@@ -111,11 +111,11 @@ export default function Help() {
           <motion.section className="page-hero" variants={fadeInUp}>
             <div className="hero-pill">
               <Sparkle size={14} className="pill-icon" />
-              <span>Knowledge Base & Support Center</span>
+              <span>FAQ & Troubleshooting</span>
             </div>
             <h1 className="page-hero-title">Help & Frequently Asked Questions</h1>
             <p className="page-hero-subtitle">
-              Learn how to get the best cinema watch party experience and troubleshoot audio or connectivity issues.
+              Common questions about setting up rooms, sharing audio, and how the encryption works.
             </p>
 
             {/* Search Box */}
@@ -143,22 +143,23 @@ export default function Help() {
 
           {/* Quick Guides Grid */}
           <motion.section className="help-quick-cards" variants={fadeInUp}>
+            <h2 className="section-title">Quick Guides</h2>
             <div className="quick-guide-card">
               <div className="guide-icon"><SpeakerSimpleHigh size={24} /></div>
-              <h3>Sharing Movie Sound</h3>
-              <p>Check "Share tab audio" in the browser screen-share picker to stream uncompressed 48kHz audio.</p>
+              <h3>Sharing System Audio</h3>
+              <p>Check "Share tab audio" in the browser screen-share picker to include movie or music audio.</p>
             </div>
             <div className="quick-guide-card">
               <div className="guide-icon"><LockSimple size={24} /></div>
-              <h3>End-to-End Encryption</h3>
-              <p>Keep the full URL with the #key hash fragment intact when sharing invite links with your friends.</p>
-              <Link to="/security" className="card-inline-link">View Security Specs →</Link>
+              <h3>Encrypted Chat</h3>
+              <p>Keep the full URL (including the #key part) intact when sharing invite links — that's the decryption key.</p>
+              <Link to="/security" className="card-inline-link">How encryption works →</Link>
             </div>
             <div className="quick-guide-card">
               <div className="guide-icon"><MonitorPlay size={24} /></div>
-              <h3>P2P Mesh Optimization</h3>
-              <p>For best results, host on Ethernet or 5GHz Wi-Fi with 1080p quality preset selected.</p>
-              <Link to="/features" className="card-inline-link">Explore Features →</Link>
+              <h3>Best Connection Quality</h3>
+              <p>For smoother streaming, use a wired connection or 5 GHz Wi-Fi, and try the 720p quality preset.</p>
+              <Link to="/features" className="card-inline-link">See all features →</Link>
             </div>
           </motion.section>
 
@@ -226,15 +227,15 @@ export default function Help() {
               <div className="help-compat-row help-compat-header">
                 <span>Browser</span>
                 <span>Screen Sharing</span>
-                <span>48kHz Audio</span>
-                <span>E2EE Cryptography</span>
+                <span>System Audio</span>
+                <span>Encrypted Chat</span>
               </div>
               {[
-                ['Google Chrome (72+)', '✅ Supported', '✅ Stereo 48kHz', '✅ Hardware AES-GCM'],
-                ['Microsoft Edge (79+)', '✅ Supported', '✅ Stereo 48kHz', '✅ Hardware AES-GCM'],
-                ['Mozilla Firefox (66+)', '✅ Supported', '✅ Stereo 48kHz', '✅ Hardware AES-GCM'],
-                ['Apple Safari (14+)', '✅ Supported', '✅ WebKit MediaStream', '✅ SubtleCrypto'],
-                ['Brave Browser', '✅ Supported', '✅ Stereo 48kHz', '✅ Hardware AES-GCM'],
+                ['Google Chrome (72+)', 'Yes', 'Yes', 'Yes'],
+                ['Microsoft Edge (79+)', 'Yes', 'Yes', 'Yes'],
+                ['Mozilla Firefox (66+)', 'Yes', 'Yes', 'Yes'],
+                ['Apple Safari (14+)', 'Yes', 'Yes', 'Yes'],
+                ['Brave Browser', 'Yes', 'Yes', 'Yes'],
               ].map(([browser, share, audio, crypto], i) => (
                 <div key={i} className="help-compat-row">
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{browser}</span>
@@ -246,16 +247,22 @@ export default function Help() {
             </div>
           </motion.section>
 
-          {/* Still need help CTA */}
-          <motion.section className="page-cta-banner" variants={fadeInUp}>
-            <div className="cta-banner-content">
-              <h2 className="cta-title">Ready to start watching?</h2>
-              <p className="cta-subtitle">
-                Launch a watch party room and invite your friends in seconds.
+          {/* Still need help */}
+          <motion.section className="help-section" variants={fadeInUp}>
+            <div className="section-header-centered">
+              <h2 className="section-title">Still stuck?</h2>
+              <p className="section-desc">
+                Open a GitHub issue with your browser, device, and steps to reproduce — we'll take a look.
               </p>
-              <Link to="/" className="btn btn-primary btn-lg">
-                Go to Room Launcher <ArrowRight size={16} />
-              </Link>
+              <a
+                href="https://github.com/Himanshusingh204/ScreenLoop/issues"
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ marginTop: 'var(--space-3)' }}
+              >
+                Report a Problem
+              </a>
             </div>
           </motion.section>
         </motion.div>

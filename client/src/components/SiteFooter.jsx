@@ -1,7 +1,7 @@
 // SiteFooter.jsx — Universal multi-column footer connecting all pages
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FilmStrip, LockSimple, ShieldCheck, GithubLogo, Heart } from './icons';
+import { FilmStrip, LockSimple, ShieldCheck, Lightning, GithubLogo, Heart } from './icons';
 
 export function SiteFooter() {
   return (
@@ -16,12 +16,14 @@ export function SiteFooter() {
             <span className="brand-title">Screenloop</span>
           </Link>
           <p className="site-footer-tagline">
-            Ultra-HD peer-to-peer watch parties with uncompressed 48kHz cinema audio, live drawing, and AES-256 end-to-end encryption.
+            Peer-to-peer screen sharing with encrypted chat. No accounts, no server storage.
           </p>
-          <div className="site-footer-p2p-badge">
-            <span className="status-dot-pulse" aria-hidden="true" />
-            <span>P2P Direct Mesh • 100% Client-Side Privacy</span>
-          </div>
+
+          <ul className="site-footer-facts">
+            <li><LockSimple size={13} /> Chat encrypted with AES-256 in the browser</li>
+            <li><Lightning size={13} /> Screen and audio flow peer-to-peer via WebRTC</li>
+            <li><ShieldCheck size={13} /> No signups, no downloads, free to use</li>
+          </ul>
         </div>
 
         {/* Navigation Grid */}
@@ -34,6 +36,8 @@ export function SiteFooter() {
               <li><Link to="/features">Features Showcase</Link></li>
               <li><Link to="/security">Security Architecture</Link></li>
               <li><Link to="/about">About Screenloop</Link></li>
+              <li><Link to="/changelog">What&apos;s New</Link></li>
+              <li><Link to="/roadmap">Roadmap</Link></li>
             </ul>
           </div>
 
@@ -44,7 +48,7 @@ export function SiteFooter() {
               <li><Link to="/help">Help Center & FAQ</Link></li>
               <li><Link to="/help#troubleshooting">Audio & Screen Troubleshooting</Link></li>
               <li><Link to="/help#shortcuts">Keyboard Shortcuts</Link></li>
-              <li><Link to="/features#comparison">Platform Comparison</Link></li>
+              <li><Link to="/contact">Contact & Feedback</Link></li>
             </ul>
           </div>
 
@@ -54,6 +58,7 @@ export function SiteFooter() {
             <ul className="footer-links-list">
               <li><Link to="/privacy">Privacy Policy</Link></li>
               <li><Link to="/terms">Terms of Service</Link></li>
+              <li><Link to="/accessibility">Accessibility Statement</Link></li>
               <li>
                 <a
                   href="https://github.com/Himanshusingh204/ScreenLoop/blob/main/LICENSE"
@@ -82,7 +87,7 @@ export function SiteFooter() {
       <div className="site-footer-bottom">
         <div className="site-footer-bottom-container">
           <div className="footer-copyright">
-            © {new Date().getFullYear()} Screenloop Pro. Zero media stored. Zero tracking.
+            © {new Date().getFullYear()} Screenloop. No data collected, no trackers.
           </div>
           <div className="footer-crafted-by">
             <span>Crafted with</span>

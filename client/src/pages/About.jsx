@@ -10,12 +10,12 @@ import {
 } from '../components/icons';
 
 const TECH_SPECS = [
-  { name: 'WebRTC P2P', category: 'Media Plane', detail: 'Direct browser-to-browser mesh streaming up to 1440p 60fps' },
-  { name: 'Web Audio API', category: 'Audio Pipeline', detail: '48 kHz uncompressed stereo with dynamic range compressor' },
-  { name: 'Web Crypto API', category: 'Cryptography', detail: 'Hardware-accelerated AES-GCM 256-bit client-side encryption' },
-  { name: 'React 18 & Vite', category: 'Frontend UI', detail: 'Fast virtual DOM rendering with Framer Motion animations' },
-  { name: 'Socket.io 4', category: 'Control Plane', detail: 'Ephemeral in-memory signaling relay with sliding rate limits' },
-  { name: 'Pure CSS Variables', category: 'Design System', detail: 'Zero heavyweight UI frameworks; 5 bespoke obsidian themes' },
+  { name: 'WebRTC P2P', category: 'Streaming', detail: 'Direct browser-to-browser video and audio — no server relay' },
+  { name: 'Web Audio API', category: 'Audio', detail: 'Echo cancellation disabled, optional volume booster' },
+  { name: 'Web Crypto API', category: 'Encryption', detail: 'AES-GCM 256-bit chat encryption in the browser' },
+  { name: 'React 18 + Vite', category: 'Frontend', detail: 'Client-side rendering with Framer Motion animations' },
+  { name: 'Socket.io 4', category: 'Signaling', detail: 'In-memory connection handshake relay with rate limiting' },
+  { name: 'CSS Variables', category: 'Design', detail: 'Custom theming system — no UI framework dependencies' },
 ];
 
 export default function About() {
@@ -38,7 +38,7 @@ export default function About() {
               <span className="about-hero-accent">not boardroom meetings.</span>
             </h1>
             <p className="about-hero-subtitle">
-              Screenloop is an open-source, peer-to-peer watch party platform engineered around sound fidelity, zero user tracking, and effortless browser streaming.
+              Screenloop is an open-source, peer-to-peer watch party app built around audio quality, privacy, and the fact that nobody wants to create another account.
             </p>
           </motion.section>
 
@@ -55,16 +55,16 @@ export default function About() {
                 </p>
                 <ul className="about-story-points">
                   <li>
-                    <strong>Uncompressed 48 kHz Cinema Sound:</strong> Disabling noise suppression so film scores and sound effects boom naturally.
+                    <strong>Audio that doesn't destroy movies:</strong> Disabling echo cancellation so film scores and surround mixes come through the way they were mixed.
                   </li>
                   <li>
-                    <strong>True Peer-to-Peer Mesh:</strong> Direct WebRTC transport with no middleman server storing or analyzing your screen.
+                    <strong>True peer-to-peer:</strong> Direct WebRTC transport — no server stores or inspects your screen.
                   </li>
                   <li>
-                    <strong>Client-Side Cryptography:</strong> 256-bit AES-GCM encryption with room keys stored exclusively in the URL hash fragment (<code>#key</code>), ensuring even the hosting server never sees plaintext messages.
+                    <strong>Encrypted chat:</strong> AES-GCM encryption with room keys stored in the URL hash fragment (<code>#key</code>), so even the server can't read messages.
                   </li>
                   <li>
-                    <strong>Zero Friction:</strong> No signups, no downloads, no cookies, no tracking scripts. Just open a link and press play.
+                    <strong>No signups, no downloads:</strong> Just open a link in your browser and press play.
                   </li>
                 </ul>
               </div>
@@ -77,7 +77,7 @@ export default function About() {
               <span className="section-eyebrow">How It Works</span>
               <h2 className="section-title">Peer-to-Peer Architecture</h2>
               <p className="section-desc">
-                Screenloop separates signaling from media transport to maximize privacy and eliminate buffering bottlenecks.
+                The server helps devices find each other. After that, everything flows directly between browsers.
               </p>
             </div>
 
@@ -86,15 +86,15 @@ export default function About() {
                 <div className="arch-step-number">01</div>
                 <h3 className="arch-step-title">Room Key Generation</h3>
                 <p className="arch-step-desc">
-                  The host browser generates a 256-bit AES-GCM symmetric key via the Web Cryptography API. This key is placed in the URL hash fragment (<code>#key</code>), which browsers never send over HTTP.
+                  The host browser generates a 256-bit AES-GCM key via the Web Crypto API. This key is placed in the URL hash fragment (<code>#key</code>), which browsers never send over HTTP.
                 </p>
               </div>
 
               <div className="arch-step-card">
                 <div className="arch-step-number">02</div>
-                <h3 className="arch-step-title">Ephemeral Signaling</h3>
+                <h3 className="arch-step-title">Signaling Server</h3>
                 <p className="arch-step-desc">
-                  When viewers click the link, the lightweight Node.js server relays WebRTC SDP offers, answers, and ICE candidates in memory. No accounts or video data ever touch the server disk.
+                  When viewers click the link, the Node.js server helps set up WebRTC connections by relaying SDP offers, answers, and ICE candidates in memory. No video or audio touches the server.
                 </p>
               </div>
 
@@ -102,7 +102,7 @@ export default function About() {
                 <div className="arch-step-number">03</div>
                 <h3 className="arch-step-title">Direct P2P Streaming</h3>
                 <p className="arch-step-desc">
-                  Once connected, video and uncompressed audio packets flow directly between viewers via DTLS-SRTP encrypted mesh channels for sub-150ms glass-to-glass latency.
+                  Once connected, video and audio flow directly between viewers over encrypted WebRTC channels. No server relay, no buffering through a central point.
                 </p>
               </div>
             </div>
@@ -111,8 +111,8 @@ export default function About() {
           {/* Technical Specifications */}
           <motion.section className="about-specs-section" variants={fadeInUp}>
             <div className="section-header-centered">
-              <span className="section-eyebrow">Technical Stack</span>
-              <h2 className="section-title">Built with Modern Web Standards</h2>
+              <span className="section-eyebrow">Tech Stack</span>
+              <h2 className="section-title">Built with Web Standards</h2>
             </div>
 
             <div className="about-specs-grid">
@@ -135,9 +135,9 @@ export default function About() {
                 <GithubLogo size={32} />
               </div>
               <div className="oss-content">
-                <h3 className="oss-title">100% Free & Open Source</h3>
+                <h3 className="oss-title">Open Source (MIT License)</h3>
                 <p className="oss-desc">
-                  Screenloop is released under the permissive <strong>MIT License</strong>. You are free to inspect the cryptographic implementation, fork the project, and self-host your own instance.
+                  You can read every line of the encryption and signaling code on GitHub. Fork it, self-host it, or just poke around.
                 </p>
                 <div className="oss-actions">
                   <a

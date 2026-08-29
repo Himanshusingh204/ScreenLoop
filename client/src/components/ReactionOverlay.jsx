@@ -31,7 +31,7 @@ export function ReactionOverlay({ socket }) {
   }, [socket]);
 
   return (
-    <div className="reaction-overlay" style={{ pointerEvents: 'none' }}>
+    <div className="reaction-overlay" style={{ pointerEvents: 'none' }} aria-live="polite" aria-relevant="additions">
       {reactions.map((r) => (
         <div
           key={r.id}

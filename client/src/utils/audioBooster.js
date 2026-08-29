@@ -15,6 +15,11 @@ class AudioBoosterManager {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
 
+      // Close previous AudioContext if one exists to prevent memory leak
+      if (this.audioCtx && this.audioCtx.state !== 'closed') {
+        this.audioCtx.close().catch(() => {});
+      }
+
       this.audioCtx = new AudioContext();
       this.videoEl = videoElement;
 

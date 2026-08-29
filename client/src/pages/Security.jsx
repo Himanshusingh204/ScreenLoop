@@ -85,13 +85,13 @@ export default function Security() {
           <motion.section className="page-hero" variants={fadeInUp}>
             <div className="hero-pill">
               <ShieldCheck size={14} className="pill-icon" />
-              <span>Zero-Knowledge Cryptography Specification</span>
+              <span>Encryption & Privacy Details</span>
             </div>
             <h1 className="page-hero-title">
-              Security & <span className="text-gradient">Privacy by Design</span>
+              How Security Works
             </h1>
             <p className="page-hero-subtitle">
-              Screenloop is engineered so that we do not have to ask for your trust. The mathematical architecture ensures that neither our servers nor eavesdroppers can view your private media or messages.
+              The short version: your chat is encrypted in the browser, the key lives in the URL, and the server never sees plaintext messages or video. Here's how that actually works.
             </p>
           </motion.section>
 
@@ -114,7 +114,7 @@ export default function Security() {
               <span className="section-eyebrow">Cryptographic Protocol</span>
               <h2 className="section-title">How End-to-End Encryption Works</h2>
               <p className="section-desc">
-                Screenloop utilizes the standard W3C Web Cryptography API for high-performance, native hardware-accelerated encryption.
+                Screenloop uses the browser's built-in Web Crypto API for encryption — no external crypto libraries, no server-side key handling.
               </p>
             </div>
 
@@ -137,23 +137,23 @@ export default function Security() {
           {/* Security Guarantees & Verification */}
           <motion.section className="security-checklist-section" variants={fadeInUp}>
             <div className="checklist-card">
-              <h2 className="checklist-title">Our Immutable Privacy Guarantees</h2>
+              <h2 className="checklist-title">What the Server Can and Can't Do</h2>
               <ul className="checklist-items">
                 <li>
                   <CheckCircle size={20} className="check-icon" weight="fill" />
-                  <span><strong>Zero Accounts Required:</strong> We never ask for your email, phone number, real name, or password.</span>
+                  <span><strong>No account required:</strong> We never ask for an email, phone number, or password.</span>
                 </li>
                 <li>
                   <CheckCircle size={20} className="check-icon" weight="fill" />
-                  <span><strong>Zero Media Stored:</strong> Video streams and voice communication flow exclusively peer-to-peer over WebRTC.</span>
+                  <span><strong>No video storage:</strong> Screen and audio streams flow peer-to-peer. The server never sees them.</span>
                 </li>
                 <li>
                   <CheckCircle size={20} className="check-icon" weight="fill" />
-                  <span><strong>Zero Tracking / Cookies:</strong> No Google Analytics, no Facebook Pixels, and no ad trackers are installed.</span>
+                  <span><strong>No analytics or trackers:</strong> No Google Analytics, no Meta Pixels, no ad scripts.</span>
                 </li>
                 <li>
                   <CheckCircle size={20} className="check-icon" weight="fill" />
-                  <span><strong>Local QR Code Generation:</strong> QR codes are rendered locally via HTML5 Canvas — URLs never touch third-party image APIs.</span>
+                  <span><strong>Local QR codes:</strong> QR codes are rendered in your browser, not fetched from a third-party service.</span>
                 </li>
               </ul>
               <div className="checklist-footer">

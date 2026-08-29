@@ -15,13 +15,6 @@
   opacity: 0.85;
 }
 
-.topbar-brand-title {
-  color: var(--text-primary);
-  font-weight: 800;
-  font-size: var(--font-size-base);
-  letter-spacing: -0.02em;
-}
-
 /* ─── Theme Selector ──────────────────────────────────────────────────────── */
 .theme-selector-container {
   display: flex;

@@ -11,11 +11,16 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Keep anchored sections clear of the sticky site header (60px) on native loads */
+:target {
+  scroll-margin-top: 80px;
+}
+
 body {
   height: 100dvh;
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
-  background: var(--bg-primary);
+  background: transparent;
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
