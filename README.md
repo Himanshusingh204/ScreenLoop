@@ -290,6 +290,8 @@ ScreenLoop/
 └── LICENSE                    # MIT License
 ```
 
+> 📖 **For an in-depth component breakdown, hooks reference, and lifecycle map, see the [File Structure Documentation](docs/FILE_STRUCTURE.md).**
+
 ---
 
 ## Security & Privacy
