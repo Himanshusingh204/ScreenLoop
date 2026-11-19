@@ -36,8 +36,26 @@ export function useMediaDevices() {
       await enumerateDevices();
       return stream;
     } catch (err) {
-      console.error('[useMediaDevices] startStream error:', err);
-      throw err;
+      console.warn('[useMediaDevices] Video+Audio constraints failed, attempting audio-only:', err);
+      try {
+        const audioConstraints = {
+          audio: micDeviceId ? { deviceId: { exact: micDeviceId } } : true,
+          video: false,
+        };
+        const audioStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+        streamRef.current = audioStream;
+        setLocalStream(audioStream);
+        setMicOn(true);
+        setCameraOn(false);
+        await enumerateDevices();
+        return audioStream;
+      } catch (audioErr) {
+        console.warn('[useMediaDevices] Audio-only also failed or permissions denied:', audioErr);
+        setMicOn(false);
+        setCameraOn(false);
+        setLocalStream(null);
+        return null;
+      }
     }
   }, [enumerateDevices]);
 

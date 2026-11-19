@@ -11,8 +11,7 @@ const NAV_LINKS = [
   { path: '/meet', label: 'Video Meet', badge: 'New' },
   { path: '/features', label: 'Features' },
   { path: '/about', label: 'About' },
-  { path: '/help', label: 'Help & FAQ' },
-  { path: '/changelog', label: "What's New" },
+  { path: '/help', label: 'Help' },
 ];
 
 export function SiteHeader() {

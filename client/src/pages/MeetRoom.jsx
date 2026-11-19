@@ -84,18 +84,22 @@ export default function MeetRoom() {
     s.on('connect', handleConnect);
 
     const handleJoined = ({ participants: p }) => {
-      setParticipants(p);
-      // Initiate offers to all existing participants
-      p.forEach((participant) => {
-        if (participant.socketId !== s.id) {
-          sendOfferRef.current(participant.socketId);
-        }
+      // Exclude self from remote participants so local tile isn't duplicated
+      const remoteOnly = (p || []).filter((participant) => participant.socketId !== s.id);
+      setParticipants(remoteOnly);
+      // Initiate offers to all existing remote participants
+      remoteOnly.forEach((participant) => {
+        sendOfferRef.current(participant.socketId);
       });
     };
     s.on('meet:joined', handleJoined);
 
     const handleUserJoined = ({ socketId, name: userName, gender: userGender, micOn: m, cameraOn: c }) => {
-      setParticipants((prev) => [...prev, { socketId, name: userName, gender: userGender, micOn: m, cameraOn: c }]);
+      if (socketId === s.id) return;
+      setParticipants((prev) => {
+        if (prev.some((p) => p.socketId === socketId)) return prev;
+        return [...prev, { socketId, name: userName, gender: userGender, micOn: m, cameraOn: c }];
+      });
     };
     s.on('meet:user-joined', handleUserJoined);
 
@@ -162,10 +166,21 @@ export default function MeetRoom() {
   const handleJoin = async (joinName, joinGender, joinMic, joinCam) => {
     setName(joinName);
     setGender(joinGender);
-    localStorage.setItem('sl-name', joinName);
-    localStorage.setItem('sl-gender', joinGender);
+    try {
+      localStorage.setItem('sl-name', joinName);
+      localStorage.setItem('sl-gender', joinGender);
+    } catch {
+      /* ignore */
+    }
 
-    await startStream(selectedCamera || undefined, selectedMic || undefined);
+    try {
+      if (!localStream) {
+        await startStream(selectedCamera || undefined, selectedMic || undefined);
+      }
+    } catch (err) {
+      console.warn('[MeetRoom] Media device start error, joining call:', err);
+    }
+
     setInLobby(false);
 
     socketRef.current?.emit('meet:join', {
