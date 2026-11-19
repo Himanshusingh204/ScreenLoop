@@ -134,7 +134,9 @@ class SFXSynthesizer {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate(pattern);
-      } catch {}
+      } catch {
+        // Haptic feedback not permitted by user or browser policy
+      }
     }
   }
 }

@@ -34,7 +34,7 @@
 |                  |                                                            |
 |                  v                                                            |
 |  +--------------------------------------------------------------------+   |
-|  |                     Room.jsx (Orchestrator)                         |   |
+|  |  Room.jsx (Watch Party Orchestrator)                                |   |
 |  |  - Socket.io connection lifecycle                                   |   |
 |  |  - Session persistence (sessionStorage)                             |   |
 |  |  - Reconnection + auto-rejoin logic                                 |   |
@@ -78,6 +78,38 @@
 |  |  | crypto  | | roomId    | |sanitizer | | linkify   | |confetti |   |   |
 |  |  | AES-GCM | | generate  | | XSS      | | URL       | | room    |   |   |
 |  |  +---------+ +-----------+ +----------+ +-----------+ +---------+   |   |
+|  +--------------------------------------------------------------------+   |
+|                                                                           |
+|  +--------------------------------------------------------------------+   |
+|  |  MeetRoom.jsx (Video Meet Orchestrator)                             |   |
+|  |  - Multi-party webcam/mic streams (2-20 participants)               |   |
+|  |  - Google Meet-style UI with responsive video grid                  |   |
+|  |  - Active speaker detection via Web Audio API                       |   |
+|  |  - Lobby preview with camera mirror and device selectors            |   |
+|  +--------------------------------------------------------------------+   |
+|       |            |               |                                       |
+|       v            v               v                                       |
+|  +------------+ +-----------+ +----------------+                          |
+|  |useMediaDev.| | useMeetRTC| |useActiveSpeaker|                          |
+|  +-----+------+ +-----+-----+ +-------+--------+                          |
+|        |              |                 |                                    |
+|        v              v                 v                                    |
+|  +------------+ +-----------+ +----------------+                          |
+|  | localStream| | peers{}   | | activeSpeaker  |                          |
+|  | devices    | | remoteStr.| | (socketId)     |                          |
+|  | micOn/cam  | | sendOffer | |                |                          |
+|  +------------+ +-----------+ +----------------+                          |
+|       |                                                                    |
+|       v                                                                    |
+|  +--------------------------------------------------------------------+   |
+|  |  Meet UI Components                                                 |   |
+|  |  +----------+ +----------+ +-----------+ +-----------+ +----------+ |   |
+|  |  |MeetLobby | |MeetGrid  | |MeetTile   | |MeetCtrl  | |MeetChat  | |   |
+|  |  +----------+ +----------+ +-----------+ |Bar       | |Drawer    | |   |
+|  |  +----------+ +----------+               +-----------+ +----------+ |   |
+|  |  |MeetPeople| |MeetReact.|                                                |
+|  |  |Drawer    | |ions      |                                                |
+|  |  +----------+ +----------+                                                |
 |  +--------------------------------------------------------------------+   |
 +===========================================================================+
            |                          |                          |
@@ -475,10 +507,12 @@ App.jsx
                 +-- "/roadmap" -> Roadmap.jsx (kanban columns)
                 +-- "/changelog" -> Changelog.jsx (magazine cards)
                 +-- "/accessibility" -> Accessibility.jsx (dashboard)
+                +-- "/meet" -> MeetLanding.jsx (video meet landing)
+                +-- "/meet/:meetId" -> MeetRoom.jsx (video meet orchestrator)
                 +-- "*" -> NotFound.jsx (glass card)
 ```
 
-### Component Inventory (24 components)
+### Component Inventory (34 components)
 
 | Component            | Purpose                                             |
 |----------------------|-----------------------------------------------------|
@@ -504,6 +538,14 @@ App.jsx
 | `Toast`              | Toast notification container                        |
 | `TopBar`             | Room header with ID, participants, connection status|
 | `VideoPlayer`        | Video element for local/remote stream               |
+| `MeetLobby`          | Green room preview with camera mirror & device selectors |
+| `MeetGrid`           | Responsive auto-sizing video grid (1-8+ participants) |
+| `MeetTile`           | Individual video tile with avatar fallback & badges |
+| `MeetControlBar`     | Floating pill control bar (mic, cam, share, reactions) |
+| `MeetChatDrawer`     | Slide-in encrypted in-call text chat                |
+| `MeetPeopleDrawer`   | Slide-in participant list with host controls        |
+| `MeetReactions`      | Floating emoji reaction picker                     |
+| `MeetDeviceModal`    | Audio/video device settings modal                  |
 
 ---
 
@@ -645,6 +687,9 @@ Scope: Uses first active peer in peers{} map
 | `useNetworkStatus`    | navigator.onLine + online/offline event listeners      |
 | `useScrollReveal`     | Intersection Observer scroll animations                |
 | `useScreenRecording`  | MediaRecorder API: record stream, timer, auto-download |
+| `useMediaDevices`     | Camera/mic enumeration, stream management, toggle tracks |
+| `useMeetRTC`          | Multi-peer WebRTC mesh: offer/answer/ICE, track replacement |
+| `useActiveSpeaker`    | AudioContext RMS analysis for active speaker detection |
 
 ---
 

@@ -36,7 +36,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "display-capture=(self), camera=(), microphone=(self)"
+          "value": "display-capture=(self), camera=(self), microphone=(self)"
         }
       ]
     },

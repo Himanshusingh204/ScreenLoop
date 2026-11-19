@@ -10,8 +10,9 @@ export {
   Trash, Bell, Info, WarningCircle, CheckCircle,
   Crown, PaperPlaneRight, ShieldCheck, DeviceMobile,
   CornersIn, CornersOut, FileText, Key, Sparkle,
-  ArrowsClockwise, Scales, EyeSlash, Broadcast, Sliders,
-  Shield, CheckFat, Clock, Smiley, Microphone, MicrophoneSlash
+  ArrowsClockwise, Scales, Eye, EyeSlash, Broadcast, Sliders,
+  Shield, CheckFat, Clock, Smiley, Microphone, MicrophoneSlash,
+  VideoCamera, Hand, Record
 } from '@phosphor-icons/react';
 
 export { ChartBar as BarChart } from '@phosphor-icons/react';

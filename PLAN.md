@@ -21,11 +21,11 @@ For architecture, data flow, and component details, see ARCHITECTURE.md
 
 | Layer | Tech | Status |
 |-------|------|--------|
-| Frontend | React 18 + Vite + React Router v6 | Working, 13 routes, React.lazy code splitting |
-| Styling | Modular CSS (8 files) + 5 themes | Working |
-| Backend | Node.js + Express + Socket.io | Working, room cap, /api/rooms endpoint |
+| Frontend | React 18 + Vite + React Router v6 | Working, 15 routes, React.lazy code splitting |
+| Styling | Modular CSS (9 files) + 5 themes + meet.css | Working |
+| Backend | Node.js + Express + Socket.io | Working, room cap, meet signaling, /api/rooms |
 | Encryption | AES-256-GCM via Web Crypto API | Working |
-| P2P | WebRTC mesh | Working |
+| P2P | WebRTC mesh (watch party + video meet) | Working |
 | Testing | Vitest (client) + Jest (server) | 67 tests passing (30 client, 37 server) |
 
 ---
@@ -62,25 +62,23 @@ Escape key, aria-valuetext, aria-pressed, aria-live, QR alt text, fullscreen hin
 ### Phase 10: Polish & Performance — 7/10 tasks done (3 skipped)
 Recent rooms, React.lazy code splitting, theme persistence, AudioContext fix, room session persistence, JoinModal counter, ShareModal host note all done. Route-level error boundaries, connection quality auto-adaptation, PiP button skipped.
 
-### Phase 11: Server Hardening — 7/8 tasks done (1 skipped)
-Room listing endpoint, typing relay, chat:ack, max rooms limit, reaction rate limit, sync validation, disconnect tracking all done. Structured logging skipped.
+### Phase 11: Server Hardening — 8/8 tasks done
+Room listing endpoint, typing relay, chat:ack, max rooms limit, reaction rate limit, sync validation, disconnect tracking, structured logging (pino) all done.
 
 ### De-AI & Copy Overhaul — 7/7 tasks done
 Copy rewrite across 13 pages, ambient glows removal, varied CTAs, README rewrite, meta/OG tags update, footer simplification, pill badge removal.
+
+### Low-Priority Tasks — 7/7 tasks done
+Gender avatar fix, screen recording (MediaRecorder), audio-only mode, auto-downgrade quality, structured logging (pino), server ESLint+Prettier, per-route error boundaries all done.
+
+### Video Meet (Google Meet-style) — 6/6 phases done
+Routing & navigation, hardware acquisition & lobby, server signaling expansion, WebRTC multi-peer mesh, video grid & controls, drawers & reactions all done.
 
 ---
 
 ## 3. Remaining Work
 
-| # | Task | Priority | Effort |
-|---|------|----------|--------|
-| 40 | Pass gender through to bot avatar | Low | Small |
-| 47 | Add screen recording (MediaRecorder) | Medium | Large |
-| 48 | Add audio-only mode | Medium | Medium |
-| 77 | Connection quality auto-downgrade on poor connection | Medium | Medium |
-| 83 | Structured logging (pino/winston) | Low | Medium |
-| 34 | Server ESLint + Prettier | Low | Small |
-| 73 | Per-route error boundaries | Low | Small |
+None. All planned tasks are complete.
 
 ---
 
@@ -91,4 +89,6 @@ Copy rewrite across 13 pages, ambient glows removal, varied CTAs, README rewrite
 | Phase 1-5 (Original) | 39 | 39 | 0 |
 | Phase 6-11 (Extended) | 50 | 50 | 0 |
 | De-AI Overhaul | 7 | 7 | 0 |
-| **Total** | **96** | **96** | **7 Low-Priority** |
+| Low-Priority Tasks | 7 | 7 | 0 |
+| Video Meet | 6 | 6 | 0 |
+| **Total** | **109** | **109** | **0** |

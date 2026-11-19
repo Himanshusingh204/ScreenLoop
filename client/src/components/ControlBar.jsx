@@ -15,6 +15,7 @@ import {
   PictureInPicture,
   Microphone,
   MicrophoneSlash,
+  Record,
 } from '../components/icons';
 import { QUALITY_PRESETS } from '../hooks/useWebRTC';
 import { audioBooster, fireReactionPop } from '../utils';

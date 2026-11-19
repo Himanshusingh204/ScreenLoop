@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader } from './Loader';
-import { FilmStrip, RocketLaunch, ArrowRight, ArrowLeft } from './icons';
+import { FilmStrip, RocketLaunch, ArrowRight, ArrowLeft, Eye, EyeSlash } from './icons';
 
 /**
  * @param {object} props
@@ -13,13 +13,32 @@ import { FilmStrip, RocketLaunch, ArrowRight, ArrowLeft } from './icons';
  * @param {boolean} props.loading
  */
 export function JoinModal({ roomId, isCreating, onJoin, error, loading, showGoHome = false }) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => {
+    try {
+      return localStorage.getItem('sl-name') || '';
+    } catch {
+      return '';
+    }
+  });
   const [pin, setPin] = useState('');
-  const [gender, setGender] = useState('neutral');
+  const [showPin, setShowPin] = useState(false);
+  const [gender, setGender] = useState(() => {
+    try {
+      return localStorage.getItem('sl-gender') || 'neutral';
+    } catch {
+      return 'neutral';
+    }
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
+    try {
+      localStorage.setItem('sl-name', name.trim());
+      localStorage.setItem('sl-gender', gender);
+    } catch {
+      /* ignore quota errors */
+    }
     onJoin({ name: name.trim(), pin: pin.trim(), gender });
   };
 
@@ -64,16 +83,40 @@ export function JoinModal({ roomId, isCreating, onJoin, error, loading, showGoHo
             <label className="home-label" htmlFor="room-pin">
               {isCreating ? 'Set Room PIN (Optional)' : 'Room PIN (if protected)'}
             </label>
-            <input
-              id="room-pin"
-              className="input"
-              type="password"
-              placeholder={isCreating ? 'Leave blank for open room' : 'Leave blank if none'}
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              maxLength={20}
-              autoComplete="current-password"
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                id="room-pin"
+                className="input"
+                type={showPin ? 'text' : 'password'}
+                placeholder={isCreating ? 'Leave blank for open room' : 'Leave blank if none'}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                maxLength={20}
+                autoComplete="current-password"
+                style={{ paddingRight: '40px' }}
+              />
+              {pin && (
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted, #94a3b8)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                  }}
+                  title={showPin ? 'Hide PIN' : 'Show PIN'}
+                  aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showPin ? <EyeSlash size={16} /> : <Eye size={16} />}
+                </button>
+              )}
+            </div>
           </div>
 
           <div>

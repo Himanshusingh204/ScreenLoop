@@ -17,9 +17,12 @@ describe('createRoom', () => {
     expect(room.participants.size).toBe(1);
   });
 
-  it('creates a room with PIN', () => {
+  it('creates a room with PIN (stored as hash, verified timing-safe)', () => {
+    const { verifyPin } = require('../src/roomManager');
     const room = createRoom('test2', 'host-socket', 'Host', '1234');
-    expect(room.pin).toBe('1234');
+    expect(room.pin).not.toBe('1234');
+    expect(verifyPin(room.pin, '1234')).toBe(true);
+    expect(verifyPin(room.pin, '9999')).toBe(false);
   });
 
   it('stores the host gender', () => {
