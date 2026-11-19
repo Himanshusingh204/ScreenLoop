@@ -668,3 +668,63 @@
   height: 4px;
   background: var(--text-muted);
 }
+
+/* ─── Device Settings Modal ─────────────────────────────────────────────── */
+.meet-device-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 440px;
+  background: var(--bg-surface, #1e2230);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-xl, 16px);
+  padding: var(--space-6, 24px);
+  z-index: 1001;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  color: var(--text-primary, #fff);
+  backdrop-filter: blur(16px);
+}
+
+.meet-device-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meet-device-modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.meet-device-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meet-device-modal-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.meet-device-modal-field select {
+  padding: 10px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary, #fff);
+  font-size: 0.95rem;
+}
+
+.meet-device-modal-close {
+  margin-top: var(--space-2, 8px);
+  width: 100%;
+}
+

@@ -10,6 +10,7 @@ import MeetControlBar from '../components/meet/MeetControlBar';
 import MeetChatDrawer from '../components/meet/MeetChatDrawer';
 import MeetPeopleDrawer from '../components/meet/MeetPeopleDrawer';
 import MeetReactions from '../components/meet/MeetReactions';
+import MeetDeviceModal from '../components/meet/MeetDeviceModal';
 import '../styles/meet.css';
 
 // Single canonical signaling URL (must match Room.jsx). VITE_SIGNALING_URL kept
@@ -34,6 +35,7 @@ export default function MeetRoom() {
   const [chatMessages, setChatMessages] = useState([]);
   const [showReactions, setShowReactions] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [deviceModalOpen, setDeviceModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Shared signaling connection (Phase 2: useSignalingSocket — socket persists
@@ -270,6 +272,7 @@ export default function MeetRoom() {
         onToggleChat={() => setChatOpen(!chatOpen)}
         onTogglePeople={() => setPeopleOpen(!peopleOpen)}
         onToggleInfo={() => setShowInfo(!showInfo)}
+        onToggleSettings={() => setDeviceModalOpen(!deviceModalOpen)}
         onLeave={handleLeave}
         meetId={meetId}
         chatCount={chatMessages.length}
@@ -335,6 +338,17 @@ export default function MeetRoom() {
             </button>
           </div>
         </div>
+      )}
+
+      {deviceModalOpen && (
+        <MeetDeviceModal
+          devices={devices}
+          selectedCamera={selectedCamera}
+          selectedMic={selectedMic}
+          onSelectCamera={setSelectedCamera}
+          onSelectMic={setSelectedMic}
+          onClose={() => setDeviceModalOpen(false)}
+        />
       )}
     </div>
   );

@@ -33,6 +33,7 @@ export function SiteFooter() {
             <h4 className="footer-group-title">Product</h4>
             <ul className="footer-links-list">
               <li><Link to="/">Watch Room Launcher</Link></li>
+              <li><Link to="/meet">Video Meet <span className="nav-new-badge" style={{ fontSize: '0.65rem', padding: '1px 5px', marginLeft: '4px' }}>New</span></Link></li>
               <li><Link to="/features">Features Showcase</Link></li>
               <li><Link to="/security">Security Architecture</Link></li>
               <li><Link to="/about">About Screenloop</Link></li>
