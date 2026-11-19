@@ -4,24 +4,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useRef, useCallback } from 'react';
+import { getIceServers } from '../utils/webrtcConfig';
+import { CINEMA_AUDIO_PRESET } from '../utils/audioPresets';
 
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' },
-    { 
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    { 
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    }
-  ],
-};
+function resolveIceServers() {
+  try {
+    return getIceServers();
+  } catch {
+    return {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ],
+    };
+  }
+}
+
+const ICE_SERVERS = resolveIceServers();
 
 // ─── Video quality presets ────────────────────────────────────────────────────
 export const QUALITY_PRESETS = {
@@ -45,14 +44,8 @@ export const QUALITY_PRESETS = {
   },
 };
 
-// ─── High-quality audio constraints ──────────────────────────────────────────
-const AUDIO_CONSTRAINTS = {
-  echoCancellation: false,
-  noiseSuppression: false,
-  autoGainControl: false,
-  sampleRate: 48000,
-  channelCount: 2,
-};
+// ─── High-quality cinema audio constraints ─────────────────────────────────
+const AUDIO_CONSTRAINTS = CINEMA_AUDIO_PRESET;
 
 /**
  * @param {object} params

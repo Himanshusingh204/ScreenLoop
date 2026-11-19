@@ -10,8 +10,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const { stopRoomSweep, listRooms } = require('./roomManager');
+const { stopRoomSweep, listRooms, getRoom, verifyPin } = require('./roomManager');
 const { registerHandlers } = require('./socketHandlers');
+const { generateLiveKitToken, LIVEKIT_URL } = require('./livekitToken');
 const logger = require('./logger');
 
 const MAX_IP_CONNECTIONS = 5;
@@ -29,25 +30,21 @@ const explicitOrigins = process.env.ALLOWED_ORIGIN
   : [];
 
 function isOriginAllowed(origin) {
-  if (!origin) return true;
+  // Allow missing origin only in local development / testing
+  if (!origin) {
+    return process.env.NODE_ENV !== 'production';
+  }
 
   if (explicitOrigins.includes(origin) || explicitOrigins.includes('*')) {
     return true;
   }
 
+  // Allow local development and LAN testing origins
   if (
     /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
     /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
     /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||
     /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+(:\d+)?$/.test(origin)
-  ) {
-    return true;
-  }
-
-  if (
-    /^https:\/\/[\w-]+\.vercel\.app$/.test(origin) ||
-    /^https:\/\/[\w-]+\.netlify\.app$/.test(origin) ||
-    /^https:\/\/[\w-]+\.onrender\.com$/.test(origin)
   ) {
     return true;
   }
@@ -94,6 +91,7 @@ const io = new Server(server, {
   },
   pingTimeout: 60000,
   pingInterval: 25000,
+  maxHttpBufferSize: 1e6, // 1MB payload ceiling prevents memory exhaustion
   transports: ['websocket', 'polling'],
 });
 
@@ -107,10 +105,78 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ─── Room Listing ───────────────────────────────────────────────────────────
+// ─── Room Listing (Phase 1: gated — prevents unauthenticated enumeration) ───
+// Set ROOM_LISTING_ENABLED=true to expose (dev default: on, prod default: off).
+// Lightweight per-IP rate limit included (no extra dependency).
+const roomListingHits = new Map();
+const ROOM_LISTING_WINDOW_MS = 60 * 1000;
+const ROOM_LISTING_MAX = 30;
+
 app.get('/api/rooms', (req, res) => {
+  const enabled =
+    process.env.ROOM_LISTING_ENABLED !== undefined
+      ? process.env.ROOM_LISTING_ENABLED === 'true'
+      : process.env.NODE_ENV !== 'production';
+  if (!enabled) {
+    return res.status(403).json({ error: 'Room listing disabled' });
+  }
+
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const rec = roomListingHits.get(ip);
+  if (!rec || now - rec.start > ROOM_LISTING_WINDOW_MS) {
+    roomListingHits.set(ip, { count: 1, start: now });
+  } else {
+    rec.count += 1;
+    if (rec.count > ROOM_LISTING_MAX) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+  }
+
   const rooms = listRooms();
   res.json({ count: rooms.length, rooms });
+});
+
+// ─── LiveKit Token Minting ──────────────────────────────────────────────────
+app.post('/api/token', async (req, res) => {
+  try {
+    const { roomId, participantName, pin, isHost, gender } = req.body || {};
+
+    if (!roomId || typeof roomId !== 'string' || !/^[A-Za-z0-9_-]{1,32}$/.test(roomId)) {
+      return res.status(400).json({ error: 'Invalid room ID format' });
+    }
+    if (
+      !participantName ||
+      typeof participantName !== 'string' ||
+      participantName.trim().length === 0 ||
+      participantName.length > 30
+    ) {
+      return res.status(400).json({ error: 'Participant name must be between 1 and 30 characters' });
+    }
+
+    // Verify PIN if room exists and has a PIN
+    const existingRoom = getRoom(roomId);
+    if (existingRoom && existingRoom.pin) {
+      if (!verifyPin(existingRoom.pin, pin)) {
+        return res.status(401).json({ error: 'Incorrect room PIN' });
+      }
+    }
+
+    const token = await generateLiveKitToken({
+      roomId,
+      participantName: participantName.trim(),
+      isHost: !!isHost,
+      metadata: { gender: gender || 'neutral' },
+    });
+
+    res.json({
+      token,
+      url: process.env.LIVEKIT_URL || LIVEKIT_URL,
+    });
+  } catch (err) {
+    logger.error({ err: err.message }, 'Failed to mint LiveKit token');
+    res.status(500).json({ error: 'Failed to mint access token' });
+  }
 });
 
 // ─── Socket.io Connection ────────────────────────────────────────────────────

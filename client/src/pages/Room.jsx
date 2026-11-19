@@ -1,7 +1,6 @@
 // Room.jsx — Main watch room orchestrator with Web APIs & clean barrel imports
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { io } from 'socket.io-client';
 
 // Clean Barrel Imports
 import {
@@ -27,6 +26,8 @@ import {
   useSoundEffects,
   useNetworkStatus,
   useScreenRecording,
+  useSignalingSocket,
+  useLiveKitRoom,
 } from '../hooks';
 
 import { fireRoomLaunchConfetti, addRecentRoom } from '../utils';
@@ -34,9 +35,9 @@ import { CornersIn } from '../components/icons';
 
 const SERVER_URL =
   import.meta.env.VITE_SERVER_URL ||
-  (typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:4000`
-    : 'http://localhost:4000');
+  (import.meta.env.DEV
+    ? 'http://localhost:4000'
+    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000'));
 
 export default function Room() {
   const { roomId } = useParams();
@@ -57,7 +58,6 @@ export default function Room() {
   const [myName, setMyName]         = useState('');
   const [modalError, setModalError] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
-  const [connected, setConnected]   = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isSharing, setIsSharing]   = useState(false);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -68,8 +68,14 @@ export default function Room() {
   const [statsVisible, setStatsVisible]       = useState(false);
   const [drawModeActive, setDrawModeActive]   = useState(false);
   const [hostDisconnected, setHostDisconnected] = useState(false);
-  const [reconnecting, setReconnecting] = useState(false);
-  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+
+  // ─── Shared signaling connection (Phase 2: useSignalingSocket) ─────────────
+  const {
+    socket,
+    connected,
+    reconnecting,
+    reconnectAttempt,
+  } = useSignalingSocket(SERVER_URL);
 
   // ─── Audio-only mode & Quality state ──────────────────────────────────────────
   const [audioOnly, setAudioOnly] = useState(false);
@@ -88,7 +94,6 @@ export default function Room() {
   const { playJoinChime, playLeaveChime, playMessagePing, playReactionPop } = useSoundEffects();
 
   // ─── Refs ─────────────────────────────────────────────────────────────────
-  const [socket, setSocket] = useState(null);
   const videoRef    = useRef(null);
   const roomRef     = useRef(null);
 
@@ -101,34 +106,8 @@ export default function Room() {
   }, [phase]);
 
   // ─── Socket.io Connection ────────────────────────────────────────────────
-  useEffect(() => {
-    const s = io(SERVER_URL, {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 15,
-      transports: ['websocket', 'polling'],
-    });
-    setSocket(s);
-    s.on('connect',    () => {
-      setConnected(true);
-      setReconnecting(false);
-      setReconnectAttempt(0);
-    });
-    s.on('disconnect', () => setConnected(false));
-    s.on('reconnect_attempt', (attempt) => {
-      setReconnecting(true);
-      setReconnectAttempt(attempt);
-    });
-    s.on('reconnect', () => {
-      setReconnecting(false);
-      setReconnectAttempt(0);
-    });
-    s.on('reconnect_failed', () => {
-      setReconnecting(false);
-      addToast('❌ Could not reconnect. Please refresh.');
-    });
-    return () => s.disconnect();
-  }, []);
+  // Owned by useSignalingSocket (shared hook). Room-specific rejoin logic lives
+  // in the WebRTC signaling effect + auto-rejoin effect below.
 
   // ─── Auto-rejoin from sessionStorage on refresh ────────────────────────────
   useEffect(() => {
@@ -159,6 +138,27 @@ export default function Room() {
     isHost: isActualHost,
     onStream: (stream) => setRemoteStream(stream),
     onTrackEnded: () => setIsSharing(false),
+  });
+
+  // ─── LiveKit SFU Media Engine ─────────────────────────────────────────────
+  const {
+    isConnected: isLiveKitActive,
+    remoteScreenStream: lkRemoteStream,
+    startScreenShare: startLiveKitScreenShare,
+    stopScreenShare: stopLiveKitScreenShare,
+  } = useLiveKitRoom({
+    roomId,
+    name: myName,
+    pin: joinInfoRef.current?.pin,
+    isHost: isActualHost,
+    enabled: phase === 'room' && !!myName,
+    onScreenTrackSubscribed: (stream) => {
+      setRemoteStream(stream);
+      addToast('📡 Connected via LiveKit High-Speed SFU');
+    },
+    onScreenTrackUnsubscribed: () => {
+      setRemoteStream(null);
+    },
   });
 
   // ─── Screen Recording Hook ──────────────────────────────────────────────
@@ -210,6 +210,16 @@ export default function Room() {
       addToast('⚠️ Network offline — reconnecting…');
     }
   }, [isOnline, addToast]);
+
+  // Signaling reconnect failure (previously inside the inline connection effect)
+  useEffect(() => {
+    if (!socket) return;
+    const onFailed = () => addToast('❌ Could not reconnect. Please refresh.');
+    socket.on('reconnect_failed', onFailed);
+    return () => {
+      socket.off('reconnect_failed', onFailed);
+    };
+  }, [socket, addToast]);
 
   // ─── WebRTC Signaling Listeners ──────────────────────────────────────────
   useEffect(() => {
@@ -410,11 +420,17 @@ export default function Room() {
 
   const handleShareScreen = useCallback(async (quality = '1080p') => {
     try {
-      await startScreenShare(quality);
-      setIsSharing(true);
-      const viewers = participants.filter((p) => !p.isHost);
-      for (const viewer of viewers) await sendOfferToViewer(viewer.socketId);
-      addToast('🖥 Screen sharing started');
+      if (isLiveKitActive) {
+        await startLiveKitScreenShare();
+        setIsSharing(true);
+        addToast('🖥 LiveKit HD Cinema Screen sharing started');
+      } else {
+        await startScreenShare(quality);
+        setIsSharing(true);
+        const viewers = participants.filter((p) => !p.isHost);
+        for (const viewer of viewers) await sendOfferToViewer(viewer.socketId);
+        addToast('🖥 Screen sharing started');
+      }
     } catch (err) {
       setIsSharing(false);
       // Task 56: Show helpful message for permission denied
@@ -424,14 +440,18 @@ export default function Room() {
         addToast('❌ Could not start screen share: ' + err.message);
       }
     }
-  }, [startScreenShare, participants, sendOfferToViewer, addToast]);
+  }, [isLiveKitActive, startLiveKitScreenShare, startScreenShare, participants, sendOfferToViewer, addToast]);
 
   const handleStopShare = useCallback(() => {
-    stopScreenShare();
+    if (isLiveKitActive) {
+      stopLiveKitScreenShare();
+    } else {
+      stopScreenShare();
+    }
     setIsSharing(false);
     setDrawModeActive(false);
     addToast('🛑 Screen sharing stopped');
-  }, [stopScreenShare, addToast]);
+  }, [isLiveKitActive, stopLiveKitScreenShare, stopScreenShare, addToast]);
 
   const handleReaction = useCallback((emoji) => {
     playReactionPop();
@@ -496,7 +516,7 @@ export default function Room() {
   }
 
   const mySocketId = socket?.id;
-  const stream = isActualHost ? localStream.current : remoteStream;
+  const stream = lkRemoteStream || (isActualHost ? localStream.current : remoteStream);
 
   return (
     <div
@@ -516,7 +536,7 @@ export default function Room() {
           roomKey={roomKey}
           participantCount={participants.length}
           connected={connected}
-          streamQuality={streamStats.quality}
+          streamQuality={isLiveKitActive ? 'good' : streamStats.quality}
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
           onOpenShare={() => setShareModalOpen(true)}

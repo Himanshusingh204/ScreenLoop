@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  # ─── LiveKit SFU Media Server (Local / Self-hosted) ────────────────────────
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: screenloop-livekit
+    command: --dev
+    restart: unless-stopped
+    ports:
+      - "7880:7880"       # WebSockets / Signaling
+      - "7881:7881"       # HTTP API
+      - "7882:7882/udp"   # WebRTC UDP traffic
+    environment:
+      - LIVEKIT_KEYS=devkey:secret
+
+  # ─── Screenloop Signaling & Token Server ───────────────────────────────────
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: screenloop-server
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+      - ALLOWED_ORIGIN=http://localhost:5173,http://localhost:3000
+      - LIVEKIT_URL=ws://livekit:7880
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+    depends_on:
+      - livekit
+
+  # ─── Screenloop Web Client ─────────────────────────────────────────────────
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: screenloop-client
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - server

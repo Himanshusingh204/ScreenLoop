@@ -45,17 +45,23 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
   );
 
   // ─── Send a chat message ──────────────────────────────────────────────────
+  // Phase 2: explicit `enc` flag marks E2EE ciphertext (server relays it so
+  // receivers know to decrypt; replaces the legacy length>30 heuristic).
   const sendChatMessage = useCallback(
     async (text) => {
       if (!socket || !text.trim()) return;
-      
+
       let payload = text.trim();
+      let enc = false;
       if (roomKey) {
         const encrypted = await encryptMessage(payload, roomKey);
-        if (encrypted) payload = encrypted;
+        if (encrypted) {
+          payload = encrypted;
+          enc = true;
+        }
       }
-      
-      socket.emit('chat:message', { roomId, name: myName, text: payload });
+
+      socket.emit('chat:message', { roomId, name: myName, text: payload, enc });
     },
     [socket, roomId, myName, roomKey]
   );
@@ -74,11 +80,15 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     async (msgId, msgTimestamp, newText) => {
       if (!socket || !newText.trim()) return;
       let payload = newText.trim();
+      let enc = false;
       if (roomKey) {
         const encrypted = await encryptMessage(payload, roomKey);
-        if (encrypted) payload = encrypted;
+        if (encrypted) {
+          payload = encrypted;
+          enc = true;
+        }
       }
-      socket.emit('chat:edit', { roomId, msgId, msgTimestamp, newText: payload });
+      socket.emit('chat:edit', { roomId, msgId, msgTimestamp, newText: payload, enc });
     },
     [socket, roomId, roomKey]
   );
@@ -105,6 +115,27 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
   // ─── Typing indicator state ────────────────────────────────────────────
   const [typingUsers, setTypingUsers] = useState({});
 
+  // ─── Auto-clear expired typing indicators (>3s) ───────────────────────────
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setTypingUsers((prev) => {
+        let hasExpired = false;
+        const next = {};
+        for (const [id, val] of Object.entries(prev)) {
+          if (now - val.ts <= 3000) {
+            next[id] = val;
+          } else {
+            hasExpired = true;
+          }
+        }
+        return hasExpired ? next : prev;
+      });
+    }, 1500);
+
+    return () => clearInterval(timer);
+  }, []);
+
   // ─── Socket event listeners ───────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return;
@@ -114,7 +145,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
       addToast(`${name} joined the room`);
       setChatMessages((prev) => [
         ...prev,
-        { id: Date.now(), system: true, text: `${name} joined the room`, timestamp: Date.now() },
+        { id: `sys_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, system: true, text: `${name} joined the room`, timestamp: Date.now() },
       ]);
     };
 
@@ -123,7 +154,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
       addToast(`${name} left the room`);
       setChatMessages((prev) => [
         ...prev,
-        { id: Date.now(), system: true, text: `${name} left the room`, timestamp: Date.now() },
+        { id: `sys_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, system: true, text: `${name} left the room`, timestamp: Date.now() },
       ]);
       if (newHostId) setHostId(newHostId);
     };
@@ -140,10 +171,13 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
       addToast(`⏩ ${name} seeked to ${Math.floor(time)}s`);
     };
 
-    const onChatMessage = async ({ id, name, text, timestamp, socketId }) => {
+    const onChatMessage = async ({ id, name, text, timestamp, socketId, enc }) => {
       let decryptedText = text;
-      
-      if (roomKey && text.length > 30) {
+
+      // Phase 2: explicit enc flag; fall back to legacy length heuristic for
+      // messages sent by older clients during rollout.
+      const shouldDecrypt = roomKey && (enc === true || (enc === undefined && text.length > 30));
+      if (shouldDecrypt) {
         const decrypted = await decryptMessage(text, roomKey);
         if (decrypted) {
           decryptedText = decrypted;
@@ -162,9 +196,16 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
       setChatMessages((prev) => prev.filter((m) => m.id !== msgId));
     };
 
-    const onChatEdited = ({ msgId, newText }) => {
+    const onChatEdited = async ({ msgId, newText, enc }) => {
+      // Phase 2: decrypt edited ciphertext (legacy senders omit enc → heuristic).
+      let displayText = newText;
+      const shouldDecrypt = roomKey && (enc === true || (enc === undefined && newText.length > 30));
+      if (shouldDecrypt) {
+        const decrypted = await decryptMessage(newText, roomKey);
+        displayText = decrypted || '*(Encrypted message)*';
+      }
       setChatMessages((prev) =>
-        prev.map((m) => (m.id === msgId ? { ...m, text: newText, edited: true } : m))
+        prev.map((m) => (m.id === msgId ? { ...m, text: displayText, edited: true } : m))
       );
     };
 

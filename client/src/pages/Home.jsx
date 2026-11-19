@@ -5,7 +5,8 @@ import { generateRoomId, generateRoomKey, withViewTransition, getRecentRooms, cl
 import { ThemeSelector, SiteHeader, SiteFooter } from '../components';
 import {
   FilmStrip, RocketLaunch, LinkSimple, LockSimple, PencilSimple,
-  Lightning, ChartBar, Phone, GithubLogo, ArrowRight, ShieldCheck, Clock
+  Lightning, ChartBar, Phone, GithubLogo, ArrowRight, ShieldCheck, Clock,
+  Eye, EyeSlash
 } from '../components/icons';
 
 import { staggerContainer, fadeInUp, slideInRight } from '../hooks/useScrollReveal';
@@ -15,6 +16,7 @@ export default function Home() {
 
   const [tab, setTab] = useState('create');
   const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [joinUrl, setJoinUrl] = useState('');
   const [error, setError] = useState('');
   const [activeFaq, setActiveFaq] = useState(null);
@@ -174,16 +176,40 @@ export default function Home() {
                   <label className="card-input-label" htmlFor="create-pin-input">
                     Optional Room PIN / Password
                   </label>
-                  <input
-                    id="create-pin-input"
-                    type="password"
-                    className="input"
-                    placeholder="Leave empty for open access…"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    maxLength={20}
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input
+                      id="create-pin-input"
+                      type={showPin ? 'text' : 'password'}
+                      className="input"
+                      placeholder="Leave empty for open access…"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      maxLength={20}
+                      autoComplete="new-password"
+                      style={{ paddingRight: '40px' }}
+                    />
+                    {pin && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPin(!showPin)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted, #94a3b8)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '4px',
+                        }}
+                        title={showPin ? 'Hide PIN' : 'Show PIN'}
+                        aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
+                      >
+                        {showPin ? <EyeSlash size={16} /> : <Eye size={16} />}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {error && (
                   <p className="card-error-text" role="alert">

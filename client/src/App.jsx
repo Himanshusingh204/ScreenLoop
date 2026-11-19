@@ -18,6 +18,8 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Roadmap = lazy(() => import('./pages/Roadmap'));
 const Changelog = lazy(() => import('./pages/Changelog'));
 const Accessibility = lazy(() => import('./pages/Accessibility'));
+const MeetLanding = lazy(() => import('./pages/MeetLanding'));
+const MeetRoom = lazy(() => import('./pages/MeetRoom'));
 
 function RouteLoader() {
   return (
@@ -72,6 +74,8 @@ export default function App() {
             <Route path="/roadmap" element={<RouteErrorBoundary><Roadmap /></RouteErrorBoundary>} />
             <Route path="/changelog" element={<RouteErrorBoundary><Changelog /></RouteErrorBoundary>} />
             <Route path="/accessibility" element={<RouteErrorBoundary><Accessibility /></RouteErrorBoundary>} />
+            <Route path="/meet" element={<RouteErrorBoundary><MeetLanding /></RouteErrorBoundary>} />
+            <Route path="/meet/:meetId" element={<RouteErrorBoundary><MeetRoom /></RouteErrorBoundary>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

@@ -13,7 +13,16 @@ const {
   getParticipants,
   transferHost,
   normalizeGender,
+  touchRoom,
+  touchMeet,
   MAX_PARTICIPANTS,
+  // Meet functions
+  createMeet,
+  getMeet,
+  joinMeet,
+  leaveMeet,
+  findMeetBySocket,
+  getMeetParticipants,
 } = require('./roomManager');
 
 const {
@@ -24,7 +33,85 @@ const {
   resetFailedPin,
 } = require('./rateLimiter');
 
+const crypto = require('crypto');
 const logger = require('./logger');
+
+// ─── Chat message ownership (Phase 1 authz fix) ─────────────────────────────
+// Maps msgId -> { socketId, roomId, timestamp }. Prevents any participant from
+// deleting/editing anyone else's messages by spoofing msgId + msgTimestamp.
+// Server-side timestamp is authoritative; client msgTimestamp is untrusted.
+const chatOwnership = new Map();
+const CHAT_OWNERSHIP_TTL_MS = 10 * 60 * 1000;
+const CHAT_EDIT_WINDOW_MS = 60 * 1000;
+
+function trackChatMessage(msgId, socketId, roomId) {
+  chatOwnership.set(msgId, { socketId, roomId, timestamp: Date.now() });
+  // Opportunistic sweep to bound memory without a dedicated timer
+  if (chatOwnership.size > 2000) {
+    const now = Date.now();
+    for (const [id, rec] of chatOwnership.entries()) {
+      if (now - rec.timestamp > CHAT_OWNERSHIP_TTL_MS) chatOwnership.delete(id);
+    }
+  }
+}
+
+function canDeleteMessage(room, socketId, msgId, clientTimestamp) {
+  const isHost = room.hostId === socketId;
+  const owner = chatOwnership.get(msgId);
+  if (owner && owner.roomId === room.id) {
+    if (isHost) return true;
+    return owner.socketId === socketId && Date.now() - owner.timestamp < CHAT_EDIT_WINDOW_MS;
+  }
+  // Fallback for messages sent before a server restart (no ownership record):
+  // preserve old behavior so in-flight messages don't break during deploy.
+  if (!owner) {
+    if (isHost) return true;
+    return Date.now() - Number(clientTimestamp) < CHAT_EDIT_WINDOW_MS;
+  }
+  return false;
+}
+
+function canEditMessage(room, socketId, msgId) {
+  const owner = chatOwnership.get(msgId);
+  if (owner && owner.roomId === room.id) {
+    return owner.socketId === socketId && Date.now() - owner.timestamp < CHAT_EDIT_WINDOW_MS;
+  }
+  // Unknown msgId: deny (old code allowed anyone to edit anything — insecure).
+  return false;
+}
+
+// Signaling payload size caps (prevent signaling-channel abuse)
+const MAX_SDP_CHARS = 16000;
+const MAX_ICE_CHARS = 4000;
+
+function payloadSize(value) {
+  try {
+    const s = typeof value === 'string' ? value : JSON.stringify(value);
+    return s ? s.length : 0;
+  } catch {
+    return MAX_SDP_CHARS + 1;
+  }
+}
+
+// ─── Membership assertions (Phase 2: single source of truth) ────────────────
+// Every room/meet event must prove: socket claims this room AND the room exists
+// AND the socket is still a participant. Returns { room, participant } or null.
+function requireRoomMember(socket, roomId) {
+  if (!roomId || !socket.data || socket.data.roomId !== roomId) return null;
+  const room = getRoom(roomId);
+  const participant = room?.participants.get(socket.id);
+  if (!room || !participant) return null;
+  return { room, participant };
+}
+
+function requireMeetMember(socket) {
+  const meetId = socket.data?.meetId;
+  if (!meetId) return null;
+  const meet = getMeet(meetId);
+  const participant = meet?.participants.get(socket.id);
+  if (!meet || !participant) return null;
+  return { meetId, meet, participant };
+}
 
 /**
  * Register all socket event handlers for a connected client.
@@ -33,7 +120,26 @@ const logger = require('./logger');
  */
 function registerHandlers(socket, io) {
   // Track which room this socket is in for fast membership checks
-  socket.data = { roomId: null, role: null, joinedAt: null };
+  socket.data = { roomId: null, role: null, joinedAt: null, meetId: null };
+
+  // Phase 2: idle-activity middleware — any inbound event refreshes the
+  // room/meet TTL clock so active sessions are never swept mid-stream.
+  // Guarded for unit-test fake sockets (which lack .use).
+  if (typeof socket.use === 'function') {
+    socket.use(([event], next) => {
+      try {
+        if (socket.data?.roomId && event !== 'room:create' && event !== 'room:join') {
+          touchRoom(socket.data.roomId);
+        }
+        if (socket.data?.meetId && event.startsWith('meet:')) {
+          touchMeet(socket.data.meetId);
+        }
+      } catch {
+        // Activity tracking must never break signaling
+      }
+      next();
+    });
+  }
 
   // ─── Room: Create ───────────────────────────────────────────────────────────
   socket.on('room:create', ({ roomId, name, pin, gender }) => {
@@ -161,6 +267,7 @@ function registerHandlers(socket, io) {
   // ─── WebRTC: Offer (host -> viewer) ─────────────────────────────────────────
   socket.on('webrtc:offer', ({ targetId, offer }) => {
     if (!socket.data.roomId || !targetId || !offer) return;
+    if (payloadSize(offer) > MAX_SDP_CHARS) return;
     // Validate target is in the same room (prevent cross-room signaling)
     const targetRoom = getRoom(socket.data.roomId);
     if (!targetRoom || !targetRoom.participants.has(targetId)) return;
@@ -174,6 +281,7 @@ function registerHandlers(socket, io) {
   // ─── WebRTC: Answer (viewer -> host) ────────────────────────────────────────
   socket.on('webrtc:answer', ({ targetId, answer }) => {
     if (!socket.data.roomId || !targetId || !answer) return;
+    if (payloadSize(answer) > MAX_SDP_CHARS) return;
     const targetRoom = getRoom(socket.data.roomId);
     if (!targetRoom || !targetRoom.participants.has(targetId)) return;
 
@@ -186,6 +294,7 @@ function registerHandlers(socket, io) {
   // ─── WebRTC: ICE Candidate (both directions) ────────────────────────────────
   socket.on('webrtc:ice', ({ targetId, candidate }) => {
     if (!socket.data.roomId || !targetId) return;
+    if (payloadSize(candidate) > MAX_ICE_CHARS) return;
     const targetRoom = getRoom(socket.data.roomId);
     if (!targetRoom || !targetRoom.participants.has(targetId)) return;
 
@@ -196,48 +305,50 @@ function registerHandlers(socket, io) {
   });
 
   // ─── Sync: Play ─────────────────────────────────────────────────────────────
-  socket.on('sync:play', ({ roomId, name, currentTime }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    socket.to(roomId).emit('sync:play', { name, currentTime });
+  // Phase 2: server-side name (never trust client-sent "name").
+  socket.on('sync:play', ({ roomId, currentTime }) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
+    socket.to(roomId).emit('sync:play', { name: m.participant.name, currentTime });
   });
 
   // ─── Sync: Pause ────────────────────────────────────────────────────────────
-  socket.on('sync:pause', ({ roomId, name, currentTime }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    socket.to(roomId).emit('sync:pause', { name, currentTime });
+  socket.on('sync:pause', ({ roomId, currentTime }) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
+    socket.to(roomId).emit('sync:pause', { name: m.participant.name, currentTime });
   });
 
   // ─── Sync: Seek ─────────────────────────────────────────────────────────────
-  socket.on('sync:seek', ({ roomId, name, time }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    socket.to(roomId).emit('sync:seek', { name, time });
+  socket.on('sync:seek', ({ roomId, time }) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
+    socket.to(roomId).emit('sync:seek', { name: m.participant.name, time });
   });
 
   // ─── Chat: Typing Indicator ─────────────────────────────────────────────────
   socket.on('chat:typing', ({ roomId }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    const room = getRoom(roomId);
-    const participant = room?.participants.get(socket.id);
-    if (!participant) return;
-    socket.to(roomId).emit('chat:typing', { name: participant.name, socketId: socket.id });
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
+    socket.to(roomId).emit('chat:typing', { name: m.participant.name, socketId: socket.id });
   });
 
   // ─── Chat: Message ───────────────────────────────────────────────────────────
-  socket.on('chat:message', ({ roomId, text }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+  // Phase 2: explicit `enc` flag marks E2EE ciphertext (replaces length heuristic).
+  socket.on('chat:message', ({ roomId, text, enc }) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
     if (!checkSpam(socket)) return;
     if (!text || typeof text !== 'string' || text.length > 500) return;
+    if (enc !== undefined && typeof enc !== 'boolean') return;
 
-    // Use server-side name from room state to prevent impersonation
-    const room = getRoom(roomId);
-    const participant = room?.participants.get(socket.id);
-    if (!participant) return;
-
-    const msgId = Date.now() + '_' + socket.id.slice(-4);
+    const msgId = `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+    trackChatMessage(msgId, socket.id, roomId);
     const payload = {
       id: msgId,
-      name: participant.name,
+      name: m.participant.name,
       text,
+      enc: enc === true,
       timestamp: Date.now(),
       socketId: socket.id,
     };
@@ -247,50 +358,47 @@ function registerHandlers(socket, io) {
   });
 
   // ─── Chat: Delete ───────────────────────────────────────────────────────────
+  // Phase 1: ownership enforced via server-side map. Host may delete any
+  // message; others may delete only their own within 60s (server clock).
   socket.on('chat:delete', ({ roomId, msgId, msgTimestamp }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    if (!msgId || !msgTimestamp) return;
+    const m = requireRoomMember(socket, roomId);
+    if (!m || !msgId || !msgTimestamp) return;
+    const { room, participant } = m;
 
-    const room = getRoom(roomId);
-    if (!room) return;
-    const participant = room.participants.get(socket.id);
-    if (!participant) return;
+    if (!canDeleteMessage(room, socket.id, msgId, msgTimestamp)) return;
 
-    const isHost = room.hostId === socket.id;
-    const isOwn = Date.now() - msgTimestamp < 60 * 1000; // within 60s
-
-    if (!isHost && !isOwn) return;
-
+    chatOwnership.delete(msgId);
     io.to(roomId).emit('chat:deleted', { msgId, deletedBy: participant.name });
   });
 
   // ─── Chat: Edit ─────────────────────────────────────────────────────────────
-  socket.on('chat:edit', ({ roomId, msgId, msgTimestamp, newText }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    if (!msgId || !msgTimestamp || !newText || typeof newText !== 'string' || newText.length > 500)
+  // Phase 1: only the original author may edit, within 60s (server clock).
+  // Phase 2: `enc` flag passes through so receivers know to decrypt.
+  socket.on('chat:edit', ({ roomId, msgId, msgTimestamp, newText, enc }) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m || !msgId || !msgTimestamp || !newText || typeof newText !== 'string' || newText.length > 500)
       return;
+    if (enc !== undefined && typeof enc !== 'boolean') return;
 
-    // Users can only edit their own messages within 60s
-    if (Date.now() - msgTimestamp > 60 * 1000) return;
+    const { room, participant } = m;
 
-    const room = getRoom(roomId);
-    if (!room) return;
-    const participant = room.participants.get(socket.id);
-    if (!participant) return;
+    if (!canEditMessage(room, socket.id, msgId)) return;
 
     // Encrypt the edited message if room has a key (client handles this)
     io.to(roomId).emit('chat:edited', {
       msgId,
       newText,
+      enc: enc === true,
       editedBy: participant.name,
     });
   });
 
   // ─── Host: Toggle host-only controls ────────────────────────────────────────
   socket.on('room:host-only-toggle', ({ roomId, enabled }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    const room = getRoom(roomId);
-    if (!room || room.hostId !== socket.id) return;
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
+    const { room } = m;
+    if (room.hostId !== socket.id) return;
     // Task 42: persist state on the room object so late joiners get it
     room.hostOnlyControls = !!enabled;
     io.to(roomId).emit('room:host-only-changed', { enabled });
@@ -298,15 +406,14 @@ function registerHandlers(socket, io) {
 
   // ─── Reactions & Laser Pointer ───────────────────────────────────────────────
   socket.on('room:reaction', ({ roomId, emoji }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
     if (!checkSpam(socket)) return;
     if (!checkReactionRate(socket)) return;
     if (!emoji || typeof emoji !== 'string' || emoji.length > 10) return;
 
     // Use server-side name to prevent impersonation
-    const room = getRoom(roomId);
-    const participant = room?.participants.get(socket.id);
-    if (!participant) return;
+    const { participant } = m;
 
     io.to(roomId).emit('room:reaction', {
       name: participant.name,
@@ -316,28 +423,29 @@ function registerHandlers(socket, io) {
   });
 
   socket.on('sync:pointer', ({ roomId, x, y }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    if (!requireRoomMember(socket, roomId)) return;
     if (typeof x !== 'number' || typeof y !== 'number') return;
     if (!isFinite(x) || !isFinite(y)) return;
     socket.to(roomId).emit('sync:pointer', { x, y });
   });
 
   socket.on('sync:draw', ({ roomId, stroke }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId || !stroke) return;
+    if (!requireRoomMember(socket, roomId) || !stroke) return;
     if (!Array.isArray(stroke) || stroke.length > 5000) return;
     socket.to(roomId).emit('sync:draw', { stroke });
   });
 
   socket.on('sync:clear-draw', ({ roomId }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    if (!requireRoomMember(socket, roomId)) return;
     socket.to(roomId).emit('sync:clear-draw');
   });
 
   // ─── Host Moderation (Kick) ─────────────────────────────────────────────────
   socket.on('room:kick', ({ roomId, targetId }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
-    const room = getRoom(roomId);
-    if (!room || room.hostId !== socket.id) return;
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
+    const { room } = m;
+    if (room.hostId !== socket.id) return;
 
     const targetParticipant = room.participants.get(targetId);
     if (!targetParticipant) return;
@@ -347,7 +455,13 @@ function registerHandlers(socket, io) {
     if (!result) return;
 
     io.to(targetId).emit('room:kicked');
-    io.sockets.sockets.get(targetId)?.leave(roomId);
+    const victim = io.sockets.sockets.get(targetId);
+    victim?.leave(roomId);
+    // Clear server-side membership so a stale socket.data can't relay signaling
+    if (victim && victim.data) {
+      victim.data.roomId = null;
+      victim.data.role = null;
+    }
 
     io.to(roomId).emit('room:user-left', {
       socketId: targetId,
@@ -365,7 +479,7 @@ function registerHandlers(socket, io) {
 
   // ─── Transfer Host ──────────────────────────────────────────────────────────
   socket.on('room:transfer-host', ({ roomId, newHostId }) => {
-    if (!socket.data.roomId || socket.data.roomId !== roomId) return;
+    if (!requireRoomMember(socket, roomId)) return;
     if (transferHost(roomId, socket.id, newHostId)) {
       io.to(roomId).emit('room:participants-updated', getParticipants(roomId));
       io.to(newHostId).emit('room:promoted-to-host', {
@@ -374,9 +488,181 @@ function registerHandlers(socket, io) {
     }
   });
 
+  // ─── Meet: Join ────────────────────────────────────────────────────────────
+  socket.on('meet:join', ({ meetId, name, gender, micOn, cameraOn }) => {
+    try {
+      if (!meetId || typeof meetId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(meetId)) return;
+      if (!name || typeof name !== 'string' || name.length > 30) return;
+      if (!checkSpam(socket)) {
+        socket.emit('room:error', { message: 'Too many requests.' });
+        return;
+      }
+
+      const existing = getMeet(meetId);
+      if (!existing) {
+        // First person creates the meet
+        createMeet(meetId, socket.id, name, gender, micOn, cameraOn);
+        socket.join(meetId);
+        socket.data.meetId = meetId;
+        socket.emit('meet:joined', {
+          meetId,
+          participants: getMeetParticipants(meetId),
+          isHost: true,
+        });
+      } else {
+        // Join existing meet
+        joinMeet(meetId, socket.id, name, gender, micOn, cameraOn);
+        socket.join(meetId);
+        socket.data.meetId = meetId;
+
+        socket.emit('meet:joined', {
+          meetId,
+          participants: getMeetParticipants(meetId),
+          isHost: false,
+        });
+
+        // Notify existing participants
+        socket.to(meetId).emit('meet:user-joined', {
+          socketId: socket.id,
+          name,
+          gender: normalizeGender(gender),
+          micOn,
+          cameraOn,
+        });
+      }
+
+      logger.info({ meetId, socketId: socket.id, name }, 'Meet joined');
+    } catch (err) {
+      logger.error({ meetId, socketId: socket.id, err: err.message }, 'Error joining meet');
+      socket.emit('room:error', { message: err.message || 'Failed to join meet.' });
+    }
+  });
+
+  // ─── Meet: Signal (WebRTC relay) ──────────────────────────────────────────
+  socket.on('meet:signal', ({ to, signalData }) => {
+    if (!socket.data.meetId || !to || !signalData) return;
+    if (payloadSize(signalData) > MAX_SDP_CHARS) return;
+    const meet = getMeet(socket.data.meetId);
+    if (!meet || !meet.participants.has(to)) return;
+
+    io.to(to).emit('meet:signal', {
+      from: socket.id,
+      signalData,
+    });
+  });
+
+  // ─── Meet: State Change (mic/cam/share/hand) ──────────────────────────────
+  socket.on('meet:state-change', ({ micOn, cameraOn, isSharing, handRaised }) => {
+    const m = requireMeetMember(socket);
+    if (!m) return;
+    const { meetId, meet, participant } = m;
+
+    if (micOn !== undefined) participant.micOn = !!micOn;
+    if (cameraOn !== undefined) participant.cameraOn = !!cameraOn;
+    if (isSharing !== undefined) participant.isSharing = !!isSharing;
+    if (handRaised !== undefined) participant.handRaised = !!handRaised;
+    meet.lastActivityAt = Date.now();
+
+    socket.to(meetId).emit('meet:state-change', {
+      socketId: socket.id,
+      micOn: participant.micOn,
+      cameraOn: participant.cameraOn,
+      isSharing: participant.isSharing,
+      handRaised: participant.handRaised,
+    });
+  });
+
+  // ─── Meet: Reaction ────────────────────────────────────────────────────────
+  socket.on('meet:reaction', ({ emoji }) => {
+    const m = requireMeetMember(socket);
+    if (!m) return;
+    if (!checkSpam(socket)) return;
+    if (!checkReactionRate(socket)) return;
+    if (!emoji || typeof emoji !== 'string' || emoji.length > 10) return;
+
+    const { meetId, participant } = m;
+
+    io.to(meetId).emit('meet:reaction', {
+      from: socket.id,
+      name: participant.name,
+      emoji,
+    });
+  });
+
+  // ─── Meet: Chat Message ────────────────────────────────────────────────────
+  socket.on('meet:chat', ({ text }) => {
+    const m = requireMeetMember(socket);
+    if (!m) return;
+    if (!checkSpam(socket)) return;
+    if (!text || typeof text !== 'string' || text.length > 500) return;
+
+    const { meetId, meet, participant } = m;
+    meet.lastActivityAt = Date.now();
+
+    const msgId = `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+    io.to(meetId).emit('meet:chat', {
+      id: msgId,
+      socketId: socket.id,
+      name: participant.name,
+      text,
+      timestamp: Date.now(),
+    });
+  });
+
+  // ─── Meet: Leave ───────────────────────────────────────────────────────────
+  socket.on('meet:leave', () => {
+    if (!socket.data.meetId) return;
+    const meetId = socket.data.meetId;
+
+    const result = leaveMeet(meetId, socket.id);
+    socket.leave(meetId);
+
+    io.to(meetId).emit('meet:user-left', { socketId: socket.id });
+
+    if (result?.meetClosed) {
+      io.to(meetId).emit('meet:closed', { message: 'Meeting ended.' });
+      const sockets = io.sockets.adapter.rooms.get(meetId);
+      if (sockets) {
+        for (const sid of sockets) {
+          const s = io.sockets.sockets.get(sid);
+          if (s) s.leave(meetId);
+        }
+      }
+    }
+
+    socket.data.meetId = null;
+    logger.info({ meetId, socketId: socket.id }, 'Meet left');
+  });
+
   // ─── Disconnect ─────────────────────────────────────────────────────────────
   socket.on('disconnect', (reason) => {
     try {
+      // Clean up meet room
+      const meetFound = findMeetBySocket(socket.id);
+      if (meetFound) {
+        const { meetId, meet } = meetFound;
+        const participant = meet.participants.get(socket.id);
+        const meetName = participant?.name || 'Someone';
+
+        const meetResult = leaveMeet(meetId, socket.id);
+
+        io.to(meetId).emit('meet:user-left', { socketId: socket.id, name: meetName });
+
+        if (meetResult?.meetClosed) {
+          io.to(meetId).emit('meet:closed', { message: 'Meeting ended.' });
+          const meetSockets = io.sockets.adapter.rooms.get(meetId);
+          if (meetSockets) {
+            for (const sid of meetSockets) {
+              const s = io.sockets.sockets.get(sid);
+              if (s) s.leave(meetId);
+            }
+          }
+        }
+
+        logger.info({ meetId, socketId: socket.id, name: meetName }, 'Meet user left (disconnect)');
+      }
+
+      // Clean up watch party room
       const found = findRoomBySocket(socket.id);
       if (!found) return;
 
