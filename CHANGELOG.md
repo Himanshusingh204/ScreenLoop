@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - Upcoming
 
+### Added
+- **LiveKit SFU media engine**: watch rooms stream through LiveKit (1 upload, many viewers) with P2P mesh fallback when no LiveKit credentials are set.
+- **Video Meet (`/meet`)**: multi-tile video grid, active speaker detection, pre-call lobby, device settings modal, emoji reactions, and hand raise.
+
 ### Planned
-- **Google Meet-style Video Conferencing (`/meet`)**: Multi-peer camera/microphone video grid with active speaker detection, floating controls, pre-call lobby preview, and presentation spotlight mode.
-- **Presenter Screen Sharing in Meet**: Simultaneous webcam + screen share broadcasting.
-- **In-Call Hand Raise & Reactions**: Synchronized hand raising queue and floating emoji reactions.
+- **Chat message search & filter** (see `client/src/data/roadmap.js`).
+- **Audio description track support**.
+- **Redis adapter** for multi-node signaling.
 
 ---
 

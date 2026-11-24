@@ -1,4 +1,11 @@
 import '@testing-library/jest-dom';
+import { webcrypto } from 'node:crypto';
+
+// Node 18 does not expose WebCrypto as a global, so window.crypto.subtle is
+// undefined under jsdom (CI runs Node 18.x). Fall back to Node's implementation.
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
+}
 
 // Node 22+ ships a broken global `localStorage` stub (it has no methods) that
 // shadows jsdom's implementation in the test environment. Install a working
