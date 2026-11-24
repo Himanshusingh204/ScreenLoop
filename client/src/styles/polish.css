@@ -213,11 +213,11 @@ p, li { text-wrap: pretty; }
 }
 /* Default dark theme ("midnight" is what the toggle sets) */
 :root:not([data-theme]), :root[data-theme="dark"], :root[data-theme="midnight"] {
-  --bg-primary: #1b1b2f;
-  --bg-secondary: #23233b;
-  --bg-surface: #2d2d4a;
-  --bg-elevated: #373758;
-  --bg-hover: #43436a;
+  --bg-primary: #0f0f1c;
+  --bg-secondary: #161626;
+  --bg-surface: #1f1f36;
+  --bg-elevated: #292946;
+  --bg-hover: #35355a;
   --accent: #8f73ff;
   --accent-hover: #a58dff;
   --accent-dim: rgba(143, 115, 255, 0.22);
@@ -226,3 +226,25 @@ p, li { text-wrap: pretty; }
 .feature-card, .glass-card, .card, .contact-channel-card, .help-quick-card,
 .about-story-card, .about-oss-card, .arch-step-card, .roadmap-kanban-card,
 .quick-guide-card { border-color: var(--border-strong); }
+
+/* ─── Glow restore: vivid ambient light on dark theme ─────────────────────── */
+:root:not([data-theme="light"]) .home-layout,
+:root:not([data-theme="light"]) .page-wrapper {
+  background:
+    radial-gradient(ellipse 60% 40% at 85% 0%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%),
+    radial-gradient(ellipse 55% 35% at 0% 30%, color-mix(in srgb, var(--accent-blue-text, #38bdf8) 20%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 30% at 100% 70%, rgba(236, 72, 153, 0.14), transparent 70%),
+    var(--bg-primary);
+  background-attachment: fixed;
+}
+:root:not([data-theme="light"]) .page-hero::before,
+:root:not([data-theme="light"]) .about-hero::before { opacity: 1; filter: blur(4px); }
+:root:not([data-theme="light"]) .btn-primary,
+:root:not([data-theme="light"]) .hero-action-card .btn {
+  box-shadow: 0 0 28px -4px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+:root:not([data-theme="light"]) .hero-action-card,
+:root:not([data-theme="light"]) .feature-card,
+:root:not([data-theme="light"]) .glass-card {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent), 0 24px 60px -24px color-mix(in srgb, var(--accent) 55%, transparent);
+}
