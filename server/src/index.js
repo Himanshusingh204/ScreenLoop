@@ -19,6 +19,8 @@ const logger = require('./logger');
 const MAX_IP_CONNECTIONS = 5;
 const connectedIPs = new Map();
 
+const rateLimit = require('express-rate-limit');
+const tokenLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
 const app = express();
 const server = http.createServer(app);
 
@@ -147,7 +149,7 @@ app.get('/api/rooms', (req, res) => {
 });
 
 // ─── LiveKit Token Minting ──────────────────────────────────────────────────
-app.post('/api/token', async (req, res) => {
+app.post('/api/token', tokenLimiter, async (req, res) => {
   try {
     const { roomId, participantName, pin, isHost, gender } = req.body || {};
 

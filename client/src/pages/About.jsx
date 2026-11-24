@@ -81,7 +81,7 @@ export default function About() {
                   <div className="arch-step-number">02</div>
                   <h3 className="arch-step-title">Signaling Server</h3>
                   <p className="arch-step-desc">
-                    When viewers click the link, the Node.js server helps set up WebRTC connections by relaying SDP offers, answers, and ICE candidates in memory. No video or audio touches the server.
+                    When viewers click the link, the Node.js server helps set up WebRTC connections by relaying SDP offers, answers, and ICE candidates in memory. Video and audio are relayed by the LiveKit media server (or go browser-to-browser as a fallback) and are never recorded or stored.
                   </p>
                 </div>
 

@@ -28,7 +28,7 @@ export default function MeetRoom() {
   const navigate = useNavigate();
   const [inLobby, setInLobby] = useState(true);
   const [name, setName] = useState(() => localStorage.getItem('sl-name') || '');
-  const [gender, setGender] = useState(() => localStorage.getItem('sl-gender') || 'neutral');
+  const [gender, setGender] = useState('neutral');
   const [participants, setParticipants] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(false);
@@ -169,7 +169,6 @@ export default function MeetRoom() {
     setGender(joinGender);
     try {
       localStorage.setItem('sl-name', joinName);
-      localStorage.setItem('sl-gender', joinGender);
     } catch {
       /* ignore */
     }

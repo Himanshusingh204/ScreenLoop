@@ -22,20 +22,13 @@ export function JoinModal({ roomId, isCreating, onJoin, error, loading, showGoHo
   });
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
-  const [gender, setGender] = useState(() => {
-    try {
-      return localStorage.getItem('sl-gender') || 'neutral';
-    } catch {
-      return 'neutral';
-    }
-  });
+  const [gender, setGender] = useState('neutral');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
     try {
       localStorage.setItem('sl-name', name.trim());
-      localStorage.setItem('sl-gender', gender);
     } catch {
       /* ignore quota errors */
     }

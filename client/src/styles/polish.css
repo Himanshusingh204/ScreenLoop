@@ -227,24 +227,48 @@ p, li { text-wrap: pretty; }
 .about-story-card, .about-oss-card, .arch-step-card, .roadmap-kanban-card,
 .quick-guide-card { border-color: var(--border-strong); }
 
-/* ─── Glow restore: vivid ambient light on dark theme ─────────────────────── */
+/* ─── Aurora: slow, fixed ambient light behind every dark page ───────────── */
+:root:not([data-theme="light"]) body { background: var(--bg-primary); }
 :root:not([data-theme="light"]) .home-layout,
-:root:not([data-theme="light"]) .page-wrapper {
+:root:not([data-theme="light"]) .page-wrapper { background: transparent; }
+:root:not([data-theme="light"]) body::before {
+  content: '';
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
   background:
-    radial-gradient(ellipse 60% 40% at 85% 0%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%),
-    radial-gradient(ellipse 55% 35% at 0% 30%, color-mix(in srgb, var(--accent-blue-text, #38bdf8) 20%, transparent), transparent 70%),
-    radial-gradient(ellipse 50% 30% at 100% 70%, rgba(236, 72, 153, 0.14), transparent 70%),
-    var(--bg-primary);
-  background-attachment: fixed;
+    radial-gradient(38% 34% at 22% 24%, color-mix(in srgb, var(--accent) 34%, transparent), transparent 70%),
+    radial-gradient(34% 30% at 78% 18%, color-mix(in srgb, #38bdf8 20%, transparent), transparent 70%),
+    radial-gradient(40% 34% at 62% 82%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%);
+  filter: blur(24px);
+  animation: aurora-drift 28s ease-in-out infinite alternate;
+  will-change: transform;
 }
-:root:not([data-theme="light"]) .page-hero::before,
-:root:not([data-theme="light"]) .about-hero::before { opacity: 1; filter: blur(4px); }
-:root:not([data-theme="light"]) .btn-primary,
-:root:not([data-theme="light"]) .hero-action-card .btn {
-  box-shadow: 0 0 28px -4px color-mix(in srgb, var(--accent) 70%, transparent);
+@keyframes aurora-drift {
+  0%   { transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1); }
+  50%  { transform: translate3d(3%, 2%, 0) rotate(4deg) scale(1.06); }
+  100% { transform: translate3d(-2%, 3%, 0) rotate(-3deg) scale(1.02); }
 }
+@media (prefers-reduced-motion: reduce) { body::before { animation: none !important; } }
+
+/* ─── One type system: Geist for everything, solid accent (no gradient text) ─ */
+h1, h2, h3, .hero-title, .page-hero-title, .about-hero-title, .section-title,
+.meet-landing-content h1 { font-family: var(--font-sans); font-weight: 700; letter-spacing: -0.04em; }
+.hero-title-accent, .gradient-text, .page-hero-title span, .meet-landing-content h1 span {
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: var(--accent) !important;
+}
+.hero-title { text-shadow: none !important; }
+
+/* ─── Flat, crisp surfaces: hairline borders instead of glowing cards/buttons ─ */
 :root:not([data-theme="light"]) .hero-action-card,
 :root:not([data-theme="light"]) .feature-card,
 :root:not([data-theme="light"]) .glass-card {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent), 0 24px 60px -24px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 40px -28px rgba(0,0,0,.7);
+  backdrop-filter: blur(10px);
 }
+.btn-primary, .hero-action-card .btn { box-shadow: none; }
+.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); }
