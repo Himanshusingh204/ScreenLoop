@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ParticipantList } from './ParticipantList';
 import { formatChatTime } from '../utils/formatTime';
 import { linkifyText } from '../utils/linkify';
+import { filterMessages } from '../utils/chatFilter';
 import { Users, ChatTeardropText, LockSimple, PaperPlaneRight, CopySimple, Check, MagnifyingGlass, Smiley, Trash, PencilSimple } from './icons';
 
 const QUICK_EMOJIS = ['👍', '❤️', '🔥', '😂', '🍿', '🎉'];
@@ -141,13 +142,7 @@ export function ChatSidebar({
     setEditDraft('');
   };
 
-  const filteredMessages = search.trim()
-    ? messages.filter(
-        (msg) =>
-          !msg.system &&
-          msg.text.toLowerCase().includes(search.toLowerCase())
-      )
-    : messages;
+  const filteredMessages = filterMessages(messages, search);
 
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`} aria-label="Room details and encrypted chat">

@@ -122,6 +122,18 @@ function registerHandlers(socket, io) {
   // Track which room this socket is in for fast membership checks
   socket.data = { roomId: null, role: null, joinedAt: null, meetId: null };
 
+  // A malformed payload (e.g. emit('webrtc:stop') with no args) would throw in
+  // destructuring and crash the process via uncaughtException. Contain it per handler.
+  const rawOn = socket.on.bind(socket);
+  socket.on = (event, fn) =>
+    rawOn(event, (...args) => {
+      try {
+        fn(...args);
+      } catch (err) {
+        logger.warn({ event, socketId: socket.id, err: err.message }, 'Handler error');
+      }
+    });
+
   // Phase 2: idle-activity middleware — any inbound event refreshes the
   // room/meet TTL clock so active sessions are never swept mid-stream.
   // Guarded for unit-test fake sockets (which lack .use).
@@ -148,6 +160,8 @@ function registerHandlers(socket, io) {
       if (!roomId || typeof roomId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(roomId)) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
+      // A socket in a room must leave first, or its old membership leaks
+      if (socket.data.roomId) return;
 
       // Task 43: Rate-limit room creation per IP
       if (!checkSpam(socket)) {
@@ -194,6 +208,7 @@ function registerHandlers(socket, io) {
       if (!roomId || typeof roomId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(roomId)) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
+      if (socket.data.roomId) return;
 
       if (!checkPinBruteForce(socket)) {
         socket.emit('room:error', {
@@ -270,7 +285,7 @@ function registerHandlers(socket, io) {
     if (payloadSize(offer) > MAX_SDP_CHARS) return;
     // Validate target is in the same room (prevent cross-room signaling)
     const targetRoom = getRoom(socket.data.roomId);
-    if (!targetRoom || !targetRoom.participants.has(targetId)) return;
+    if (!targetRoom || !targetRoom.participants.has(socket.id) || !targetRoom.participants.has(targetId)) return;
 
     io.to(targetId).emit('webrtc:offer', {
       fromId: socket.id,
@@ -283,7 +298,7 @@ function registerHandlers(socket, io) {
     if (!socket.data.roomId || !targetId || !answer) return;
     if (payloadSize(answer) > MAX_SDP_CHARS) return;
     const targetRoom = getRoom(socket.data.roomId);
-    if (!targetRoom || !targetRoom.participants.has(targetId)) return;
+    if (!targetRoom || !targetRoom.participants.has(socket.id) || !targetRoom.participants.has(targetId)) return;
 
     io.to(targetId).emit('webrtc:answer', {
       fromId: socket.id,
@@ -296,7 +311,7 @@ function registerHandlers(socket, io) {
     if (!socket.data.roomId || !targetId) return;
     if (payloadSize(candidate) > MAX_ICE_CHARS) return;
     const targetRoom = getRoom(socket.data.roomId);
-    if (!targetRoom || !targetRoom.participants.has(targetId)) return;
+    if (!targetRoom || !targetRoom.participants.has(socket.id) || !targetRoom.participants.has(targetId)) return;
 
     io.to(targetId).emit('webrtc:ice', {
       fromId: socket.id,
@@ -408,7 +423,7 @@ function registerHandlers(socket, io) {
     if (room.hostId !== socket.id) return;
     // Task 42: persist state on the room object so late joiners get it
     room.hostOnlyControls = !!enabled;
-    io.to(roomId).emit('room:host-only-changed', { enabled });
+    io.to(roomId).emit('room:host-only-changed', { enabled: room.hostOnlyControls });
   });
 
   // ─── Reactions & Laser Pointer ───────────────────────────────────────────────
@@ -500,6 +515,7 @@ function registerHandlers(socket, io) {
     try {
       if (!meetId || typeof meetId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(meetId)) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
+      if (socket.data.meetId) return;
       if (!checkSpam(socket)) {
         socket.emit('room:error', { message: 'Too many requests.' });
         return;
@@ -550,7 +566,7 @@ function registerHandlers(socket, io) {
     if (!socket.data.meetId || !to || !signalData) return;
     if (payloadSize(signalData) > MAX_SDP_CHARS) return;
     const meet = getMeet(socket.data.meetId);
-    if (!meet || !meet.participants.has(to)) return;
+    if (!meet || !meet.participants.has(socket.id) || !meet.participants.has(to)) return;
 
     io.to(to).emit('meet:signal', {
       from: socket.id,

@@ -20,6 +20,13 @@ export function useMeetRTC(socketRef, localStream) {
     localStreamRef.current = localStream;
   }, [localStream]);
 
+  // Close all peers on unmount so connections never leak
+  useEffect(() => () => {
+    Object.values(peersRef.current).forEach((pc) => {
+      try { pc.close(); } catch { /* ignore */ }
+    });
+  }, []);
+
   if (!iceConfigRef.current) {
     try {
       iceConfigRef.current = getIceServers();
@@ -56,7 +63,8 @@ export function useMeetRTC(socketRef, localStream) {
     }
 
     const pc = new RTCPeerConnection(iceConfigRef.current);
-    pendingIceRef.current[targetId] = [];
+    // keep candidates parked before the SDP arrived
+    pendingIceRef.current[targetId] ||= [];
 
     const stream = localStreamRef.current;
     if (stream) {

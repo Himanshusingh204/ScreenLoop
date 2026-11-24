@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useActiveSpeaker(remoteStreams, participants) {
+export function useActiveSpeaker(remoteStreams) {
   const [activeSpeaker, setActiveSpeaker] = useState(null);
   const analyzersRef = useRef({});
   const intervalsRef = useRef({});
@@ -51,8 +51,9 @@ export function useActiveSpeaker(remoteStreams, participants) {
       if (stream) startMonitoring(socketId, stream);
     });
     
+    const intervals = intervalsRef.current;
     return () => {
-      Object.keys(intervalsRef.current).forEach(stopMonitoring);
+      Object.keys(intervals).forEach(stopMonitoring);
     };
   }, [remoteStreams, startMonitoring, stopMonitoring]);
 

@@ -1,9 +1,7 @@
 // Terms.jsx — Terms of Service & Acceptable Use Policy
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
-import { FileText, ShieldCheck, Scales } from '../components/icons';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
 
 export default function Terms() {

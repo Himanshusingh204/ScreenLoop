@@ -10,7 +10,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const { stopRoomSweep, listRooms, getRoom, verifyPin } = require('./roomManager');
+const { stopRoomSweep, listRooms, getRoom, verifyPin, normalizeGender } = require('./roomManager');
+const { checkPinBruteForce, recordFailedPin, resetFailedPin } = require('./rateLimiter');
 const { registerHandlers } = require('./socketHandlers');
 const { generateLiveKitToken, LIVEKIT_URL } = require('./livekitToken');
 const logger = require('./logger');
@@ -112,6 +113,14 @@ const roomListingHits = new Map();
 const ROOM_LISTING_WINDOW_MS = 60 * 1000;
 const ROOM_LISTING_MAX = 30;
 
+// Drop expired buckets so the map can't grow without bound (unref: don't hold the process open)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, rec] of roomListingHits) {
+    if (now - rec.start > ROOM_LISTING_WINDOW_MS) roomListingHits.delete(ip);
+  }
+}, ROOM_LISTING_WINDOW_MS).unref();
+
 app.get('/api/rooms', (req, res) => {
   const enabled =
     process.env.ROOM_LISTING_ENABLED !== undefined
@@ -157,16 +166,23 @@ app.post('/api/token', async (req, res) => {
     // Verify PIN if room exists and has a PIN
     const existingRoom = getRoom(roomId);
     if (existingRoom && existingRoom.pin) {
+      // Share the socket PIN brute-force limiter so /api/token can't be used to bypass it
+      const limiterKey = { handshake: { address: req.ip } };
+      if (!checkPinBruteForce(limiterKey)) {
+        return res.status(429).json({ error: 'Too many failed PIN attempts' });
+      }
       if (!verifyPin(existingRoom.pin, pin)) {
+        recordFailedPin(limiterKey);
         return res.status(401).json({ error: 'Incorrect room PIN' });
       }
+      resetFailedPin(limiterKey);
     }
 
     const token = await generateLiveKitToken({
       roomId,
       participantName: participantName.trim(),
       isHost: !!isHost,
-      metadata: { gender: gender || 'neutral' },
+      metadata: { gender: normalizeGender(gender) },
     });
 
     res.json({
@@ -208,13 +224,16 @@ io.on('connection', (socket) => {
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, '0.0.0.0', () => {
-  logger.info({ port: PORT }, 'Screenloop signaling server active');
-  logger.info(
-    { bindAddress: `0.0.0.0:${PORT}` },
-    'Listening on all interfaces for LAN & Cloud access'
-  );
-});
+// Only listen when run directly, so tests can import `app` without binding a port
+if (require.main === module) {
+  server.listen(PORT, '0.0.0.0', () => {
+    logger.info({ port: PORT }, 'Screenloop signaling server active');
+    logger.info(
+      { bindAddress: `0.0.0.0:${PORT}` },
+      'Listening on all interfaces for LAN & Cloud access'
+    );
+  });
+}
 
 // ─── Graceful Shutdown ──────────────────────────────────────────────────────
 let isShuttingDown = false;
@@ -266,3 +285,5 @@ app.use((err, req, res, _next) => {
   logger.error({ err: err.message }, 'Express error');
   res.status(500).json({ error: 'Internal server error' });
 });
+
+module.exports = { app, server, io };

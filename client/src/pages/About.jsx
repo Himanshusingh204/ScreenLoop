@@ -4,10 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
-import {
-  FilmStrip, LockSimple, Lightning, Users, MonitorPlay, ShieldCheck,
-  RocketLaunch, ChartBar, GithubLogo, ArrowRight, SpeakerSimpleHigh
-} from '../components/icons';
+import { GithubLogo, ArrowRight } from '../components/icons';
 
 const TECH_SPECS = [
   { name: 'WebRTC + LiveKit', category: 'Streaming', detail: 'LiveKit SFU for watch rooms; direct browser-to-browser fallback and for Meet' },

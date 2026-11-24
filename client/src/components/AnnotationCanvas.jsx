@@ -18,7 +18,7 @@ export function AnnotationCanvas({ socket, isHost, roomId, active, onToggleActiv
   const currentPathRef = useRef([]);
 
   const [color, setColor] = useState('#ff3b30');
-  const [lineWidth, setLineWidth] = useState(4);
+  const [lineWidth] = useState(4);
   const [tool, setTool] = useState('pen'); // 'pen' | 'highlighter' | 'eraser'
 
   // Resize canvas to match its container resolution

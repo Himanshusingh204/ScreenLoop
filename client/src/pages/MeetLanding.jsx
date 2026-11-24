@@ -100,7 +100,7 @@ export default function MeetLanding() {
                 lineHeight: 1.6,
               }}
             >
-              Connect face-to-face with friends and teammates. Crystal-clear voice, high-definition camera, instant screen sharing, and encrypted connections.
+              Connect face-to-face with friends and teammates. Crystal-clear voice, high-definition camera, instant screen sharing, and connections encrypted in transit.
             </p>
 
             {/* Main Action Launcher Card */}
@@ -130,7 +130,7 @@ export default function MeetLanding() {
                     Start New Meeting
                   </h3>
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
-                    Create an instant encrypted meeting room and share the link.
+                    Create an instant meeting room and share the link.
                   </p>
                   <button
                     type="button"
@@ -242,7 +242,7 @@ export default function MeetLanding() {
               </div>
               <h4 style={{ fontWeight: 600, marginBottom: '6px' }}>Direct & Private</h4>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Audio and video stream directly between browsers over encrypted WebRTC — zero accounts and zero tracking.
+                Audio and video are encrypted in transit (WebRTC). No accounts, no tracking. End-to-end media encryption is planned.
               </p>
             </motion.div>
           </motion.div>

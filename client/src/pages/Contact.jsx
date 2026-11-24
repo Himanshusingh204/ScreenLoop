@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
 import {
-  ChatTeardropText, MagnifyingGlass, Clock, GithubLogo, Info, RocketLaunch
+  ChatTeardropText, MagnifyingGlass, Clock, GithubLogo, Info
 } from '../components/icons';
 
 const CHANNELS = [

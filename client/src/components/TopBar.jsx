@@ -20,7 +20,6 @@ import { ShareNetwork, Users } from './icons';
  */
 export function TopBar({
   roomId,
-  roomKey,
   participantCount,
   connected,
   streamQuality = 'good',

@@ -160,3 +160,42 @@ p, li { text-wrap: pretty; }
 @media (max-width: 360px) {
   .theme-toggle-wrapper { display: none; }
 }
+
+/* ─── Site header on phones: keep the menu toggle visible (drawer has Launch) ─ */
+@media (max-width: 560px) {
+  .site-launch-btn, .github-header-btn { display: none !important; }
+  .site-header-actions { gap: 8px; min-width: 0; }
+  .site-header-brand { min-width: 0; }
+}
+
+/* ─── Help page: padding inside FAQ panel, breathing room between sections ── */
+.help-faq-container { padding: var(--space-5, 20px); }
+.help-faq-container .help-faq-section:last-child { margin-bottom: 0; }
+.help-section + .help-section { margin-top: var(--space-10, 48px); }
+.help-compat-row span:not(:first-child) { color: var(--text-secondary); }
+.help-faq-question:hover { color: var(--accent); }
+.help-faq-question:focus-visible, .help-sidebar-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius-md); }
+
+/* ─── Features: uniform grid (nth-child spans left holes, especially when filtered) ─ */
+.features-bento-grid .feature-card-pro:nth-child(n) { grid-column: auto; }
+.features-bento-grid .feature-specs-list { margin-top: auto; }
+.features-bento-grid .feature-card-pro:hover { border-color: var(--accent); }
+
+/* ─── Meet landing: centered hero, plain icon wells ───────────────────────── */
+.meet-landing-content .text-center > h1, .meet-landing-content .text-center > p { text-align: center; }
+.meet-landing-content .glass-card { text-align: left; }
+.meet-feature-grid .glass-card > div:first-child { background: none !important; padding: 0 !important; box-shadow: none !important; width: auto; height: auto; }
+.meet-feature-grid .glass-card { transition: border-color 150ms ease, transform 150ms ease; }
+.meet-feature-grid .glass-card:hover { border-color: var(--accent) !important; transform: translateY(-2px); }
+
+/* ─── Meet control bar on phones: wrap instead of clipping end-call/chat ──── */
+.meet-controlbar-left, .meet-controlbar-center, .meet-controlbar-right { flex-wrap: wrap; justify-content: center; }
+.meet-ctrl-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.meet-ctrl-btn { position: relative; flex-shrink: 0; }
+@media (max-width: 720px) {
+  .meet-controlbar { flex-wrap: wrap; justify-content: center; row-gap: 8px; column-gap: 8px; }
+  .meet-controlbar-left { order: 3; width: 100%; font-size: 0.8rem; }
+  .meet-ctrl-btn { width: 42px; height: 42px; }
+  .meet-ctrl-btn.end-call { width: 54px; }
+  .meet-controlbar-center { gap: 6px; }
+}

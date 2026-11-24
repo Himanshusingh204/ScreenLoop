@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import {
-  FilmStrip, MonitorPlay, SpeakerSimpleHigh, LockSimple, PaintBrush,
-  ChartBar, QrCode, Lightning, Users, ShieldCheck, Check,
-  RocketLaunch, PictureInPicture
+  MonitorPlay, SpeakerSimpleHigh, LockSimple, PaintBrush,
+  ChartBar, QrCode, Users, ShieldCheck, Check,
+  PictureInPicture
 } from '../components/icons';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
 import { generateRoomId, generateRoomKey } from '../utils';

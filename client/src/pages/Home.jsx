@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { generateRoomId, generateRoomKey, withViewTransition, getRecentRooms, clearRecentRooms, formatRelativeTime } from '../utils';
-import { ThemeSelector, SiteHeader, SiteFooter } from '../components';
+import { SiteHeader, SiteFooter } from '../components';
 import {
   FilmStrip, RocketLaunch, LinkSimple, LockSimple, PencilSimple,
-  Lightning, ChartBar, Phone, GithubLogo, ArrowRight, ShieldCheck, Clock,
+  Lightning, ChartBar, Phone, ArrowRight, ShieldCheck, Clock,
   Eye, EyeSlash
 } from '../components/icons';
 
-import { staggerContainer, fadeInUp, slideInRight } from '../hooks/useScrollReveal';
+import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
 
 export default function Home() {
   const navigate = useNavigate();

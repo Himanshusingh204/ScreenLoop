@@ -4,18 +4,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
-import {
-  ChatTeardropText, EyeSlash, Sparkle, GearSix, CheckFat,
-  Clock, RocketLaunch, Check
-} from '../components/icons';
+import { CheckFat, Clock, RocketLaunch } from '../components/icons';
 import { ROADMAP_PHASES } from '../data/roadmap';
-
-const PHASE_ICONS = {
-  chat: <ChatTeardropText size={20} weight="duotone" />,
-  a11y: <EyeSlash size={20} weight="duotone" />,
-  polish: <Sparkle size={20} weight="duotone" />,
-  server: <GearSix size={20} weight="duotone" />,
-};
 
 export default function Roadmap() {
   const totalItems = ROADMAP_PHASES.reduce((sum, p) => sum + p.items.length, 0);

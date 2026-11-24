@@ -1,5 +1,5 @@
 // VideoPlayer.jsx — Cinema stage video display area with ambient back-glow & autoplay recovery
-import React, { useEffect, useRef, useState, memo } from 'react';
+import React, { useEffect, useRef, useState, memo, useCallback } from 'react';
 import { SpeakerSimpleHigh, MonitorPlay, PictureInPicture } from './icons';
 
 /**
@@ -9,7 +9,7 @@ import { SpeakerSimpleHigh, MonitorPlay, PictureInPicture } from './icons';
  * @param {boolean} props.isSharing — host is actively sharing
  * @param {React.RefObject} props.videoRef — forwarded ref so parent can control the video el
  */
-export const VideoPlayer = memo(function VideoPlayer({ stream, isHost, isSharing, videoRef }) {
+export const VideoPlayer = memo(function VideoPlayer({ stream, isHost, videoRef }) {
   const internalRef = useRef(null);
   const ref = videoRef || internalRef;
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
@@ -31,7 +31,7 @@ export const VideoPlayer = memo(function VideoPlayer({ stream, isHost, isSharing
     };
   }, [ref]);
 
-  const togglePip = async () => {
+  const togglePip = useCallback(async () => {
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
@@ -41,7 +41,7 @@ export const VideoPlayer = memo(function VideoPlayer({ stream, isHost, isSharing
     } catch (err) {
       console.warn('[video-player] PiP toggle failed:', err);
     }
-  };
+  }, [ref]);
 
   // Keyboard shortcut: P = Picture in Picture
   useEffect(() => {

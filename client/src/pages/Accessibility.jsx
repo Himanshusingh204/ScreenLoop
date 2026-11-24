@@ -1,10 +1,8 @@
 // Accessibility.jsx — Accessibility statement page (dashboard-style layout)
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
-import { Sparkle, RocketLaunch } from '../components/icons';
 
 export default function Accessibility() {
   return (

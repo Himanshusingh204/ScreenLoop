@@ -1,11 +1,10 @@
 // Security.jsx — Cryptography whitepaper & zero-knowledge security architecture
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import {
   LockSimple, ShieldCheck, Key, EyeSlash, Broadcast, FileText,
-  CheckCircle, GithubLogo, FilmStrip, Sparkle, Lightning
+  CheckCircle, GithubLogo
 } from '../components/icons';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
 

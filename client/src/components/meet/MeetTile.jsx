@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-export default function MeetTile({ stream, name, isSelf, isActive, isMuted, isCameraOff, handRaised, gender }) {
+export default function MeetTile({ stream, name, isSelf, isActive, isMuted, isCameraOff, handRaised }) {
   const videoRef = useRef(null);
   const [initials, setInitials] = useState('');
 

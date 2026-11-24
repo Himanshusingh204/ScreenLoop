@@ -23,7 +23,7 @@ module.exports = {
     'react/no-unescaped-entities': 'off',
     'react/react-in-jsx-scope': 'off',
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^React$' }],
-    'no-console': ['warn', { allow: ['warn', 'error', 'log'] }],
+    'no-console': ['warn', { allow: ['warn', 'error', 'log', 'debug'] }],
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
   },

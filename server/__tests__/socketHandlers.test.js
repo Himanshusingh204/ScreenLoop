@@ -100,11 +100,13 @@ describe('room:create', () => {
   });
 
   it('rate-limits rapid room creation per IP', () => {
-    const socket = makeSocket('host-1', '10.0.0.7');
+    // A socket may only be in one room, so spam from many sockets on one IP
+    const socket = makeSocket('host-last', '10.0.0.7');
     registerHandlers(socket, makeIo());
-
     for (let i = 0; i < 20; i++) {
-      invoke(socket, 'room:create', { roomId: `spam-${i}`, name: 'Spam' });
+      const s = makeSocket(`host-${i}`, '10.0.0.7');
+      registerHandlers(s, makeIo());
+      invoke(s, 'room:create', { roomId: `spam-${i}`, name: 'Spam' });
     }
     invoke(socket, 'room:create', { roomId: 'spam-21', name: 'Spam' });
 

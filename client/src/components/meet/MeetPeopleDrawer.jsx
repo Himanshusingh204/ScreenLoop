@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Crown } from '../icons';
+import { X } from '../icons';
 
 export default function MeetPeopleDrawer({ participants, onClose }) {
   return (

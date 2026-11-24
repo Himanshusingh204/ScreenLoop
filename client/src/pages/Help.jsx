@@ -1,12 +1,12 @@
 // Help.jsx — Help & FAQ page with searchable sections and troubleshooting guides
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SiteHeader, SiteFooter } from '../components';
 import { staggerContainer, fadeInUp } from '../hooks/useScrollReveal';
 import {
-  FilmStrip, MagnifyingGlass, Sparkle, ArrowRight, ShieldCheck,
-  SpeakerSimpleHigh, MonitorPlay, Key, LockSimple
+  MagnifyingGlass, Sparkle,
+  SpeakerSimpleHigh, MonitorPlay, LockSimple
 } from '../components/icons';
 
 const faqSections = [
@@ -87,6 +87,14 @@ const faqSections = [
 export default function Help() {
   const [search, setSearch] = useState('');
   const [openIndex, setOpenIndex] = useState(null);
+
+  // Deep links like /help#shortcuts: scroll after the animated sections mount.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return undefined;
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   const filtered = faqSections.map((section) => ({
     ...section,
@@ -246,8 +254,8 @@ export default function Help() {
               {[
                 ['Google Chrome (72+)', 'Yes', 'Yes', 'Yes'],
                 ['Microsoft Edge (79+)', 'Yes', 'Yes', 'Yes'],
-                ['Mozilla Firefox (66+)', 'Yes', 'Yes', 'Yes'],
-                ['Apple Safari (14+)', 'Yes', 'Yes', 'Yes'],
+                ['Mozilla Firefox (66+)', 'Yes', 'Limited (tab audio unsupported)', 'Yes'],
+                ['Apple Safari (14+)', 'Yes', 'Limited (tab audio unsupported)', 'Yes'],
                 ['Brave Browser', 'Yes', 'Yes', 'Yes'],
               ].map(([browser, share, audio, crypto], i) => (
                 <div key={i} className="help-compat-row">

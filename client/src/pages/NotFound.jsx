@@ -1,21 +1,10 @@
-// NotFound.jsx — Custom 404 page with auto-redirect and helpful links
-import React, { useState, useEffect } from 'react';
+// NotFound.jsx — Custom 404 page and helpful links
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { SiteHeader, SiteFooter } from '../components';
-import { FilmStrip, RocketLaunch, ArrowRight, MagnifyingGlass } from '../components/icons';
+import { RocketLaunch, MagnifyingGlass } from '../components/icons';
 
 export default function NotFound() {
-  const [countdown, setCountdown] = useState(10);
-
-  useEffect(() => {
-    if (countdown <= 0) {
-      window.location.href = '/';
-      return;
-    }
-    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [countdown]);
-
   return (
     <div className="page-wrapper">
       <SiteHeader />
@@ -33,20 +22,16 @@ export default function NotFound() {
           <h1 className="not-found-title">404</h1>
           <p className="not-found-subtitle">Room or page not found</p>
           <p className="not-found-message">
-            The watch room you are looking for may have been stopped by the host, expired, or the link has a typo.
+            The page or room you are looking for may have been stopped by the host, expired, or the link has a typo. Rooms are temporary and end when the host leaves.
           </p>
 
           <div className="not-found-actions">
             <Link to="/" className="btn btn-primary btn-md">
-              <RocketLaunch size={16} /> Launch New Room
+              <RocketLaunch size={16} /> Back to Home
             </Link>
             <Link to="/help" className="btn btn-secondary btn-md">
               <MagnifyingGlass size={16} /> Help & FAQ
             </Link>
-          </div>
-
-          <div className="not-found-countdown-box">
-            <span>Redirecting to Home in <strong>{countdown}s</strong>…</span>
           </div>
         </div>
       </main>

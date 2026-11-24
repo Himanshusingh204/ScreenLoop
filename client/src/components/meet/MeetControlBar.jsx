@@ -18,7 +18,6 @@ export default function MeetControlBar({
   onToggleInfo,
   onToggleSettings,
   onLeave,
-  meetId,
   chatCount,
   participantCount,
 }) {

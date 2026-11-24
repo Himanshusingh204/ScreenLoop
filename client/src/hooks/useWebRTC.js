@@ -83,7 +83,8 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
       }
 
       const peer = new RTCPeerConnection(ICE_SERVERS);
-      pendingIceCandidates.current[targetId] = [];
+      // keep candidates that arrived before the offer
+      pendingIceCandidates.current[targetId] ||= [];
 
       peer.onicecandidate = ({ candidate }) => {
         if (candidate && socket) {
@@ -114,6 +115,17 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     },
     [socket, isHost, onStream]
   );
+
+  // ─── Cleanup ──────────────────────────────────────────────────────────────
+  const stopScreenShare = useCallback(() => {
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((t) => t.stop());
+      localStream.current = null;
+    }
+    Object.values(peers.current).forEach((p) => p.close());
+    peers.current = {};
+    pendingIceCandidates.current = {};
+  }, []);
 
   // ─── Host: capture screen ──────────────────────────────────────────────────
   const startScreenShare = useCallback(
@@ -146,7 +158,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
         throw err;
       }
     },
-    [onTrackEnded]
+    [onTrackEnded, stopScreenShare]
   );
 
   // ─── Host: send offer to a viewer ──────────────────────────────────────────
@@ -160,9 +172,13 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
         peer.addTrack(track, localStream.current);
       });
 
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
-      socket.emit('webrtc:offer', { targetId: viewerId, offer });
+      try {
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+        socket.emit('webrtc:offer', { targetId: viewerId, offer });
+      } catch (err) {
+        console.error('[webrtc] sendOfferToViewer error:', err);
+      }
     },
     [createPeer, socket]
   );
@@ -171,12 +187,16 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
   const handleOffer = useCallback(
     async ({ fromId, offer }) => {
       const peer = createPeer(fromId);
-      await peer.setRemoteDescription(new RTCSessionDescription(offer));
-      await processPendingIce(fromId);
+      try {
+        await peer.setRemoteDescription(new RTCSessionDescription(offer));
+        await processPendingIce(fromId);
 
-      const answer = await peer.createAnswer();
-      await peer.setLocalDescription(answer);
-      socket.emit('webrtc:answer', { targetId: fromId, answer });
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+        socket.emit('webrtc:answer', { targetId: fromId, answer });
+      } catch (err) {
+        console.error('[webrtc] handleOffer error:', err);
+      }
     },
     [createPeer, socket, processPendingIce]
   );
@@ -185,17 +205,21 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
   const handleAnswer = useCallback(async ({ fromId, answer }) => {
     const peer = peers.current[fromId];
     if (peer) {
-      await peer.setRemoteDescription(new RTCSessionDescription(answer));
-      await processPendingIce(fromId);
+      try {
+        await peer.setRemoteDescription(new RTCSessionDescription(answer));
+        await processPendingIce(fromId);
+      } catch (err) {
+        console.warn('[webrtc] handleAnswer error:', err);
+      }
     }
   }, [processPendingIce]);
 
   // ─── Handle incoming ICE candidate (with queuing) ─────────────────────────
   const handleIce = useCallback(async ({ fromId, candidate }) => {
+    if (!candidate) return;
     const peer = peers.current[fromId];
-    if (!peer || !candidate) return;
 
-    if (!peer.remoteDescription) {
+    if (!peer || !peer.remoteDescription) {
       if (!pendingIceCandidates.current[fromId]) {
         pendingIceCandidates.current[fromId] = [];
       }
@@ -208,17 +232,6 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     } catch (err) {
       console.warn('[webrtc] addIceCandidate error:', err);
     }
-  }, []);
-
-  // ─── Cleanup ──────────────────────────────────────────────────────────────
-  const stopScreenShare = useCallback(() => {
-    if (localStream.current) {
-      localStream.current.getTracks().forEach((t) => t.stop());
-      localStream.current = null;
-    }
-    Object.values(peers.current).forEach((p) => p.close());
-    peers.current = {};
-    pendingIceCandidates.current = {};
   }, []);
 
   return {

@@ -27,6 +27,9 @@ jobs:
     - name: Install client dependencies
       run: cd client && npm ci
 
+    - name: Lint client
+      run: cd client && npm run lint
+
     - name: Run client tests
       run: cd client && npm test
 
@@ -55,6 +58,9 @@ jobs:
 
     - name: Install server dependencies
       run: cd server && npm ci
+
+    - name: Lint server
+      run: cd server && npm run lint
 
     - name: Run server tests
       run: cd server && npm test
