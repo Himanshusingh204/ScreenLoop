@@ -12,7 +12,7 @@ const privacySections = [
     title: '1. Overview & Core Principle',
     content: (
       <p>
-        Screenloop was built around a simple constraint: <strong>if we don't store it, we can't leak or sell it.</strong> Unlike platforms that keep accounts, viewing histories, and server-side video proxies, Screenloop routes everything peer-to-peer and stores nothing on disk.
+        Screenloop was built around a simple constraint: <strong>if we don't store it, we can't leak or sell it.</strong> Unlike platforms that keep accounts, viewing histories, and server-side video proxies, Screenloop never records or stores your streams or chats on disk.
       </p>
     ),
   },
@@ -23,7 +23,7 @@ const privacySections = [
       <ul>
         <li><strong>No personal identifiers:</strong> No names, emails, phone numbers, or passwords.</li>
         <li><strong>No chat logs:</strong> Messages are encrypted in your browser. They never exist in plaintext on any server.</li>
-        <li><strong>No video or audio recordings:</strong> Streams flow directly between users via WebRTC. Nothing passes through server storage.</li>
+        <li><strong>No video or audio recordings:</strong> Streams are delivered live over WebRTC and are never recorded or written to storage.</li>
         <li><strong>No tracking or analytics:</strong> No Google Analytics, no Meta Pixels, no third-party scripts of any kind.</li>
       </ul>
     ),
@@ -49,10 +49,10 @@ const privacySections = [
   },
   {
     icon: <ArrowRight size={20} />,
-    title: '4. WebRTC Peer-to-Peer Connections',
+    title: '4. WebRTC Media Connections',
     content: (
       <p>
-        When you share your screen, media packets travel over encrypted peer-to-peer connections directly between participants. The signaling server helps set up the initial connection (SDP offers/answers and ICE candidates) but never sees the video or audio content.
+        When you share your screen, media travels over encrypted WebRTC (DTLS-SRTP). In watch rooms it is relayed live through a LiveKit media server, which can process the stream in memory but does not record or store it; in fallback mode and in Video Meet it flows directly between participants. The Screenloop signaling server only sets up connections (SDP offers/answers and ICE candidates) and never receives video or audio. Chat messages are end-to-end encrypted in your browser.
       </p>
     ),
   },

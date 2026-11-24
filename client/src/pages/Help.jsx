@@ -24,7 +24,7 @@ const faqSections = [
       },
       {
         q: 'How many people can join a room?',
-        a: 'Up to 10 participants per room. This ensures smooth direct WebRTC peer-to-peer streaming with high framerates and crystal-clear audio on typical home connections.',
+        a: 'Up to 10 participants per room. This keeps WebRTC streaming smooth, with high framerates and crystal-clear audio, on typical home connections.',
       },
       {
         q: 'What browsers are supported?',
@@ -64,7 +64,7 @@ const faqSections = [
       },
       {
         q: 'Can the server owner see my screen or messages?',
-        a: 'No. Screen video flows directly peer-to-peer over WebRTC (DTLS-SRTP), and chat messages are encrypted client-side. The server acts as a blind signaling relay and never stores media.',
+        a: 'No. Screen video is encrypted in transit over WebRTC (DTLS-SRTP) and is never recorded or stored. Chat messages are end-to-end encrypted in your browser, and the signaling server never receives media.',
       },
       {
         q: 'What happens when a room PIN is set?',

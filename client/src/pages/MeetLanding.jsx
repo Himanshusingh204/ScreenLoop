@@ -100,7 +100,7 @@ export default function MeetLanding() {
                 lineHeight: 1.6,
               }}
             >
-              Connect face-to-face with friends and teammates. Crystal-clear voice, high-definition camera, instant screen sharing, and peer-to-peer security.
+              Connect face-to-face with friends and teammates. Crystal-clear voice, high-definition camera, instant screen sharing, and encrypted connections.
             </p>
 
             {/* Main Action Launcher Card */}
@@ -242,7 +242,7 @@ export default function MeetLanding() {
               </div>
               <h4 style={{ fontWeight: 600, marginBottom: '6px' }}>Direct & Private</h4>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Audio and video stream directly between browsers — zero accounts and zero tracking.
+                Audio and video stream directly between browsers over encrypted WebRTC — zero accounts and zero tracking.
               </p>
             </motion.div>
           </motion.div>

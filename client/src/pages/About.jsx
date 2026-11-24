@@ -10,7 +10,7 @@ import {
 } from '../components/icons';
 
 const TECH_SPECS = [
-  { name: 'WebRTC P2P', category: 'Streaming', detail: 'Direct browser-to-browser video and audio — no server relay' },
+  { name: 'WebRTC + LiveKit', category: 'Streaming', detail: 'LiveKit SFU for watch rooms; direct browser-to-browser fallback and for Meet' },
   { name: 'Web Audio API', category: 'Audio', detail: 'Echo cancellation disabled, optional volume booster' },
   { name: 'Web Crypto API', category: 'Encryption', detail: 'AES-GCM 256-bit chat encryption in the browser' },
   { name: 'React 18 + Vite', category: 'Frontend', detail: 'Client-side rendering with Framer Motion animations' },
@@ -38,7 +38,7 @@ export default function About() {
               <span className="about-hero-accent">not boardroom meetings.</span>
             </h1>
             <p className="about-hero-subtitle">
-              Screenloop is an open-source, peer-to-peer watch party app built around audio quality, privacy, and the fact that nobody wants to create another account.
+              Screenloop is an open-source watch party and video meeting app built around audio quality, privacy, and the fact that nobody wants to create another account.
             </p>
           </motion.section>
 
@@ -59,7 +59,7 @@ export default function About() {
                       <strong>Audio that doesn't destroy movies:</strong> Disabling echo cancellation so film scores and surround mixes come through the way they were mixed.
                     </li>
                     <li>
-                      <strong>True peer-to-peer:</strong> Direct WebRTC transport — no server stores or inspects your screen.
+                      <strong>No media storage:</strong> Streams are delivered live over encrypted WebRTC. Nothing is recorded or stored.
                     </li>
                     <li>
                       <strong>Encrypted chat:</strong> AES-GCM encryption with room keys stored in the URL hash fragment (<code>#key</code>), so even the server can't read messages.
@@ -90,9 +90,9 @@ export default function About() {
 
                 <div className="arch-step-card glass-card">
                   <div className="arch-step-number">03</div>
-                  <h3 className="arch-step-title">Direct P2P Streaming</h3>
+                  <h3 className="arch-step-title">Live encrypted streaming</h3>
                   <p className="arch-step-desc">
-                    Once connected, video and audio flow directly between viewers over encrypted WebRTC channels. No server relay, no buffering through a central point.
+                    Once connected, the host's video and audio are delivered over encrypted WebRTC: through a LiveKit media server when available, or directly between browsers as a fallback. Nothing is stored.
                   </p>
                 </div>
               </div>

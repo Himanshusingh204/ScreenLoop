@@ -58,7 +58,9 @@ export default function Room() {
   const [myName, setMyName]         = useState('');
   const [modalError, setModalError] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window === 'undefined' || window.matchMedia('(min-width: 769px)').matches
+  );
   const [isSharing, setIsSharing]   = useState(false);
   const [remoteStream, setRemoteStream] = useState(null);
   const [isActualHost, setIsActualHost] = useState(intendedHost);

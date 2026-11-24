@@ -31,9 +31,9 @@ const FEATURES = [
     category: 'media',
     icon: <MonitorPlay size={30} weight="duotone" />,
     badge: 'Streaming',
-    title: 'Direct Peer-to-Peer Screen Sharing',
-    desc: 'Screen and audio frames travel directly between browsers via WebRTC — they don\'t pass through a central server. This means less buffering, lower latency, and no server bandwidth bill eating into performance.',
-    specs: ['Up to 1080p60 (1440p on strong connections)', 'Adaptive bitrate', 'No relay server needed'],
+    title: 'Low-Latency Screen Sharing',
+    desc: 'The host uploads one stream and a LiveKit media server fans it out to viewers, so large rooms stay smooth. If LiveKit is unavailable, Screenloop falls back to direct browser-to-browser WebRTC.',
+    specs: ['Up to 1080p60 (1440p on strong connections)', 'Adaptive bitrate', 'Automatic peer-to-peer fallback'],
   },
   {
     category: 'security',

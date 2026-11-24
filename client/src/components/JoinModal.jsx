@@ -43,7 +43,10 @@ export function JoinModal({ roomId, isCreating, onJoin, error, loading, showGoHo
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="join-modal-title">
+    <div className="modal-overlay join-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="join-modal-title">
+      <Link to="/" className="join-brand" aria-label="Screenloop home">
+        <FilmStrip size={18} weight="bold" /> Screenloop
+      </Link>
       <div className="modal-card animate-scale-up">
         <div id="join-modal-title" className="modal-title">
           {isCreating ? <span><FilmStrip size={20} /> Create Watch Room</span> : 'Join Watch Party'}
@@ -166,6 +169,9 @@ export function JoinModal({ roomId, isCreating, onJoin, error, loading, showGoHo
               <><ArrowRight size={16} /> Enter Watch Room</>
             )}
           </button>
+          {!name.trim() && !loading && (
+            <p className="join-hint" role="status">Enter a display name to continue.</p>
+          )}
         </form>
       </div>
     </div>

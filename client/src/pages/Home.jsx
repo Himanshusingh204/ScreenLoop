@@ -90,7 +90,7 @@ export default function Home() {
   const faqs = [
     {
       q: 'Do my friends need to create an account or install anything?',
-      a: 'No accounts. No installs. Just a link. Screenloop runs 100% in any modern browser (Chrome, Edge, Brave, Firefox, Safari) using native WebRTC peer-to-peer protocols.',
+      a: 'No accounts. No installs. Just a link. Screenloop runs 100% in any modern browser (Chrome, Edge, Brave, Firefox, Safari) using native WebRTC.',
     },
     {
       q: 'How is the chat encrypted?',
@@ -102,7 +102,7 @@ export default function Home() {
     },
     {
       q: 'Is there any time limit or participant limit?',
-      a: 'No time limits. For optimal performance on standard home internet connections, WebRTC mesh handles 2-10 simultaneous viewers in crisp HD.',
+      a: 'No time limits. For optimal performance on standard home internet connections, rooms support up to 10 viewers in crisp HD.',
     },
   ];
 
@@ -121,7 +121,7 @@ export default function Home() {
         <motion.div className="hero-content" variants={fadeInUp}>
           <div className="hero-pill">
             <span className="pill-dot" aria-hidden="true" />
-            <span>Peer-to-peer · No accounts · Encrypted chat</span>
+            <span>No accounts · Live HD streaming · Encrypted chat</span>
           </div>
 
           <h1 className="hero-title">
@@ -287,7 +287,7 @@ export default function Home() {
               </form>
               <div className="card-footer">
                 <span className="security-badge">
-                  Direct peer-to-peer connection
+                  Encrypted media connection
                 </span>
               </div>
             </motion.div>
@@ -468,7 +468,7 @@ export default function Home() {
           <div className="discovery-content">
             <h3 className="discovery-title">Curious about the technical details?</h3>
             <p className="discovery-desc">
-              Read about the encryption model, how peer-to-peer streaming works, and why there's no database.
+              Read about the encryption model, how streaming works, and why there's no database.
             </p>
           </div>
           <div className="discovery-actions">

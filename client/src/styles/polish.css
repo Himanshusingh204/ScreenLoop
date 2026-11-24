@@ -6,7 +6,7 @@
 ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --footer-bg: color-mix(in srgb, var(--accent) 9%, var(--bg-secondary));
+  --footer-bg: color-mix(in srgb, var(--accent) 17%, var(--bg-secondary));
   --footer-border: color-mix(in srgb, var(--accent) 16%, transparent);
   --shadow-tint: color-mix(in srgb, var(--accent) 22%, transparent);
 }
@@ -21,7 +21,7 @@ p, li { text-wrap: pretty; }
 .site-footer,
 [data-theme="light"] .site-footer {
   position: relative;
-  margin-top: var(--space-16, 4rem);
+  margin-top: var(--space-8, 2rem);
   padding-top: 0;
   background: transparent;
   border-top: 0;
@@ -37,9 +37,9 @@ p, li { text-wrap: pretty; }
 }
 
 .footer-wave { fill: var(--footer-bg); }
-.footer-wave-1 { fill-opacity: 0.28; animation: footer-wave-drift 9s cubic-bezier(.55,.5,.45,.5) -2s infinite; }
-.footer-wave-2 { fill-opacity: 0.42; animation: footer-wave-drift 12s cubic-bezier(.55,.5,.45,.5) -3s infinite reverse; }
-.footer-wave-3 { fill-opacity: 0.62; animation: footer-wave-drift 16s cubic-bezier(.55,.5,.45,.5) -4s infinite; }
+.footer-wave-1 { fill-opacity: 0.22; animation: footer-wave-drift 9s cubic-bezier(.55,.5,.45,.5) -2s infinite; }
+.footer-wave-2 { fill-opacity: 0.38; animation: footer-wave-drift 12s cubic-bezier(.55,.5,.45,.5) -3s infinite reverse; }
+.footer-wave-3 { fill-opacity: 0.6; animation: footer-wave-drift 16s cubic-bezier(.55,.5,.45,.5) -4s infinite; }
 .footer-wave-4 { fill-opacity: 1;    animation: footer-wave-drift 22s cubic-bezier(.55,.5,.45,.5) -5s infinite reverse; }
 
 @keyframes footer-wave-drift {
@@ -54,6 +54,7 @@ p, li { text-wrap: pretty; }
 }
 
 .site-footer-container { padding-bottom: var(--space-8); }
+.site-footer-bottom-container { max-width: 1200px; }
 
 .site-footer-bottom,
 [data-theme="light"] .site-footer-bottom {
@@ -101,4 +102,61 @@ p, li { text-wrap: pretty; }
   .feature-card:hover, .glass-card:hover, .contact-channel-card:hover, .help-quick-card:hover,
   .about-story-card:hover, .about-oss-card:hover, .arch-step-card:hover, .roadmap-kanban-card:hover,
   .quick-guide-card:hover, .footer-links-list a:hover { transform: none; }
+}
+
+/* ─── Join modal + Meet lobby ambience, brand link, hints ─────────────────── */
+.join-modal-overlay {
+  background:
+    radial-gradient(55% 45% at 18% 12%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 88% 90%, color-mix(in srgb, var(--accent-blue-text, var(--accent)) 14%, transparent), transparent 70%),
+    var(--bg-primary);
+}
+.meet-lobby {
+  position: relative;
+  background:
+    radial-gradient(55% 45% at 15% 10%, color-mix(in srgb, var(--meet-accent, var(--accent)) 16%, transparent), transparent 70%),
+    radial-gradient(45% 45% at 90% 95%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    var(--meet-bg);
+}
+.join-brand {
+  position: absolute;
+  top: 20px;
+  left: clamp(16px, 4vw, 40px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary, #f3f2f8);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: background 150ms ease;
+}
+.join-brand:hover { background: var(--accent-dim); }
+.join-brand-sub { color: var(--accent); font-weight: 600; }
+.join-hint { margin: -4px 0 0; font-size: var(--font-size-xs, 0.75rem); color: var(--text-muted); text-align: center; }
+
+@media (max-width: 720px) {
+  .meet-lobby { padding: 72px 16px 24px; }
+}
+
+/* ─── Room control bar: wrap instead of clipping on narrower stages ───────── */
+.controlbar { height: auto; min-height: var(--controlbar-height); flex-wrap: wrap; row-gap: 8px; padding-block: 8px; }
+.controlbar-left, .controlbar-right { flex-wrap: wrap; }
+.controlbar-center { flex: 1 1 auto; flex-wrap: wrap; row-gap: 8px; }
+
+/* ─── Room top bar on phones: no overlap, no clipping ─────────────────────── */
+@media (max-width: 767px) {
+  .topbar { min-width: 0; overflow: hidden; }
+  .topbar-actions { gap: 6px; min-width: 0; flex-shrink: 1; }
+  .theme-selector-label { display: none; }
+  .topbar-actions .btn { padding: 6px 10px; }
+}
+@media (max-width: 480px) {
+  .topbar-brand-btn { max-width: 36px; overflow: hidden; flex-shrink: 0; }
+  .topbar-quality-badge { display: none; }
+}
+@media (max-width: 360px) {
+  .theme-toggle-wrapper { display: none; }
 }

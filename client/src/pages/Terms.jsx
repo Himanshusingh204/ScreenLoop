@@ -51,7 +51,7 @@ export default function Terms() {
                 <div className="terms-section-number">02</div>
                 <h2>2. Nature of the Service</h2>
                 <p>
-                  Screenloop is an open-source, peer-to-peer (P2P) communication tool. Screenloop does not host, store, broadcast, or index any video files, movie files, audio recordings, or copyrighted media. All video and audio data is transmitted directly between users' web browsers via WebRTC.
+                  Screenloop is an open-source real-time communication tool. Screenloop does not host, store, broadcast, or index any video files, movie files, audio recordings, or copyrighted media. Video and audio are transmitted live over WebRTC, either directly between users' browsers or relayed through a media server, and are never recorded or stored by Screenloop.
                 </p>
               </section>
 
@@ -71,7 +71,7 @@ export default function Terms() {
                 <div className="terms-section-number">04</div>
                 <h2>4. Intellectual Property & Copyright</h2>
                 <p>
-                  As the host of a watch party, you are solely and entirely responsible for any material you choose to share from your screen or audio output. Screenloop does not monitor, record, or filter peer-to-peer data streams.
+                  As the host of a watch party, you are solely and entirely responsible for any material you choose to share from your screen or audio output. Screenloop does not monitor, record, or filter media streams.
                 </p>
               </section>
 

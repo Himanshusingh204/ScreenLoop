@@ -22,8 +22,8 @@ const SECURITY_PILLARS = [
   },
   {
     icon: <Broadcast size={28} weight="duotone" />,
-    title: 'DTLS-SRTP Mesh Media Streams',
-    desc: 'All WebRTC screen and audio streams are encrypted via DTLS 1.2 (Datagram Transport Layer Security) and SRTP directly between viewer peers.',
+    title: 'DTLS-SRTP Encrypted Media',
+    desc: 'All WebRTC screen and audio streams are encrypted in transit via DTLS and SRTP. Media is not end-to-end encrypted when relayed through the LiveKit server; chat is end-to-end encrypted.',
   },
   {
     icon: <EyeSlash size={28} weight="duotone" />,
@@ -91,7 +91,7 @@ export default function Security() {
               How Security Works
             </h1>
             <p className="page-hero-subtitle">
-              The short version: your chat is encrypted in the browser, the key lives in the URL, and the server never sees plaintext messages or video. Here's how that actually works.
+              The short version: your chat is encrypted in the browser, the key lives in the URL, and the server never sees plaintext messages, and nothing is recorded. Here's how that actually works.
             </p>
           </motion.section>
 
@@ -145,7 +145,7 @@ export default function Security() {
                 </li>
                 <li>
                   <CheckCircle size={20} className="check-icon" weight="fill" />
-                  <span><strong>No video storage:</strong> Screen and audio streams flow peer-to-peer. The server never sees them.</span>
+                  <span><strong>No video storage:</strong> Streams are delivered live and never recorded. The signaling server never receives them.</span>
                 </li>
                 <li>
                   <CheckCircle size={20} className="check-icon" weight="fill" />

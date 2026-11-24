@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Microphone, MicrophoneSlash, VideoCamera } from '../icons';
 
 export default function MeetLobby({
@@ -48,6 +49,9 @@ export default function MeetLobby({
 
   return (
     <div className="meet-lobby">
+      <Link to="/meet" className="join-brand" aria-label="Back to Screenloop Meet">
+        Screenloop <span className="join-brand-sub">Meet</span>
+      </Link>
       <div className="meet-lobby-card">
         {/* Video Preview Box */}
         <div className="meet-lobby-video">

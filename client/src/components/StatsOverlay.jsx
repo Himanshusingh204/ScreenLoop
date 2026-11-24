@@ -58,7 +58,7 @@ export function StatsOverlay({ stats, visible, onClose, isHost }) {
         </div>
         <div className="stats-item">
           <span className="stats-label">Latency (RTT)</span>
-          <span className="stats-value">{stats.rttMs ? `${stats.rttMs} ms` : 'P2P Direct'}</span>
+          <span className="stats-value">{stats.rttMs ? `${stats.rttMs} ms` : 'Direct'}</span>
         </div>
         <div className="stats-item">
           <span className="stats-label">Packet Loss</span>
