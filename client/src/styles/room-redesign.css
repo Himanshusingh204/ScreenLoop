@@ -1,0 +1,49 @@
+/* Watch and meeting rooms: keep the stage prominent and controls legible. */
+.room-layout { background: var(--bg-primary); }
+.topbar { padding-inline: 24px; border-color: var(--border-strong); }
+.topbar-room-id { padding: 6px 10px; border: 1px solid var(--border-strong); }
+.room-video-area { padding: 16px 16px 0; gap: 12px; }
+.video-wrapper { border: 1px solid var(--border-strong); border-radius: 16px; background: var(--bg-secondary); }
+.video-placeholder-icon { color: var(--accent); opacity: .75; }
+.video-placeholder-text { color: var(--text-primary); font-size: 1.15rem; font-weight: 650; }
+.video-placeholder-sub { max-width: 340px; line-height: 1.6; }
+.controlbar { border: 1px solid var(--border-strong); border-radius: 14px 14px 0 0; }
+.ctrl-btn { border-radius: 10px; }
+.sidebar { background: var(--bg-secondary); border-color: var(--border-strong); }
+.sidebar-header { padding: 20px; }
+.sidebar-title { letter-spacing: -.02em; }
+.sidebar-tab { border-radius: 8px; }
+.chat-input-area { border-color: var(--border-strong); }
+.chat-input { border-radius: 10px; }
+.modal-card { border: 1px solid var(--border-strong); border-radius: 18px; }
+.is-fullscreen .room-video-area { padding: 0; gap: 0; }
+.is-fullscreen .video-wrapper { border: 0; border-radius: 0; }
+.is-fullscreen .controlbar { border-radius: 0; }
+.room-layout :focus-visible, .meet-lobby :focus-visible, .meet-room :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.meet-lobby, .meet-room { --meet-bg: #111116; --meet-surface: #1c1c24; --meet-pill-bg: #1c1c24; --meet-pill-button: #30303b; --meet-pill-button-hover: #424250; --meet-accent: #a998ff; }
+.meet-lobby { min-height: 100dvh; padding: 32px; color: #f3f2f8; }
+.meet-lobby-card { max-width: 1060px; gap: clamp(36px, 6vw, 80px); }
+.meet-lobby-video { flex: 1.25; background: #1c1c24; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; }
+.meet-lobby-form { max-width: 390px; gap: 12px; }
+.meet-lobby-form h2 { font-size: clamp(2rem, 3vw, 2.8rem) !important; line-height: 1.1; letter-spacing: -.05em; }
+.meet-lobby-form input[type="text"], .meet-lobby-form select { min-height: 48px; background: #24242e; color: #f3f2f8; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; }
+.meet-lobby-form p { color: #b9b8c7 !important; }
+.meet-room { height: 100dvh; }
+.meet-grid-container { padding: 20px; }
+.meet-tile { border: 1px solid rgba(255,255,255,.1); border-radius: 16px; }
+.meet-controlbar { max-width: 760px; width: calc(100% - 40px); padding: 10px 16px; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; }
+.meet-ctrl-btn { border-radius: 12px; flex-shrink: 0; }
+.meet-ctrl-btn.end-call { border-radius: 12px; }
+.meet-drawer { border-left: 1px solid rgba(255,255,255,.1); }
+@media (max-width: 767px) {
+  .topbar { padding-inline: 12px; }
+  .room-video-area { padding: 8px 8px 0; gap: 8px; }
+  .video-wrapper { border-radius: 12px; }
+  .controlbar { border-radius: 12px 12px 0 0; }
+  .meet-lobby { padding: 24px 16px; }
+  .meet-lobby-card { flex-direction: column; gap: 24px; align-items: stretch; }
+  .meet-lobby-video { flex: none; width: 100%; }
+  .meet-lobby-form { max-width: none; }
+  .meet-controlbar { width: calc(100% - 16px); margin-bottom: 8px; padding: 8px; }
+  .meet-ctrl-btn { width: 40px; height: 40px; }
+}

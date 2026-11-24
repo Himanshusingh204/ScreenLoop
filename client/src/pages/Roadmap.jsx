@@ -34,7 +34,7 @@ export default function Roadmap() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="roadmap-page-content">
+      <main id="main-content" tabIndex={-1} className="roadmap-page-content">
         <motion.div
           className="roadmap-container"
           variants={staggerContainer}

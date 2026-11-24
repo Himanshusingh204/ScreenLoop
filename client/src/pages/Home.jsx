@@ -116,29 +116,39 @@ export default function Home() {
 
       <SiteHeader />
 
-      <main className="home-hero">
+      <main id="main-content" tabIndex={-1} className="home-hero">
+        <div className="hero-intro">
         <motion.div className="hero-content" variants={fadeInUp}>
           <div className="hero-pill">
             <span className="pill-dot" aria-hidden="true" />
-            <span>Peer-to-Peer • No Accounts • E2E Encrypted Chat</span>
+            <span>Peer-to-peer · No accounts · Encrypted chat</span>
           </div>
 
           <h1 className="hero-title">
-            Watch Movies Together, <br />
-            <span className="hero-title-accent">Right From Your Browser</span>
+            Watch movies together, <br />
+            <span className="hero-title-accent">right from your browser.</span>
           </h1>
           <p className="hero-description">
-            Share your screen with friends in HD, with full movie audio. No installs, no signups, no video hitting a server — just send a link and press play.
+            Share your screen and movie audio with friends. No installs or signups, just send a link and press play.
           </p>
         </motion.div>
 
         <motion.div className="hero-action-card" variants={fadeInUp} role="region" aria-label="Room Launcher">
-          <div className="card-tabs" role="tablist" aria-label="Room Action Selection">
+          <div className="card-tabs" role="tablist" aria-label="Room Action Selection" onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+              e.preventDefault();
+              const next = tab === 'create' ? 'join' : 'create';
+              setTab(next);
+              setError('');
+              document.getElementById(`tab-${next}`)?.focus();
+            }
+          }}>
             <button
               id="tab-create"
               type="button"
               role="tab"
               aria-selected={tab === 'create'}
+              tabIndex={tab === 'create' ? 0 : -1}
               aria-controls="panel-create"
               className={`card-tab ${tab === 'create' ? 'active' : ''}`}
               onClick={() => { setTab('create'); setError(''); }}
@@ -150,6 +160,7 @@ export default function Home() {
               type="button"
               role="tab"
               aria-selected={tab === 'join'}
+              tabIndex={tab === 'join' ? 0 : -1}
               aria-controls="panel-join"
               className={`card-tab ${tab === 'join' ? 'active' : ''}`}
               onClick={() => { setTab('join'); setError(''); }}
@@ -221,12 +232,12 @@ export default function Home() {
                   type="submit"
                   className="btn btn-primary btn-lg w-full card-action-btn"
                 >
-                  Launch Watch Room
+                  Create a watch room
                 </button>
               </form>
               <div className="card-footer">
                 <span className="security-badge">
-                  <LockSimple size={14} /> AES-256 GCM Key auto-generated in URL hash fragment
+                  <LockSimple size={14} /> Your chat encryption key stays in your invite link
                 </span>
               </div>
             </motion.div>
@@ -276,12 +287,14 @@ export default function Home() {
               </form>
               <div className="card-footer">
                 <span className="security-badge">
-                  Zero-lag direct WebRTC peer connection
+                  Direct peer-to-peer connection
                 </span>
               </div>
             </motion.div>
           )}
         </motion.div>
+
+        </div>
 
         {recentRooms.length > 0 && (
           <motion.div className="recent-rooms" variants={fadeInUp} aria-label="Recent Rooms">
@@ -314,19 +327,18 @@ export default function Home() {
             </div>
           </motion.div>
         )}
-      </main>
 
       {/* Features Showcase Grid */}
       <section className="home-features" aria-label="Key Features">
         <motion.div className="features-header" variants={fadeInUp}>
-          <h2 className="features-title">What Screenloop Actually Does</h2>
-          <p className="features-sub">A short list of things that matter when watching movies with friends remotely.</p>
+          <h2 className="features-title">Everything you need for a night in</h2>
+          <p className="features-sub">Made for the little moments that make watching together better.</p>
         </motion.div>
 
         <motion.div className="features-grid" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><FilmStrip size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Full Movie Audio, Not Voice-Chat Audio</h3>
+            <h3 className="feature-heading">Sound worth sharing</h3>
             <p className="feature-text">
               Most screen-sharing tools kill your audio quality with echo cancellation. We skip that — film scores and surround sound come through the way they were mixed.
             </p>
@@ -334,7 +346,7 @@ export default function Home() {
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><LockSimple size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Encrypted Chat, Server Can't Read It</h3>
+            <h3 className="feature-heading">A little more privacy</h3>
             <p className="feature-text">
               Chat messages are encrypted in your browser. The decryption key lives in the URL hash — browsers never send that to the server, so it's invisible to us.
             </p>
@@ -342,7 +354,7 @@ export default function Home() {
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><PencilSimple size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Draw on the Stream Together</h3>
+            <h3 className="feature-heading">Draw on the moment</h3>
             <p className="feature-text">
               Point at things, draw arrows, highlight scenes — all synchronized live on top of the video. Useful for movie nights and screen-sharing work sessions alike.
             </p>
@@ -350,7 +362,7 @@ export default function Home() {
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><Lightning size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Volume Booster for Quiet Scenes</h3>
+            <h3 className="feature-heading">Hear every line</h3>
             <p className="feature-text">
               Built-in audio compressor evens out quiet dialogue and loud action scenes so you don't have to keep reaching for the volume slider.
             </p>
@@ -358,7 +370,7 @@ export default function Home() {
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><ChartBar size={32} weight="bold" /></div>
-            <h3 className="feature-heading">Connection Quality Dashboard</h3>
+            <h3 className="feature-heading">Keep an eye on quality</h3>
             <p className="feature-text">
               A small overlay showing framerate, bitrate, and packet loss — handy when something feels off and you want to know why.
             </p>
@@ -366,7 +378,7 @@ export default function Home() {
 
           <motion.div className="feature-card" variants={fadeInUp}>
             <div className="feature-icon" aria-hidden="true"><Phone size={32} weight="bold" /></div>
-            <h3 className="feature-heading">QR Code for Quick Mobile Join</h3>
+            <h3 className="feature-heading">An easier way in</h3>
             <p className="feature-text">
               Friends on their phones can scan a QR code from your screen to join — no typing long room IDs, generated locally in your browser.
             </p>
@@ -377,7 +389,7 @@ export default function Home() {
       {/* FAQ Section */}
       <section className="home-faq-section" aria-label="Frequently Asked Questions">
         <motion.div className="features-header" variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-          <h2 className="features-title">Common Questions</h2>
+          <h2 className="features-title">Good to know</h2>
           <p className="features-sub">Quick answers before you create a room.</p>
         </motion.div>
 
@@ -441,7 +453,7 @@ export default function Home() {
       {/* Keyboard Shortcuts Cheatsheet */}
       <section className="shortcuts-section" aria-label="Keyboard Shortcuts">
         <motion.h4 className="shortcuts-title" variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-          Quick Keyboard Shortcuts
+          Handy shortcuts for your room
         </motion.h4>
         <motion.div className="shortcuts-grid" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
           <motion.div className="shortcut-item" variants={fadeInUp}><kbd>M</kbd> <span>Toggle Mute / Unmute</span></motion.div>
@@ -477,6 +489,7 @@ export default function Home() {
           </div>
         </motion.div>
       </section>
+      </main>
 
       <SiteFooter />
     </motion.div>

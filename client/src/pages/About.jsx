@@ -23,7 +23,7 @@ export default function About() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="about-page-content">
+      <main id="main-content" tabIndex={-1} className="about-page-content">
         <motion.div
           className="about-container"
           variants={staggerContainer}

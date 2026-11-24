@@ -120,7 +120,7 @@ export default function Features() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="features-page-content">
+      <main id="main-content" tabIndex={-1} className="features-page-content">
         <motion.div
           className="features-container"
           variants={staggerContainer}
@@ -145,6 +145,7 @@ export default function Features() {
                 key={cat.id}
                 type="button"
                 className={`filter-btn ${activeCategory === cat.id ? 'active' : ''}`}
+                aria-pressed={activeCategory === cat.id}
                 onClick={() => setActiveCategory(cat.id)}
               >
                 {cat.label}
@@ -153,7 +154,7 @@ export default function Features() {
           </motion.div>
 
           {/* Features Bento Grid */}
-          <motion.div className="features-bento-grid" variants={staggerContainer}>
+          <motion.div className="features-bento-grid" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
             {filteredFeatures.map((feature, idx) => (
               <motion.div
                 key={idx}

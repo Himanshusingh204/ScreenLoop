@@ -28,6 +28,11 @@ export function useSignalingSocket(
   const socketRef = useRef(null);
   const failedCbRef = useRef(onReconnectFailed);
   failedCbRef.current = onReconnectFailed;
+  // Keep latest callbacks in refs so the socket effect doesn't re-run per render
+  const onReconnectFailedMessageRef = useRef(onReconnectFailedMessage);
+  useEffect(() => {
+    onReconnectFailedMessageRef.current = onReconnectFailedMessage;
+  }, [onReconnectFailedMessage]);
   const transportsKey = Array.isArray(transports) ? transports.join(',') : String(transports);
 
   useEffect(() => {
@@ -58,9 +63,8 @@ export function useSignalingSocket(
     };
     const handleFailed = () => {
       setReconnecting(false);
-      if (failedCbRef.current) failedCbRef.current(onReconnectFailedMessage);
+      if (failedCbRef.current) failedCbRef.current(onReconnectFailedMessageRef.current);
     };
-
     s.on('connect', handleConnect);
     s.on('disconnect', handleDisconnect);
     // socket.io-client emits 'reconnect_attempt' / 'reconnect' / 'reconnect_failed'
@@ -78,7 +82,7 @@ export function useSignalingSocket(
       socketRef.current = null;
       setSocket(null);
     };
-  }, [url, reconnection, reconnectionDelay, reconnectionAttempts, transportsKey, onReconnectFailedMessage]);
+  }, [url, reconnection, reconnectionDelay, reconnectionAttempts, transportsKey]);
 
   const disconnect = useCallback(() => {
     const s = socketRef.current;

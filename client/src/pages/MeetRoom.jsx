@@ -12,6 +12,7 @@ import MeetPeopleDrawer from '../components/meet/MeetPeopleDrawer';
 import MeetReactions from '../components/meet/MeetReactions';
 import MeetDeviceModal from '../components/meet/MeetDeviceModal';
 import '../styles/meet.css';
+import '../styles/room-redesign.css';
 
 // Single canonical signaling URL (must match Room.jsx). VITE_SIGNALING_URL kept
 // as deprecated fallback so existing deploys don't break during migration.

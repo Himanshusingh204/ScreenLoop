@@ -11,6 +11,7 @@ import {
 
 const faqSections = [
   {
+    id: 'getting-started',
     title: 'Getting Started',
     items: [
       {
@@ -54,6 +55,7 @@ const faqSections = [
     ],
   },
   {
+    id: 'security',
     title: 'Security & Cryptography',
     items: [
       {
@@ -100,7 +102,7 @@ export default function Help() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="help-page-content">
+      <main id="main-content" tabIndex={-1} className="help-page-content">
         <motion.div
           className="help-container"
           variants={staggerContainer}
@@ -191,7 +193,7 @@ export default function Help() {
               {filtered.map((section, si) => (
                 <motion.section
                   key={si}
-                  id={section.id || undefined}
+                  id={section.id || section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}
                   className="help-faq-section"
                   variants={fadeInUp}
                 >

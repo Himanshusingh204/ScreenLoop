@@ -12,7 +12,7 @@ export {
   CornersIn, CornersOut, FileText, Key, Sparkle,
   ArrowsClockwise, Scales, Eye, EyeSlash, Broadcast, Sliders,
   Shield, CheckFat, Clock, Smiley, Microphone, MicrophoneSlash,
-  VideoCamera, Hand, Record
+  VideoCamera, Hand, Record, Play, Pause
 } from '@phosphor-icons/react';
 
 export { ChartBar as BarChart } from '@phosphor-icons/react';

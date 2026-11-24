@@ -418,6 +418,22 @@
 
 /* ─── Control Bar ──────────────────────────────────────────────────── */
 /* Normal (non-fullscreen): static bar at the bottom of the video area */
+/* ─── Playback sync controls (ControlBar) ────────────────────────────────── */
+.host-sync-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+.sync-seek-slider {
+  width: 120px;
+  height: 4px;
+  accent-color: var(--accent, #7c5cfc);
+}
+.sync-seek-slider:disabled {
+  opacity: 0.4;
+}
+
 .controlbar {
   height: var(--controlbar-height);
   background: var(--bg-secondary);

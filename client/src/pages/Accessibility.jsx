@@ -11,7 +11,7 @@ export default function Accessibility() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="legal-page-content">
+      <main id="main-content" tabIndex={-1} className="legal-page-content">
         <motion.div
           className="legal-container"
           variants={staggerContainer}
@@ -61,7 +61,7 @@ export default function Accessibility() {
                 <li>Full keyboard navigation with documented shortcuts (e.g. <b>F</b> for fullscreen, <b>Esc</b> to close)</li>
                 <li>Semantic HTML and ARIA labels on buttons, dialogs, and the navigation</li>
                 <li>Screen-reader announcements for toasts and live chat events</li>
-                <li>Five high-contrast color themes, all configurable without reloading</li>
+                <li>Light and dark themes, all configurable without reloading</li>
                 <li><code>prefers-reduced-motion</code> support so animations are minimized for motion sensitivity</li>
                 <li>Focus states that stay clearly visible on every interactive element</li>
               </ul>

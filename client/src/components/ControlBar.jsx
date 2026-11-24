@@ -16,6 +16,8 @@ import {
   Microphone,
   MicrophoneSlash,
   Record,
+  Play,
+  Pause,
 } from '../components/icons';
 import { QUALITY_PRESETS } from '../hooks/useWebRTC';
 import { audioBooster, fireReactionPop } from '../utils';
@@ -48,6 +50,7 @@ import { audioBooster, fireReactionPop } from '../utils';
 export function ControlBar({
   isActualHost,
   isSharing,
+  hostOnlyControls,
   videoRef,
   isFullscreen,
   controlsVisible,
@@ -73,6 +76,13 @@ export function ControlBar({
   const [boostLevel, setBoostLevel] = useState(1); // 1 = 100%, 1.5 = 150%, 2.0 = 200%
   const [isPiP, setIsPiP]           = useState(false);
   const [hostOnlyOn, setHostOnlyOn] = useState(false);
+  const [isPaused, setIsPaused]     = useState(false);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const [hasVideo, setHasVideo] = useState(false);
+
+  // Host-only controls flag: controlled by parent (Room) when provided.
+  const hostOnlyEnabled = hostOnlyControls ?? hostOnlyOn;
 
   // Use controlled quality from parent (Room.jsx), fallback to '1080p'
   const quality = currentQuality || '1080p';
@@ -99,6 +109,30 @@ export function ControlBar({
     };
   }, []);
 
+  // ─── Track playback state for sync controls ───────────────────────────────
+  useEffect(() => {
+    const video = videoRef?.current;
+    if (!video) {
+      setHasVideo(false);
+      setPlaybackTime(0);
+      setPlaybackDuration(0);
+      return;
+    }
+    const syncState = () => {
+      setHasVideo(!!(video.srcObject || video.currentSrc || video.src));
+      setPlaybackTime(Number.isFinite(video.currentTime) ? video.currentTime : 0);
+      const dur = Number.isFinite(video.duration) ? video.duration : 0;
+      setPlaybackDuration(dur);
+      setIsPaused(video.paused);
+    };
+    syncState();
+    const events = ['timeupdate', 'loadedmetadata', 'durationchange', 'play', 'pause', 'emptied'];
+    events.forEach((ev) => video.addEventListener(ev, syncState));
+    return () => {
+      events.forEach((ev) => video.removeEventListener(ev, syncState));
+    };
+  }, [videoRef]);
+
   const toggleMute = useCallback(() => setMuted((m) => !m), []);
 
   const cycleBoost = useCallback(() => {
@@ -123,6 +157,37 @@ export function ControlBar({
       console.warn('[pip]', err);
     }
   }, [videoRef]);
+
+  // ─── Playback sync: play / pause / seek across the room ───────────────────
+  // Hosts own the stream, viewers request control via sync events.
+  const togglePlayback = useCallback(() => {
+    const video = videoRef?.current;
+    if (!video) return;
+    const shouldPause = video.paused; // currently playing -> pause, currently paused -> play
+
+    if (isActualHost) {
+      if (shouldPause) {
+        video.pause();
+        setIsPaused(true);
+        if (onSync) onSync('sync:pause', {});
+      } else {
+        video.play().catch(() => {});
+        setIsPaused(false);
+        if (onSync) onSync('sync:play', {});
+      }
+    } else if (onSync) {
+      // Viewers never own the stream — route the request through sync.
+      if (shouldPause) onSync('sync:pause', {});
+      else onSync('sync:play', {});
+    }
+  }, [isActualHost, videoRef, onSync]);
+
+  const seekTo = useCallback((time) => {
+    const video = videoRef?.current;
+    if (!video || !Number.isFinite(time)) return;
+    video.currentTime = time;
+    if (onSync) onSync('sync:seek', { time });
+  }, [videoRef, onSync]);
 
   // ─── Keyboard shortcut: M = mute ─────────────────────────────────────────
   useEffect(() => {
@@ -272,6 +337,32 @@ export function ControlBar({
           </button>
         )}
 
+        {/* Playback sync controls (pause/resume/seek shared across the room) */}
+        <div className="host-sync-controls" role="group" aria-label="Playback sync controls">
+          <button
+            type="button"
+            className="ctrl-btn"
+            onClick={togglePlayback}
+            disabled={hostOnlyEnabled && !isActualHost}
+            title={hostOnlyEnabled && !isActualHost ? 'Only the host can control playback' : (isPaused ? 'Resume playback for everyone' : 'Pause playback for everyone')}
+            aria-label={isPaused ? 'Resume playback for everyone' : 'Pause playback for everyone'}
+          >
+            {isPaused ? <Play size={16} /> : <Pause size={16} />}
+          </button>
+          <input
+            type="range"
+            className="sync-seek-slider"
+            min={0}
+            max={Math.max(0, Math.floor(playbackDuration || 0))}
+            step={1}
+            value={Math.min(playbackTime, Math.max(0, Math.floor(playbackDuration || 0)))}
+            onChange={(e) => seekTo(parseFloat(e.target.value))}
+            disabled={!hasVideo || !(playbackDuration > 0) || (hostOnlyEnabled && !isActualHost)}
+            title={playbackDuration > 0 ? 'Seek playback' : 'Seeking unavailable for live streams'}
+            aria-label="Seek playback"
+          />
+        </div>
+
         {/* Host-only controls toggle */}
         {isActualHost && (
           <div className="host-only-toggle" title="Restrict controls to host only">
@@ -280,7 +371,7 @@ export function ControlBar({
               <input
                 id="host-only-toggle"
                 type="checkbox"
-                checked={hostOnlyOn}
+                checked={hostOnlyEnabled}
                 onChange={(e) => {
                   setHostOnlyOn(e.target.checked);
                   if (onSync) onSync('room:host-only-toggle', { enabled: e.target.checked });

@@ -95,7 +95,7 @@ export default function Privacy() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="legal-page-content">
+      <main id="main-content" tabIndex={-1} className="legal-page-content">
         <motion.div
           className="legal-container"
           variants={staggerContainer}
@@ -120,17 +120,16 @@ export default function Privacy() {
               <motion.div
                 key={i}
                 className={`privacy-expandable-card glass-card ${openIndex === i ? 'open' : ''}`}
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 variants={fadeInUp}
               >
-                <div className="privacy-expandable-header">
+                <button type="button" className="privacy-expandable-header" onClick={() => setOpenIndex(openIndex === i ? null : i)} aria-expanded={openIndex === i} aria-controls={`privacy-section-${i}`}>
                   <div className="privacy-expandable-left">
                     <div className="privacy-expandable-icon">{section.icon}</div>
                     <span className="privacy-expandable-title">{section.title}</span>
                   </div>
-                  <span className="privacy-expandable-chevron">▾</span>
-                </div>
-                <div className="privacy-expandable-body">
+                  <span className="privacy-expandable-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div id={`privacy-section-${i}`} className="privacy-expandable-body" hidden={openIndex !== i}>
                   <div className="privacy-expandable-content">{section.content}</div>
                 </div>
               </motion.div>

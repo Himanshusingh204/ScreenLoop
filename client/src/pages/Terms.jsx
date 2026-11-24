@@ -11,7 +11,7 @@ export default function Terms() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="legal-page-content">
+      <main id="main-content" tabIndex={-1} className="legal-page-content">
         <motion.div
           className="legal-container"
           variants={staggerContainer}

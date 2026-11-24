@@ -43,6 +43,16 @@ export const VideoPlayer = memo(function VideoPlayer({ stream, isHost, isSharing
     }
   };
 
+  // Keyboard shortcut: P = Picture in Picture
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.code === 'KeyP') togglePip();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [togglePip]);
+
   useEffect(() => {
     if (ref.current && stream) {
       ref.current.srcObject = stream;
@@ -89,7 +99,7 @@ export const VideoPlayer = memo(function VideoPlayer({ stream, isHost, isSharing
       {autoplayBlocked && (
         <div className="autoplay-banner animate-slide-down" onClick={handleUnblockAutoplay}>
           <SpeakerSimpleHigh size={16} /> <span>Sound is muted by browser policy — Click anywhere to enable full cinema audio</span>
-          <button className="btn btn-primary btn-sm">Enable Audio</button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={handleUnblockAutoplay}>Enable Audio</button>
         </div>
       )}
 

@@ -20,7 +20,7 @@ export default function NotFound() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="not-found-page-content">
+      <main id="main-content" tabIndex={-1} className="not-found-page-content">
         <div className="not-found-card glass-card">
           <div className="not-found-illustration">
             <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">

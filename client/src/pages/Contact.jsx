@@ -46,7 +46,7 @@ export default function Contact() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="contact-page-content">
+      <main id="main-content" tabIndex={-1} className="contact-page-content">
         <motion.div
           className="contact-container"
           variants={staggerContainer}

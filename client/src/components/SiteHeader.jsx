@@ -37,6 +37,7 @@ export function SiteHeader() {
 
   return (
     <header className="site-header" role="banner">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <div className="site-header-container">
         {/* Brand */}
         <Link to="/" className="site-header-brand" aria-label="Screenloop Home">
@@ -94,7 +95,8 @@ export function SiteHeader() {
             type="button"
             className="btn btn-ghost btn-sm mobile-menu-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle navigation menu"
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-controls="mobile-navigation"
             aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X size={20} /> : <Sliders size={20} />}
@@ -104,8 +106,8 @@ export function SiteHeader() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="mobile-nav-drawer" role="dialog" aria-modal="true">
-          <nav className="mobile-nav-links">
+        <div className="mobile-nav-drawer" id="mobile-navigation">
+          <nav className="mobile-nav-links" aria-label="Mobile navigation">
             {NAV_LINKS.map((link) => {
               const isActive = location.pathname === link.path;
               return (
@@ -113,6 +115,7 @@ export function SiteHeader() {
                   key={link.path}
                   to={link.path}
                   className={`mobile-nav-link ${isActive ? 'active' : ''}`}
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() => setMobileMenuOpen(false)}
                 >
 {link.label}

@@ -62,7 +62,7 @@
   width: 30px;
   height: 30px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--accent), #3b82f6);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -387,7 +387,7 @@
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent), #38bdf8);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

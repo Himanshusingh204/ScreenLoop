@@ -34,6 +34,15 @@ export function useLiveKitRoom({
   const [isSharing, setIsSharing] = useState(false);
   const roomRef = useRef(null);
 
+  // Keep latest callbacks in refs so the connection effect doesn't re-run
+  // (and tear down the SFU room) on every parent render.
+  const onScreenTrackSubscribedRef = useRef(onScreenTrackSubscribed);
+  const onScreenTrackUnsubscribedRef = useRef(onScreenTrackUnsubscribed);
+  useEffect(() => {
+    onScreenTrackSubscribedRef.current = onScreenTrackSubscribed;
+    onScreenTrackUnsubscribedRef.current = onScreenTrackUnsubscribed;
+  }, [onScreenTrackSubscribed, onScreenTrackUnsubscribed]);
+
   // Connect to LiveKit Room when enabled and name/roomId are present
   useEffect(() => {
     if (!enabled || !roomId || !name) return;
@@ -97,12 +106,19 @@ export function useLiveKitRoom({
             console.log('[LiveKit] Subscribed to remote screen share track');
             const mediaStream = new MediaStream([track.mediaStreamTrack]);
             setRemoteScreenStream(mediaStream);
-            if (onScreenTrackSubscribed) onScreenTrackSubscribed(mediaStream, participant);
+            if (onScreenTrackSubscribedRef.current) onScreenTrackSubscribedRef.current(mediaStream, participant);
           } else if (track.source === Track.Source.ScreenShareAudio) {
             console.log('[LiveKit] Subscribed to cinema audio track');
-            // Attach audio element to play through device
+            // Attach the audio track to a playable element in the DOM
             const audioEl = track.attach();
             audioEl.id = 'livekit-cinema-audio';
+            audioEl.autoplay = true;
+            if (audioEl && typeof audioEl.play === 'function') {
+              audioEl.play().catch(() => {});
+            }
+            if (audioEl && audioEl.parentElement !== document.body) {
+              document.body.appendChild(audioEl);
+            }
           }
         });
 
@@ -111,11 +127,15 @@ export function useLiveKitRoom({
             console.log('[LiveKit] Remote screen share stopped');
             track.detach();
             setRemoteScreenStream(null);
-            if (onScreenTrackUnsubscribed) onScreenTrackUnsubscribed();
+            if (onScreenTrackUnsubscribedRef.current) onScreenTrackUnsubscribedRef.current();
           } else if (track.source === Track.Source.ScreenShareAudio) {
+            console.log('[LiveKit] Remote cinema audio stopped');
             track.detach();
             const el = document.getElementById('livekit-cinema-audio');
-            if (el) el.remove();
+            if (el) {
+              el.pause?.();
+              el.remove();
+            }
           }
         });
 
@@ -138,7 +158,7 @@ export function useLiveKitRoom({
         roomRef.current = null;
       }
     };
-  }, [roomId, name, pin, isHost, enabled, onScreenTrackSubscribed, onScreenTrackUnsubscribed]);
+  }, [roomId, name, pin, isHost, enabled]);
 
   // Start Screen Sharing with Cinema Audio
   const startScreenShare = useCallback(async () => {

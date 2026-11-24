@@ -12,7 +12,7 @@ export default function Changelog() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="changelog-page-content">
+      <main id="main-content" tabIndex={-1} className="changelog-page-content">
         <motion.div
           className="changelog-container"
           variants={staggerContainer}

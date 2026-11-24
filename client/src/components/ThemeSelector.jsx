@@ -2,18 +2,15 @@
 import React, { useEffect, useState } from 'react';
 
 const THEMES = [
-  { id: 'light', label: 'Light Editorial', color: '#F7F6F3', border: '#111111' },
-  { id: 'midnight', label: 'Midnight Obsidian', color: '#7c5cfc' },
-  { id: 'oled', label: 'OLED Pure Black', color: '#000000', border: '#ffffff' },
-  { id: 'ocean', label: 'Cyber Ocean', color: '#0ea5e9' },
-  { id: 'crimson', label: 'Crimson Noir', color: '#e11d48' },
+  { id: 'light', label: 'Light', color: '#F7F6F3', border: '#777' },
+  { id: 'midnight', label: 'Dark', color: '#292433', border: '#fff' },
 ];
 
 export function ThemeSelector() {
   const [activeTheme, setActiveTheme] = useState('midnight');
 
   useEffect(() => {
-    const saved = localStorage.getItem('screenloop-theme') || 'midnight';
+    const saved = localStorage.getItem('screenloop-theme') === 'light' ? 'light' : 'midnight';
     setActiveTheme(saved);
     document.documentElement.setAttribute('data-theme', saved);
   }, []);

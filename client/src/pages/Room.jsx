@@ -1,5 +1,5 @@
 // Room.jsx — Main watch room orchestrator with Web APIs & clean barrel imports
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 // Clean Barrel Imports
@@ -94,6 +94,7 @@ export default function Room() {
   const { playJoinChime, playLeaveChime, playMessagePing, playReactionPop } = useSoundEffects();
 
   // ─── Refs ─────────────────────────────────────────────────────────────────
+  const addToastRef = useRef(null);
   const videoRef    = useRef(null);
   const roomRef     = useRef(null);
 
@@ -104,6 +105,9 @@ export default function Room() {
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+  // Track initial socket connect to avoid double-joining on first handshake
+  // (auto-rejoin/handleJoin handle the first join; connect handler is for reconnects).
+  const initialConnectHandledRef = useRef(false);
 
   // ─── Socket.io Connection ────────────────────────────────────────────────
   // Owned by useSignalingSocket (shared hook). Room-specific rejoin logic lives
@@ -142,10 +146,12 @@ export default function Room() {
 
   // ─── LiveKit SFU Media Engine ─────────────────────────────────────────────
   const {
+    room: lkRoom,
     isConnected: isLiveKitActive,
     remoteScreenStream: lkRemoteStream,
     startScreenShare: startLiveKitScreenShare,
     stopScreenShare: stopLiveKitScreenShare,
+    error: lkError,
   } = useLiveKitRoom({
     roomId,
     name: myName,
@@ -154,15 +160,25 @@ export default function Room() {
     enabled: phase === 'room' && !!myName,
     onScreenTrackSubscribed: (stream) => {
       setRemoteStream(stream);
-      addToast('📡 Connected via LiveKit High-Speed SFU');
+      addToastRef.current?.('📡 Connected via LiveKit High-Speed SFU');
     },
     onScreenTrackUnsubscribed: () => {
       setRemoteStream(null);
     },
   });
 
+  // LiveKit self-view: when the host shares via the SFU, build a local stream
+  // from the SFU local participant's video track so the host sees their own
+  // screen (and screen recording has a capture source).
+  const livekitSelfStream = useMemo(() => {
+    if (!isLiveKitActive || !isActualHost) return null;
+    const track = lkRoom?.localParticipant?.videoTrack?.mediaStreamTrack;
+    if (!track) return null;
+    return new MediaStream([track]);
+  }, [isLiveKitActive, isActualHost, lkRoom]);
+
   // ─── Screen Recording Hook ──────────────────────────────────────────────
-  const recordingStream = isActualHost ? localStream.current : remoteStream;
+  const recordingStream = isActualHost ? (livekitSelfStream || localStream.current) : remoteStream;
   const {
     isRecording,
     recordingTime,
@@ -192,6 +208,13 @@ export default function Room() {
       }
     }, [isActualHost, sendOfferToViewer, localStream]),
   });
+
+  addToastRef.current = addToast;
+
+  // Surface LiveKit failures as toasts (falls back to WebRTC automatically).
+  useEffect(() => {
+    if (lkError) addToast(`⚠️ LiveKit high-speed link unavailable — using peer-to-peer fallback ()`);
+  }, [lkError, addToast]);
 
   // Play audio on new incoming chat messages
   const lastMsgCount = useRef(0);
@@ -224,9 +247,16 @@ export default function Room() {
   // ─── WebRTC Signaling Listeners ──────────────────────────────────────────
   useEffect(() => {
     if (!socket) return;
+    const handleStreamEnd = () => {
+      // Host ended the screen share — clear the stream on viewers
+      setRemoteStream(null);
+      setIsSharing(false);
+    };
     socket.on('webrtc:offer',  handleOffer);
     socket.on('webrtc:answer', handleAnswer);
     socket.on('webrtc:ice',    handleIce);
+    socket.on('webrtc:stream-end', handleStreamEnd);
+    socket.on('webrtc:stop', handleStreamEnd); // legacy fallback
     socket.on('room:promoted-to-host', () => {
       setIsActualHost(true);
       addToast('👑 You have been promoted to Host!');
@@ -243,11 +273,14 @@ export default function Room() {
       addToast('⚠️ Host disconnected — waiting for reconnection…');
     });
 
-    // Task 41/52: Re-join on every successful connect (fires on both the initial
-    // connection and after a reconnect) so the host re-offers a WebRTC stream.
-    // The join payload is replayed from joinInfoRef so PIN-protected rooms and
-    // avatar gender survive a network blip.
+    // Task 41/52: Re-join on every successful connect after the first handshake
+    // so the host re-offers a WebRTC stream. The join payload is replayed from
+    // joinInfoRef so PIN-protected rooms and avatar gender survive a network blip.
     const handleConnect = () => {
+      if (!initialConnectHandledRef.current) {
+        initialConnectHandledRef.current = true;
+        return; // initial connect — handled by auto-rejoin or manual join
+      }
       const { name, pin, gender } = joinInfoRef.current;
       if (!name || !roomId) return; // not joined yet
       addToast('🔄 Reconnected — re-establishing stream…');
@@ -255,10 +288,18 @@ export default function Room() {
     };
     socket.on('connect', handleConnect);
 
+    // If socket is already connected when this effect mounts, mark initial connect handled
+    // so subsequent reconnects will trigger rejoin.
+    if (socket.connected) {
+      initialConnectHandledRef.current = true;
+    }
+
     return () => {
       socket.off('webrtc:offer',  handleOffer);
       socket.off('webrtc:answer', handleAnswer);
       socket.off('webrtc:ice',    handleIce);
+      socket.off('webrtc:stream-end', handleStreamEnd);
+      socket.off('webrtc:stop', handleStreamEnd);
       socket.off('room:closed');
       socket.off('room:host-disconnected');
       socket.off('connect', handleConnect);
@@ -381,18 +422,34 @@ export default function Room() {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleFullscreen, shareModalOpen, isFullscreen, sidebarOpen]);
 
-  // ─── Auto-downgrade quality on poor connection ──────────────────────────────
+  // ─── Apply incoming playback sync events to the local video element ──────
+  // Server broadcasts sync events to other participants; apply them here so
+  // pause/play/seek actually affects playback (toasts are handled in useRoom).
   useEffect(() => {
-    if (!streamStats || !isActualHost || audioOnly) return;
-
-    const { packetLoss, fps } = streamStats;
-
-    // If packet loss > 5% or fps < 15, downgrade to 720p
-    if ((packetLoss > 5 || (fps > 0 && fps < 15)) && currentQuality !== '720p') {
-      setCurrentQuality('720p');
-      addToast('⚠️ Connection quality dropped. Switched to 720p.');
-    }
-  }, [streamStats, isActualHost, audioOnly, currentQuality, addToast]);
+    if (!socket) return;
+    const onSyncPlay = () => {
+      const video = videoRef.current;
+      if (video) video.play().catch(() => {});
+    };
+    const onSyncPause = () => {
+      const video = videoRef.current;
+      if (video) video.pause();
+    };
+    const onSyncSeek = ({ time }) => {
+      const video = videoRef.current;
+      if (video && typeof time === 'number' && Number.isFinite(time)) {
+        video.currentTime = time;
+      }
+    };
+    socket.on('sync:play', onSyncPlay);
+    socket.on('sync:pause', onSyncPause);
+    socket.on('sync:seek', onSyncSeek);
+    return () => {
+      socket.off('sync:play', onSyncPlay);
+      socket.off('sync:pause', onSyncPause);
+      socket.off('sync:seek', onSyncSeek);
+    };
+  }, [socket]);
 
   // ─── Room Actions ─────────────────────────────────────────────────────────
   const handleJoin = useCallback(({ name, pin, gender }) => {
@@ -448,10 +505,22 @@ export default function Room() {
     } else {
       stopScreenShare();
     }
+    // Notify viewers the stream has ended so they can clear it
+    socket?.emit('webrtc:stop', { roomId });
     setIsSharing(false);
     setDrawModeActive(false);
     addToast('🛑 Screen sharing stopped');
-  }, [isLiveKitActive, stopLiveKitScreenShare, stopScreenShare, addToast]);
+  }, [isLiveKitActive, stopLiveKitScreenShare, stopScreenShare, addToast, socket, roomId]);
+
+  const handleToggleRecording = useCallback(() => {
+    if (isRecording) {
+      stopRecording();
+      return;
+    }
+    if (recordingStream) {
+      startRecording();
+    }
+  }, [isRecording, recordingStream, startRecording, stopRecording]);
 
   const handleReaction = useCallback((emoji) => {
     playReactionPop();
@@ -459,26 +528,22 @@ export default function Room() {
   }, [roomId, socket, playReactionPop]);
 
   const handleToggleAudioOnly = useCallback(() => {
-    setAudioOnly((prev) => {
-      const next = !prev;
-      // If turning on audio-only, stop video tracks on the local stream
-      if (next && localStream.current) {
+    const next = !audioOnly;
+    if (next && localStream.current) {
+      localStream.current.getVideoTracks().forEach((t) => {
+        t.enabled = false;
+      });
+    } else if (!next) {
+      // Re-enable video tracks (user must re-share for new capture)
+      if (localStream.current) {
         localStream.current.getVideoTracks().forEach((t) => {
-          t.enabled = false;
+          t.enabled = true;
         });
-        addToast('🔇 Video disabled — audio-only mode');
-      } else if (!next) {
-        // Re-enable video tracks (user must re-share for new capture)
-        if (localStream.current) {
-          localStream.current.getVideoTracks().forEach((t) => {
-            t.enabled = true;
-          });
-        }
-        addToast('🎥 Video re-enabled');
       }
-      return next;
-    });
-  }, [addToast, localStream]);
+    }
+    setAudioOnly(next);
+    addToast(next ? '🔇 Video disabled — audio-only mode' : '🎥 Video re-enabled');
+  }, [audioOnly, localStream, addToast]);
 
   const handleQualityChange = useCallback((newQuality) => {
     setCurrentQuality(newQuality);
@@ -516,7 +581,7 @@ export default function Room() {
   }
 
   const mySocketId = socket?.id;
-  const stream = lkRemoteStream || (isActualHost ? localStream.current : remoteStream);
+  const stream = lkRemoteStream || (isActualHost ? (livekitSelfStream || localStream.current) : remoteStream);
 
   return (
     <div
@@ -600,6 +665,9 @@ export default function Room() {
             onToggleAudioOnly={handleToggleAudioOnly}
             currentQuality={currentQuality}
             onQualityChange={handleQualityChange}
+            isRecording={isActualHost ? isRecording : false}
+            recordingTime={recordingTime}
+            onToggleRecording={isActualHost ? handleToggleRecording : null}
           />
 
           {/* Persistent Exit button — always visible in fullscreen, the rest only on hover */}
@@ -677,3 +745,5 @@ export default function Room() {
     </div>
   );
 }
+
+

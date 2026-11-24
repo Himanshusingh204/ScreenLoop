@@ -88,7 +88,18 @@ export function ShareModal({ isOpen, onClose, roomId, roomKey }) {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     } catch {
-      prompt('Copy invite link:', fullLink);
+      // Clipboard API unavailable (insecure context / permission) — use execCommand fallback
+      const ta = document.createElement('textarea');
+      ta.value = fullLink;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
     }
   };
 
@@ -98,7 +109,17 @@ export function ShareModal({ isOpen, onClose, roomId, roomKey }) {
       setCopiedId(true);
       setTimeout(() => setCopiedId(false), 2000);
     } catch {
-      prompt('Copy Room ID:', roomId);
+      const ta = document.createElement('textarea');
+      ta.value = roomId;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
     }
   };
 

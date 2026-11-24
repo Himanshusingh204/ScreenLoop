@@ -44,7 +44,7 @@ export default function MeetLanding() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="meet-landing-content" style={{ minHeight: 'calc(100vh - 160px)', padding: 'var(--space-8) var(--space-4)' }}>
+      <main id="main-content" tabIndex={-1} className="meet-landing-content" style={{ minHeight: 'calc(100vh - 160px)', padding: 'var(--space-8) var(--space-4)' }}>
         <motion.div
           className="container"
           style={{ maxWidth: '1000px', margin: '0 auto' }}
@@ -197,6 +197,7 @@ export default function MeetLanding() {
 
           {/* Features Grid */}
           <motion.div
+            className="meet-feature-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',

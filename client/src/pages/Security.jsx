@@ -74,7 +74,7 @@ export default function Security() {
     <div className="page-wrapper">
       <SiteHeader />
 
-      <main className="security-page-content">
+      <main id="main-content" tabIndex={-1} className="security-page-content">
         <motion.div
           className="security-container"
           variants={staggerContainer}

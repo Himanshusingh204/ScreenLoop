@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ParticipantList } from './ParticipantList';
 import { formatChatTime } from '../utils/formatTime';
-import { sanitizeText } from '../utils/sanitizer';
 import { linkifyText } from '../utils/linkify';
 import { Users, ChatTeardropText, LockSimple, PaperPlaneRight, CopySimple, Check, MagnifyingGlass, Smiley, Trash, PencilSimple } from './icons';
 
@@ -47,7 +46,6 @@ export function ChatSidebar({
   const [unreadCount, setUnreadCount] = useState(0);
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editDraft, setEditDraft] = useState('');
-  const [typingUsers, setTypingUsers] = useState({});
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const prevMsgCountRef = useRef(messages.length);
@@ -69,21 +67,6 @@ export function ChatSidebar({
   useEffect(() => {
     if (tab === 'chat') setUnreadCount(0);
   }, [tab]);
-
-  // Clear stale typing indicators after 3s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTypingUsers((prev) => {
-        const now = Date.now();
-        const next = {};
-        for (const [id, data] of Object.entries(prev)) {
-          if (now - data.ts < 3000) next[id] = data;
-        }
-        return Object.keys(next).length === Object.keys(prev).length ? prev : next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -259,7 +242,7 @@ export function ChatSidebar({
                 <div key={msg.id} className={`chat-message ${msg.system ? 'system' : ''}`}>
                   {!msg.system && (
                     <div className="chat-message-header">
-                      <span className="chat-message-name">{sanitizeText(msg.name)}</span>
+                      <span className="chat-message-name">{msg.name}</span>
                       <span className="chat-message-time">{formatChatTime(msg.timestamp)}</span>
                       {msg.edited && <span className="chat-message-edited">(edited)</span>}
                       <button
