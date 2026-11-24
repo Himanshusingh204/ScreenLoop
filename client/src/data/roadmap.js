@@ -23,7 +23,7 @@ export const ROADMAP_PHASES = [
       { title: 'Message timestamps', status: 'done' },
       { title: 'Real-time floating emoji reaction bursts', status: 'done' },
       { title: 'Live typing indicators with auto-cleanup timer', status: 'done' },
-      { title: 'Chat message search & filter', status: 'planned' },
+      { title: 'Chat message search & filter', status: 'done' },
     ],
   },
   {

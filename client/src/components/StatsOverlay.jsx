@@ -68,7 +68,7 @@ export function StatsOverlay({ stats, visible, onClose, isHost }) {
         </div>
       </div>
       <div className="stats-footer">
-        <span className="stats-note"><ShieldCheck size={12} /> AES-256-GCM E2EE Enabled • WebRTC Direct Mesh</span>
+        <span className="stats-note"><ShieldCheck size={12} /> Chat E2EE (AES-256-GCM) • Media encrypted in transit</span>
       </div>
     </div>
   );
