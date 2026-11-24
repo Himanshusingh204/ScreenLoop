@@ -199,3 +199,30 @@ p, li { text-wrap: pretty; }
   .meet-ctrl-btn.end-call { width: 54px; }
   .meet-controlbar-center { gap: 6px; }
 }
+
+/* ─── Brightness pass: dark themes were too dim ───────────────────────────── */
+:root:not([data-theme="light"]) {
+  --text-primary: #f7f6fc;
+  --text-secondary: #c9c8da;
+  --text-muted: #9c9cb4;
+  --text-tertiary: #aeaec2;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --gradient-hero: radial-gradient(ellipse 80% 55% at 50% 0%, color-mix(in srgb, var(--accent) 32%, transparent), transparent);
+  --gradient-card: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent) 3%, transparent));
+}
+/* Default dark theme ("midnight" is what the toggle sets) */
+:root:not([data-theme]), :root[data-theme="dark"], :root[data-theme="midnight"] {
+  --bg-primary: #1b1b2f;
+  --bg-secondary: #23233b;
+  --bg-surface: #2d2d4a;
+  --bg-elevated: #373758;
+  --bg-hover: #43436a;
+  --accent: #8f73ff;
+  --accent-hover: #a58dff;
+  --accent-dim: rgba(143, 115, 255, 0.22);
+}
+
+.feature-card, .glass-card, .card, .contact-channel-card, .help-quick-card,
+.about-story-card, .about-oss-card, .arch-step-card, .roadmap-kanban-card,
+.quick-guide-card { border-color: var(--border-strong); }
