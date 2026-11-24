@@ -1,5 +1,7 @@
 # 🔐 Screenloop — Multi-User Authentication System Design
 
+> **Status: design proposal — NOT implemented.** The current app has no accounts and no database (authentication / PostgreSQL below describes a possible future direction).
+
 > **Document Version**: 1.0  
 > **Status**: Approved Design (Future Scaling)  
 > **Target**: User Accounts, OAuth2, Persistent Profiles & RBAC

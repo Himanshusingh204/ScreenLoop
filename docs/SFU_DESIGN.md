@@ -39,9 +39,11 @@ If a viewer has a slow mobile connection, LiveKit automatically drops them to 72
 
 ---
 
-## 3. End-to-End Encryption (E2EE) via Insertable Streams
+## 3. End-to-End Encryption (E2EE) via Insertable Streams (Planned)
 
-LiveKit uses the WebRTC Insertable Streams API (`TransformStream`):
+> **Status: not implemented.** Today media is protected by DTLS-SRTP in transit only (the SFU can access media); only chat is end-to-end encrypted. The design below is the intended approach.
+
+LiveKit supports the WebRTC Insertable Streams API (`TransformStream`):
 1. **Host Browser**: Encrypts raw video/audio frames using AES-256-GCM with the secret key from the URL `#hash`.
 2. **SFU Server**: Inspects RTP headers to route packets, but the payload bytes remain 100% encrypted ciphertext. The server cannot view or store the video.
 3. **Viewer Browser**: Receives ciphertext bytes and decrypts them using the key from the shared link.

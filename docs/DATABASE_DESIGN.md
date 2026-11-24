@@ -1,5 +1,7 @@
 # 🗄️ Screenloop — Database & Persistence Layer Architecture
 
+> **Status: design proposal — NOT implemented.** The current app has no accounts and no database (database / persistence below describes a possible future direction).
+
 > **Document Version**: 1.0  
 > **Status**: Approved Design  
 > **Target**: PostgreSQL (Core DB) + Redis (Session & Socket.IO Clustering)

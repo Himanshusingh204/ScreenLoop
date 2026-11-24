@@ -192,13 +192,12 @@ ScreenLoop/
 ├── CODE_OF_CONDUCT.md                 # Contributor Covenant v2.1
 ├── CONTRIBUTING.md                    # Guidelines for contributing, git branching, and PRs
 ├── LICENSE                            # MIT License
-├── PLAN.md                            # High-level product milestones & status
+├── MASTER_PLAN_NEW.md                 # Master plan & technical specification
 ├── PROJECT_MEMORY.md                  # Canonical single-file AI memory & project context
 ├── README.md                          # Public GitHub landing page
 ├── render.yaml                        # Turnkey Render Blueprint specification
 ├── SECURITY.md                        # Security policy & private vulnerability reporting
-├── vercel.json                        # Root zero-config Vercel deployment specification
-└── VIDEO_CALL_MASTER_PLAN.md          # Google Meet-style video call engineering blueprint
+└── vercel.json                        # Root zero-config Vercel deployment specification
 ```
 
 ---
@@ -211,7 +210,6 @@ ScreenLoop/
 | **[vercel.json](file:///i:/Web%20devlopment/Screenshare/vercel.json)** | Root Vercel config enabling zero-configuration 1-click frontend deployments with hardened CSP headers (`worker-src 'self' blob:`). |
 | **[render.yaml](file:///i:/Web%20devlopment/Screenshare/render.yaml)** | Cloud deployment blueprint for hosting the Node.js signaling service on Render with health checks on `/health`. |
 | **[PROJECT_MEMORY.md](file:///i:/Web%20devlopment/Screenshare/PROJECT_MEMORY.md)** | Single-source-of-truth memory context file for human developers and AI assistants. |
-| **[VIDEO_CALL_MASTER_PLAN.md](file:///i:/Web%20devlopment/Screenshare/VIDEO_CALL_MASTER_PLAN.md)** | Full architectural master plan for adding Google Meet-style video conferencing (`/meet`). |
 | **[CHANGELOG.md](file:///i:/Web%20devlopment/Screenshare/CHANGELOG.md)** | Semantic release notes following the Keep a Changelog standard. |
 | **[CONTRIBUTING.md](file:///i:/Web%20devlopment/Screenshare/CONTRIBUTING.md)** | Contributor guidelines for code standards, testing, and pull requests. |
 | **[SECURITY.md](file:///i:/Web%20devlopment/Screenshare/SECURITY.md)** | Security disclosure instructions routing to GitHub Security Advisories. |

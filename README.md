@@ -6,7 +6,7 @@
 
   # ScreenLoop
 
-  **Zero-friction, peer-to-peer watch party & screen sharing platform with end-to-end encrypted chat.**
+  **Zero-friction watch party & video meeting platform — LiveKit SFU streaming, P2P fallback, and end-to-end encrypted chat.**
 
   <p align="center">
     <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FHimanshusingh204%2FScreenLoop"><img src="https://vercel.com/button" alt="Deploy with Vercel" /></a>
@@ -18,7 +18,7 @@
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-6366F1.svg?style=flat-square" alt="License: MIT" /></a>
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 18" /></a>
     <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.4-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 5" /></a>
-    <a href="https://webrtc.org/"><img src="https://img.shields.io/badge/WebRTC-P2P%20Mesh-333333?style=flat-square&logo=webrtc&logoColor=white" alt="WebRTC" /></a>
+    <a href="https://webrtc.org/"><img src="https://img.shields.io/badge/WebRTC-LiveKit%20SFU-333333?style=flat-square&logo=webrtc&logoColor=white" alt="WebRTC + LiveKit SFU" /></a>
     <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.io-4.7-010101?style=flat-square&logo=socketdotio&logoColor=white" alt="Socket.io" /></a>
   </p>
 
@@ -52,12 +52,18 @@
 
 **ScreenLoop** is a modern, privacy-focused watch party and screen sharing platform designed for seamless group watching, remote collaboration, and live presentations.
 
-Unlike conventional video conferencing tools that route video through heavy media servers or aggressively compress stereo sound with vocal noise filters, ScreenLoop connects viewers directly over a **WebRTC peer-to-peer mesh**. Audio is streamed cleanly with high fidelity, while chat messages are encrypted client-side using **AES-256-GCM** via the Web Crypto API.
+ScreenLoop has two modes:
+
+- **Watch Party (`/room/:id`)** — the host shares a screen once and a **LiveKit SFU** fans the stream out to viewers (1 upload, many viewers). If LiveKit isn't configured or can't connect, it automatically falls back to a **WebRTC peer-to-peer mesh**. Audio uses a cinema preset (48 kHz stereo, no echo cancellation or noise suppression).
+- **Video Meet (`/meet/:id`)** — a multi-tile video call with lobby, device switching, screen share, reactions, hand raise and chat, over a WebRTC P2P mesh.
+
+Chat messages are encrypted client-side with **AES-256-GCM** via the Web Crypto API.
 
 - **No accounts or signups required**
 - **No software or extension downloads**
-- **Zero video/audio data touches the server**
-- **Decryption keys never leave the browser URL fragment**
+- **The signaling server never handles media** (media goes through LiveKit or directly between peers)
+- **Chat decryption keys never leave the browser URL fragment**
+- **Media is encrypted in transit (DTLS-SRTP) but not end-to-end** when routed through the LiveKit SFU
 
 ---
 
@@ -65,7 +71,7 @@ Unlike conventional video conferencing tools that route video through heavy medi
 
 | Feature | Standard Meeting Tools (Zoom, Meet, Discord) | ScreenLoop |
 | :--- | :--- | :--- |
-| **Media Routing** | Centralized media servers (SFU/MCU) | **100% Peer-to-Peer (WebRTC Mesh)** |
+| **Media Routing** | Centralized media servers (SFU/MCU) | **LiveKit SFU for watch parties, P2P mesh fallback and for Meet** |
 | **Movie Audio Quality** | Aggressive noise suppression downsamples stereo audio | **Lossless, uncompressed stereo pass-through** |
 | **Chat Encryption** | Server-side or readable by service host | **End-to-End Encrypted (AES-256-GCM in browser)** |
 | **Account Required** | Yes (email, OAuth, or phone verification) | **None (Zero registration, instant ephemeral rooms)** |
@@ -77,7 +83,8 @@ Unlike conventional video conferencing tools that route video through heavy medi
 ## Key Features
 
 ### 🎬 High-Fidelity Streaming & Audio
-- **Direct WebRTC P2P Mesh**: Stream up to 1080p60 directly between peers without server bottlenecks.
+- **LiveKit SFU Streaming**: The host uploads one stream and the SFU replicates it to viewers, with automatic fallback to a direct WebRTC P2P mesh.
+- **Video Meet**: Multi-tile video calls with active speaker detection, device switching, screen share, reactions and hand raise.
 - **Cinema-Grade Audio**: Echo cancellation and speech filters disabled so music, cinematic soundtracks, and movie audio play exactly as mastered.
 - **Web Audio Volume Booster**: Built-in gain node amplification for movies with quiet dialogue.
 - **Dynamic Resolution Controls**: Adaptive quality presets (1080p, 720p, 480p) with connection fallback.
@@ -100,40 +107,29 @@ Unlike conventional video conferencing tools that route video through heavy medi
 
 ## Architecture & Data Flow
 
-ScreenLoop separates the **signaling plane** from the **media plane** to guarantee maximum performance and absolute privacy:
+ScreenLoop separates the **signaling plane** from the **media plane**:
 
 ```
-                          ┌─────────────────────────────────────────┐
-                          │         Signaling Coordinator           │
-                          │          Node.js + Socket.IO            │
-                          │   - Ephemeral room session state        │
-                          │   - SDP Offer/Answer negotiation        │
-                          │   - ICE candidate exchange              │
-                          │   - Rate limiting & room protection     │
-                          └────────────────────┬────────────────────┘
-                                               │
-                                 WebSocket     │     WebSocket
-                                 Signaling     │     Signaling
-                                               │
-               ┌───────────────────────────────┴───────────────────────────────┐
-               │                                                               │
-               ▼                                                               ▼
-  ┌─────────────────────────┐         Encrypted WebRTC P2P Mesh      ┌─────────────────────────┐
-  │       Host Client       │═══════════════════════════════════════>│      Viewer Client      │
-  │    (React 18 + Vite)    │        Direct Video & Audio Tracks     │    (React 18 + Vite)    │
-  │                         │                                        │                         │
-  │ • getDisplayMedia()     │< - - - - - - - - - - - - - - - - - - - │ • MediaStream rendering │
-  │ • Web Audio Gain Boost  │     End-to-End Encrypted Chat Data     │ • Web Audio Gain Boost  │
-  │ • AES-256-GCM Encrypt   │ - - - - - - - - - - - - - - - - - - - >│ • AES-256-GCM Decrypt   │
-  │ • Laser & Draw Canvas   │       Real-Time Sync Annotations       │ • Canvas Sync Render    │
-  └─────────────────────────┘                                        └─────────────────────────┘
+        ┌──────────────── Signaling Server (Node.js + Express + Socket.IO) ───────────────┐
+        │  ephemeral rooms · PIN checks · rate limiting · chat relay · SDP/ICE relay       │
+        │  POST /api/token → LiveKit JWT                                                   │
+        └───────────▲──────────────────────────────────────────────────▲──────────────────┘
+                    │ Socket.IO                                        │ Socket.IO
+        ┌───────────┴──────────┐        media (wss)        ┌───────────┴──────────┐
+        │      Host Client     │ ═════════════════════════>│    LiveKit SFU       │
+        │  (React 18 + Vite)   │                           │ (cloud or Docker)    │══> Viewers
+        └──────────────────────┘                           └──────────────────────┘
+        Fallback (no LiveKit) and Video Meet: direct WebRTC P2P mesh between clients.
+        Chat is AES-256-GCM encrypted in the browser; the server relays ciphertext only.
 ```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full breakdown.
 
 ### Encryption Protocol Lifecycle
 
 1. **Key Generation**: When a room is created, the host browser generates a cryptographically secure 256-bit AES-GCM key via `crypto.subtle.generateKey`.
 2. **Zero-Knowledge URL Sharing**: The key is serialized and appended to the URL fragment (`/room/ROOM_ID#ROOM_KEY`). Per RFC 3986, browser user agents **never** transmit the hash fragment across the network to HTTP or WebSocket servers.
-3. **Payload Encryption**: Chat messages and sensitive annotations are encrypted with AES-256-GCM and a unique 12-byte initialization vector (IV) before transmission.
+3. **Payload Encryption**: Chat messages are encrypted with AES-256-GCM and a unique 12-byte initialization vector (IV) before transmission.
 4. **Decryption**: Connected peers extract the key from their local URL hash to decrypt payloads in memory.
 
 ---
@@ -198,7 +194,7 @@ The repository includes a production-ready [vercel.json](vercel.json) at the roo
 
 ### Backend Signaling Deployment (Render / Railway)
 
-Because ScreenLoop only requires signaling (lightweight WebSocket messages), the server can run on free or low-cost cloud tiers.
+The signaling/token server is lightweight and can run on free or low-cost cloud tiers. For SFU streaming, also set up LiveKit (free [LiveKit Cloud](https://cloud.livekit.io) tier or the bundled `docker-compose.yml`); without it, watch parties fall back to P2P. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 #### Deploy to Render:
 1. Create a new **Web Service** on [render.com](https://render.com).
@@ -210,19 +206,27 @@ Because ScreenLoop only requires signaling (lightweight WebSocket messages), the
 4. Set Environment Variables:
    - `PORT`: `4000`
    - `ALLOWED_ORIGIN`: Your deployed Vercel frontend URL (e.g., `https://screenloop.vercel.app`).
+   - `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`: LiveKit credentials (optional; enables SFU).
 
 ### Environment Variables
+
+Copy `client/.env.example` and `server/.env.example` to `.env` files. Main variables:
 
 #### Client (`client/.env`)
 | Variable | Description | Default (Dev) |
 | :--- | :--- | :--- |
-| `VITE_SERVER_URL` | Base URL of the Socket.IO signaling server | `http://localhost:4000` |
+| `VITE_SERVER_URL` | Base URL of the signaling/token server | `http://localhost:4000` |
+| `VITE_LIVEKIT_URL` | LiveKit WebSocket URL (optional) | unset |
+| `VITE_TURN_URLS`, `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` | Optional TURN relay for strict NATs | unset |
 
 #### Server (`server/.env`)
 | Variable | Description | Default (Dev) |
 | :--- | :--- | :--- |
-| `PORT` | Listening port for the Express/Socket.IO server | `4000` |
-| `ALLOWED_ORIGIN` | CORS allowed origin for HTTP and WebSocket connections | `http://localhost:5173` |
+| `PORT` | Listening port | `4000` |
+| `ALLOWED_ORIGIN` | Comma-separated CORS origins | `http://localhost:5173` |
+| `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit credentials for `/api/token` | see `.env.example` |
+| `MAX_PARTICIPANTS`, `MAX_MEET_PARTICIPANTS`, `MAX_ROOMS`, `ROOM_TTL_MS`, `MEET_TTL_MS` | Capacity and lifecycle limits | see `.env.example` |
+| `ROOM_LISTING_ENABLED` | Expose `/api/rooms` (off in production by default) | on in dev |
 
 ---
 
@@ -271,7 +275,7 @@ ScreenLoop/
 │   ├── public/                # Static assets, SVG icons, manifest
 │   ├── src/
 │   │   ├── components/        # Reusable UI components & dialogs
-│   │   ├── hooks/             # WebRTC, WebSocket, wake lock, & screen recording hooks
+│   │   ├── hooks/             # LiveKit, WebRTC, Meet, signaling, wake lock & recording hooks
 │   │   ├── pages/             # Route pages (Home, Room, Security, Roadmap, etc.)
 │   │   ├── styles/            # Vanilla CSS design tokens & component styles
 │   │   └── utils/             # AES crypto, audio booster, linkifier, sanitizers
@@ -280,7 +284,8 @@ ScreenLoop/
 │   ├── src/
 │   │   ├── index.js           # Server bootstrap & health check endpoints
 │   │   ├── roomManager.js     # Ephemeral in-memory room state
-│   │   ├── socketHandlers.js  # WebRTC signaling event router
+│   │   ├── livekitToken.js    # LiveKit access-token minting
+│   │   ├── socketHandlers.js  # Signaling, chat, sync & Meet event router
 │   │   └── rateLimiter.js     # IP & socket connection rate limiting
 │   └── __tests__/             # Server vitest test suites
 ├── vercel.json                # Root zero-config Vercel deployment configuration
@@ -298,7 +303,7 @@ ScreenLoop/
 
 - **Zero Data Collection**: ScreenLoop maintains no persistent databases, logs no user accounts, and stores no analytical tracking scripts.
 - **Ephemeral State**: Rooms and connection metadata exist only in memory on the signaling server and are immediately garbage-collected when the host disconnects.
-- **DTLS-SRTP Encryption**: Direct audio/video tracks are encrypted under mandatory WebRTC DTLS-SRTP specifications.
+- **DTLS-SRTP Encryption**: Audio/video is encrypted in transit under mandatory WebRTC DTLS-SRTP. Through the LiveKit SFU the media is not end-to-end encrypted (the SFU terminates DTLS-SRTP); chat is end-to-end encrypted.
 - **Vulnerability Disclosures**: If you discover a security vulnerability, please report it via [GitHub Security Advisories](https://github.com/Himanshusingh204/ScreenLoop/security/advisories/new) as detailed in our [Security Policy](SECURITY.md).
 
 ---

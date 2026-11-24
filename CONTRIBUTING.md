@@ -1,6 +1,6 @@
 # Contributing to ScreenLoop
 
-Thank you for your interest in contributing to **ScreenLoop**! ScreenLoop is an open-source, zero-friction peer-to-peer watch party and screen sharing platform built with React, WebRTC, Node.js, and Socket.IO.
+Thank you for your interest in contributing to **ScreenLoop**! ScreenLoop is an open-source, zero-friction watch party and video meeting platform built with React, WebRTC, LiveKit, Node.js, and Socket.IO.
 
 We welcome contributions of all kinds: bug reports, documentation improvements, UI/UX polish, new features, and performance enhancements.
 
@@ -39,9 +39,9 @@ ScreenLoop follows a modern, decoupled client/server architecture:
 ScreenLoop/
 ├── client/              # React 18 frontend (Vite, Phosphor Icons, Canvas Confetti)
 │   ├── src/
-│   │   ├── components/  # Reusable UI widgets (Navbar, Footer, AudioMeter, etc.)
+│   │   ├── components/  # Reusable UI widgets (SiteHeader, ControlBar, meet/, etc.)
 │   │   ├── pages/       # Route views (Home, Room, Features, Security, etc.)
-│   │   ├── hooks/       # Custom React hooks (useWebRTC, useChat, etc.)
+│   │   ├── hooks/       # Custom React hooks (useLiveKitRoom, useWebRTC, useMeetRTC, etc.)
 │   │   ├── utils/       # Helper functions & pure business logic
 │   │   └── styles/      # Vanilla CSS design system
 │   └── public/          # Static assets, icons, manifest
@@ -49,13 +49,14 @@ ScreenLoop/
 │   └── src/
 │       ├── roomManager.js     # In-memory room state management
 │       ├── socketHandlers.js  # Socket.IO event controllers & signaling
+│       ├── livekitToken.js    # LiveKit access-token minting (POST /api/token)
 │       ├── rateLimiter.js     # Leaky-bucket / sliding window rate limiting
 │       └── index.js           # Server entry point & health check
 └── .github/             # GitHub actions CI/CD, issue/PR templates
 ```
 
-- **Signaling Server (`server/`)**: Acts only as a lightweight coordinator for WebRTC session negotiation (SDP offers/answers and ICE candidates), chat messages, room state, and participant heartbeats. Media streams flow directly peer-to-peer.
-- **Client (`client/`)**: Handles UI state, WebRTC peer connections (mesh topology), audio/video device management, and responsive layouts.
+- **Signaling Server (`server/`)**: Coordinates room state, chat relay, WebRTC negotiation (SDP/ICE) and mints LiveKit tokens. It never carries media.
+- **Client (`client/`)**: Handles UI state, media (LiveKit SFU for watch parties with P2P mesh fallback; P2P mesh for Video Meet), device management, and responsive layouts. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 

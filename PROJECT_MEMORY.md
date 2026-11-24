@@ -2,201 +2,110 @@
 
 > **IMPORTANT INSTRUCTION FOR ALL AI CODING ASSISTANTS**:
 > Read this file **FIRST** before analyzing, modifying, or creating code in this repository.
-> This document is the single source of truth for ScreenLoop's architecture, file structure, technology choices, signaling protocols, and design patterns.
+> It summarizes architecture, structure, and rules. When it disagrees with the code, the code wins — and please fix this file.
 
 ---
 
 ## 1. Project Overview & Philosophy
 
-**ScreenLoop** is an open-source, zero-friction peer-to-peer watch party, screen sharing, and video collaboration web platform.
+**ScreenLoop** is an open-source, zero-friction watch party, screen sharing and video meeting web platform.
 
-### Core Tenets:
-1. **Zero Registration / Zero Accounts**: No databases, no passwords, no email collection. Rooms are ephemeral and created on-demand.
-2. **Direct Peer-to-Peer Media (WebRTC Mesh)**: Video and audio never touch or transit the server. The Node.js server acts strictly as a lightweight signaling coordinator.
-3. **Cinema-Grade Audio Pass-Through**: Bypasses browser voice suppression and echo cancellation so movie soundtracks, explosions, and music stream with full stereo fidelity.
-4. **Client-Side Cryptographic Security**: Chat messages are encrypted using **AES-256-GCM** via the Web Crypto API (`window.crypto.subtle`). The 256-bit key resides only in the URL `#hash` fragment and is never sent across the network to servers (per RFC 3986).
-5. **No Third-Party CSS Frameworks**: Built using pure vanilla CSS with custom CSS tokens, glassmorphism, and dynamic themes. **Never introduce TailwindCSS, Bootstrap, or Material UI.**
+- **Watch Party (`/room/:id`)**: host shares once; a **LiveKit SFU** fans out to viewers. Automatic **P2P WebRTC mesh fallback** when LiveKit is not configured or unreachable.
+- **Video Meet (`/meet/:id`)**: multi-tile call over a **P2P WebRTC mesh** (`useMeetRTC`), with lobby, device switching, screen share, reactions, hand raise and chat.
+
+### Core Tenets
+1. **Zero registration / zero accounts**: no database, no passwords, no email. Rooms are ephemeral, in server memory.
+2. **The signaling server never handles media.** Media goes through LiveKit or directly between peers.
+3. **Cinema-grade audio**: `CINEMA_AUDIO_PRESET` (48 kHz stereo, echo cancellation / noise suppression / AGC off) in `client/src/utils/audioPresets.js`.
+4. **Chat is end-to-end encrypted** with AES-256-GCM (Web Crypto). The key lives only in the URL `#hash`. **Media is not E2EE** (DTLS-SRTP in transit; the SFU can access media). Media E2EE via Insertable Streams is planned, not built.
+5. **No CSS frameworks**: vanilla CSS with tokens in `client/src/styles/tokens.css`. Never add Tailwind, Bootstrap or Material UI.
 
 ---
 
-## 2. Complete Repository File Structure
+## 2. Repository Structure
 
 ```
 ScreenLoop/
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.yml             # Structured YAML bug report form
-│   │   ├── feature_request.yml        # Structured YAML feature request form
-│   │   └── config.yml                 # Issue configuration & security link
-│   ├── workflows/
-│   │   ├── ci.yml                     # Node 18/20 client & server build/test pipeline
-│   │   └── codeql.yml                 # Automated CodeQL static security analysis
-│   ├── PULL_REQUEST_TEMPLATE.md       # Standardized PR checklist & test proof
-│   └── dependabot.yml                 # Weekly npm and GitHub Action dependency bot
-│
-├── client/                            # React 18 frontend (Vite 5)
-│   ├── public/
-│   │   ├── logo.svg                   # Brand vector logo
-│   │   ├── Logo.png                   # High-res raster brand mark
-│   │   ├── og-image.png               # Social preview card
-│   │   ├── pwa-icon.svg               # PWA app icon
-│   │   └── robots.txt                 # Search engine directives
-│   ├── src/
-│   │   ├── components/                # Reusable UI widgets & modals
-│   │   │   ├── icons/index.js         # Centralized Phosphor Icons export
-│   │   │   ├── AnnotationCanvas.jsx   # Live on-screen drawing & laser pointer
-│   │   │   ├── ChatSidebar.jsx        # Encrypted chat, emoji picker, participant list
-│   │   │   ├── ConfirmModal.jsx       # Universal confirmation dialog
-│   │   │   ├── ControlBar.jsx         # Bottom video playback & reaction controls
-│   │   │   ├── CursorOverlay.jsx      # Synchronized multi-user laser pointers
-│   │   │   ├── ErrorBoundary.jsx      # Top-level React error catch boundary
-│   │   │   ├── GradientBackground.jsx # Dynamic ambient glow canvas
-│   │   │   ├── JoinModal.jsx          # PIN / password entry dialog
-│   │   │   ├── Loader.jsx             # Glassmorphic loading spinner
-│   │   │   ├── LogoBrand.jsx          # Branded vector header component
-│   │   │   ├── ParticipantList.jsx    # User avatars, host badges, kick buttons
-│   │   │   ├── ReactionOverlay.jsx    # Floating animated emoji reactions
-│   │   │   ├── RouteErrorBoundary.jsx # Isolated route-level error boundary
-│   │   │   ├── ShareModal.jsx         # 1-click room link & QR code generator
-│   │   │   ├── SiteFooter.jsx         # Universal footer navigation
-│   │   │   ├── SiteHeader.jsx         # Universal header navbar
-│   │   │   ├── StatsOverlay.jsx       # Real-time WebRTC diagnostics HUD (FPS, Bitrate)
-│   │   │   ├── ThemeSelector.jsx      # Theme switcher (Midnight, OLED, Cyber, etc.)
-│   │   │   ├── Toast.jsx              # Floating notification toasts
-│   │   │   ├── TopBar.jsx             # Active room header, participant counter, quality
-│   │   │   └── VideoPlayer.jsx        # Stream player with volume booster hookup
-│   │   ├── data/
-│   │   │   ├── changelog.js           # Version history data for /changelog
-│   │   │   └── roadmap.js             # Public milestone roadmap data
-│   │   ├── hooks/
-│   │   │   ├── index.js               # Central hook exports
-│   │   │   ├── useNetworkStatus.js    # Online/offline network detector
-│   │   │   ├── useRoom.js             # Socket.io room state, participants, and chat
-│   │   │   ├── useScreenRecording.js  # Client-side MediaRecorder capture
-│   │   │   ├── useScrollReveal.js     # Framer Motion scroll animations
-│   │   │   ├── useSoundEffects.js     # Web Audio SFX synthesizer
-│   │   │   ├── useWakeLock.js         # Screen Wake Lock API
-│   │   │   ├── useWebRTC.js           # Multi-peer WebRTC mesh coordinator
-│   │   │   └── useWebRTCStats.js      # RTCStatsReport telemetry parser
-│   │   ├── pages/
-│   │   │   ├── About.jsx              # /about - Project background & architecture
-│   │   │   ├── Accessibility.jsx      # /accessibility - WCAG 2.1 AA statement
-│   │   │   ├── Changelog.jsx          # /changelog - Release timeline
-│   │   │   ├── Contact.jsx            # /contact - Support & GitHub channels
-│   │   │   ├── Features.jsx           # /features - Interactive feature catalog
-│   │   │   ├── Help.jsx               # /help - FAQ & troubleshooting
-│   │   │   ├── Home.jsx               # / - Room launcher & recent rooms history
-│   │   │   ├── NotFound.jsx           # 404 handler with auto-redirect
-│   │   │   ├── Privacy.jsx            # /privacy - Data handling guarantees
-│   │   │   ├── Roadmap.jsx            # /roadmap - Kanban development board
-│   │   │   ├── Room.jsx               # /room/:roomId - Watch party master orchestrator
-│   │   │   ├── Security.jsx           # /security - Cryptography & threat model
-│   │   │   └── Terms.jsx              # /terms - Acceptable use policy
-│   │   ├── styles/
-│   │   │   ├── base.css               # Reset, typography, body base styles
-│   │   │   ├── components.css         # Buttons, cards, form inputs, badges
-│   │   │   ├── home.css               # Hero section, feature preview grids
-│   │   │   ├── pages.css              # Informational page layouts & tables
-│   │   │   ├── responsive.css         # Mobile/tablet breakpoints
-│   │   │   ├── room.css               # Theater mode, video grid, chat drawer
-│   │   │   ├── tokens.css             # CSS variables (colors, spacing, shadows)
-│   │   │   └── utilities.css          # Flex, grid, animation helper classes
-│   │   ├── test/setup.js              # Vitest DOM environment mocks
-│   │   ├── utils/
-│   │   │   ├── __tests__/             # Unit test suites (formatTime, sanitizer, etc.)
-│   │   │   ├── audioBooster.js        # Web Audio API GainNode compressor
-│   │   │   ├── confetti.js            # Canvas Confetti burst trigger
-│   │   │   ├── crypto.js              # AES-256-GCM subtle crypto routines
-│   │   │   ├── formatTime.js          # Timestamp formatting
-│   │   │   ├── linkify.js             # URL detection & sanitization in chat
-│   │   │   ├── recentRooms.js         # LocalStorage room history manager
-│   │   │   ├── roomId.js              # Cryptographically secure room code generator
-│   │   │   ├── sanitizer.js           # XSS HTML entity escaper
-│   │   │   ├── sfxSynth.js            # Synthetic audio chimes
-│   │   │   └── viewTransition.js      # Document View Transitions API
-│   │   ├── App.jsx                    # Route switchboard & layout providers
-│   │   ├── index.css                  # Global root styles & CSS imports
-│   │   └── main.jsx                   # React 18 root mount
-│   ├── .eslintrc.cjs                  # ESLint configuration
-│   ├── package.json                   # Client dependencies & scripts
-│   ├── vercel.json                    # Client-specific CSP & routing rules
-│   └── vite.config.js                 # Vite bundler, PWA plugin, Vitest config
-│
-├── server/                            # Node.js Socket.IO signaling service
-│   ├── src/
-│   │   ├── index.js                   # Express server, health check, Socket.io bootstrap
-│   │   ├── logger.js                  # Pino structured JSON logger
-│   │   ├── rateLimiter.js             # IP & Socket sliding-window anti-spam
-│   │   ├── roomManager.js             # In-memory ephemeral room registry
-│   │   └── socketHandlers.js          # WebRTC SDP/ICE relay, chat, drawing events
-│   ├── __tests__/                     # Vitest server integration test suites
-│   ├── package.json                   # Server dependencies & scripts
-│   └── vitest.config.js               # Server Vitest configuration
-│
-├── ARCHITECTURE.md                    # Deep-dive engineering specification
-├── CHANGELOG.md                       # Semantic version history (Keep a Changelog)
-├── CODE_OF_CONDUCT.md                 # Contributor Covenant v2.1
-├── CONTRIBUTING.md                    # Branching, testing & PR rules
-├── LICENSE                            # MIT License
-├── PROJECT_MEMORY.md                  # THIS FILE — Canonical AI context & rules
-├── README.md                          # Public GitHub landing documentation
-├── render.yaml                        # Turnkey Render Blueprint deployment specification
-├── SECURITY.md                        # Security policy & private vulnerability reporting
-├── vercel.json                        # Root Vercel deployment specification
-└── VIDEO_CALL_MASTER_PLAN.md          # Google Meet-style video calling architecture
+├── .github/                 # workflows (ci.yml, codeql.yml), issue forms, PR template, dependabot
+├── client/                  # React 18 + Vite 5 frontend
+│   ├── public/              # logo, og-image, pwa icon, hero image, robots.txt
+│   └── src/
+│       ├── pages/           # Home, Room, MeetLanding, MeetRoom + info pages (Features, Security, About,
+│       │                    #   Help, Privacy, Terms, Accessibility, Changelog, Roadmap, Contact, NotFound)
+│       ├── components/      # SiteHeader/Footer, ControlBar, VideoPlayer, ChatSidebar, ShareModal, JoinModal,
+│       │   │                #   AnnotationCanvas, CursorOverlay, StatsOverlay, LiveKitRoomWrapper, ...
+│       │   ├── meet/        # MeetGrid, MeetTile, MeetLobby, MeetControlBar, MeetDeviceModal,
+│       │   │                #   MeetChatDrawer, MeetPeopleDrawer, MeetReactions
+│       │   └── icons/       # central Phosphor icon exports
+│       ├── hooks/           # useSignalingSocket, useRoom, useLiveKitRoom, useWebRTC, useWebRTCStats,
+│       │                    #   useMeetRTC, useMediaDevices, useActiveSpeaker, useScreenRecording,
+│       │                    #   useWakeLock, useNetworkStatus, useSoundEffects, useScrollReveal
+│       ├── utils/           # crypto, audioPresets, audioBooster, roomId, sanitizer, linkify, recentRooms,
+│       │                    #   formatTime, webrtcConfig, confetti, sfxSynth, viewTransition (+ __tests__/)
+│       ├── data/            # changelog.js, roadmap.js (feed the public pages)
+│       ├── styles/          # tokens, base, components, utilities, responsive, home, room, meet, pages,
+│       │                    #   home-redesign, room-redesign
+│       └── test/setup.js    # Vitest setup (localStorage + WebCrypto shims for CI Node versions)
+├── server/                  # Node.js Express + Socket.IO
+│   ├── src/                 # index.js, socketHandlers.js, roomManager.js, rateLimiter.js,
+│   │                        #   livekitToken.js, logger.js
+│   └── __tests__/           # roomManager, rateLimiter, socketHandlers, livekitToken
+├── docs/                    # FILE_STRUCTURE, SFU_DESIGN, AUTH_DESIGN* , DATABASE_DESIGN*  (*proposals only)
+├── ARCHITECTURE.md  CHANGELOG.md  CONTRIBUTING.md  CODE_OF_CONDUCT.md  DEPLOYMENT.md
+├── MASTER_PLAN_NEW.md  PROJECT_MEMORY.md  README.md  SECURITY.md  LICENSE
+└── docker-compose.yml  render.yaml  vercel.json  package.json
 ```
 
 ---
 
-## 3. Technology Stack Reference
+## 3. Technology Stack
 
-| Layer | Technologies Used |
+| Layer | Technologies |
 | :--- | :--- |
-| **Frontend Framework** | React 18 (`react`, `react-dom`, `react-router-dom` v6) |
-| **Build & Tooling** | Vite 5, `vite-plugin-pwa`, Vitest |
-| **Icons & Animation** | `@phosphor-icons/react`, `framer-motion`, `canvas-confetti` |
-| **Styling** | Vanilla CSS3, CSS Custom Properties (`tokens.css`), Glassmorphism |
-| **Real-time Signaling** | Socket.IO client & server (`v4.7.4`), WebSockets |
-| **Media & Audio Engine** | WebRTC (`RTCPeerConnection`), Web Audio API (`AudioContext`, `GainNode`) |
-| **Cryptography** | Web Crypto API (`crypto.subtle` AES-256-GCM) |
-| **Backend Runtime** | Node.js (>=18.0.0), Express 4, Pino Logger |
-| **Deployment Targets** | **Frontend**: Vercel (`vercel.json`) \| **Signaling Server**: Render (`render.yaml`) |
+| Frontend | React 18, react-router-dom 6, Vite 5, vite-plugin-pwa, Vitest + jsdom |
+| UI | Vanilla CSS + custom properties, `@phosphor-icons/react`, `framer-motion`, `canvas-confetti` |
+| Media | `livekit-client`, `@livekit/components-react`, WebRTC (`RTCPeerConnection`), Web Audio API |
+| Signaling | Socket.IO 4, Express 4, Pino |
+| LiveKit | `livekit-server-sdk` (JWT minting at `POST /api/token`); LiveKit Cloud or Docker |
+| Crypto | Web Crypto API, AES-256-GCM (chat only) |
+| Deploy | Vercel (client), Render (server), `docker-compose.yml` (full stack) |
+| CI | GitHub Actions: tests on Node 18.x/20.x, build, server smoke test, CodeQL |
 
 ---
 
-## 4. Key Architectural Patterns & Contracts
+## 4. Key Contracts
 
-### 4.1 Cryptographic Key Flow (Zero-Knowledge)
-1. **Generation**: Host generates 256-bit AES-GCM key in browser via `crypto.subtle.generateKey`.
-2. **Key Storage in URL**: Key is serialized into URL hash: `https://domain.com/room/abc-123#SECRET_KEY`.
-3. **Network Isolation**: Per RFC 3986, browser user agents **never** transmit URL `#hash` fragments in HTTP requests or WebSocket handshakes.
-4. **Chat Encryption**: Messages are encrypted locally before being emitted over Socket.IO. The server only sees ciphertext. Connected peers decrypt locally using the key in their URL hash.
+### Chat key flow
+Host generates a 256-bit AES-GCM key → placed in URL hash `/room/ID#KEY` → browsers never transmit the fragment → messages are encrypted client-side and the server relays ciphertext only.
 
-### 4.2 WebRTC Signaling Protocol
-The server never decodes or transacts audio/video frames. It routes these Socket.IO events:
-- `room:create`: `{ roomId, pin, name, gender }`
-- `room:join`: `{ roomId, pin, name, gender }`
-- `webrtc:offer`: `{ to, offer }` (SDP offer forwarded to specific peer)
-- `webrtc:answer`: `{ to, answer }` (SDP answer forwarded back)
-- `webrtc:ice`: `{ to, candidate }` (ICE candidate exchange)
-- `chat:message`: Encrypted payload forwarded to same-room sockets
-- `draw:stroke` / `cursor:move`: Real-time canvas annotation coordinates
+### Socket events (see `server/src/socketHandlers.js`)
+- Rooms: `room:create`, `room:join`, `room:kick`, `room:transfer-host`, `room:host-only-toggle`, `room:reaction`
+- WebRTC relay: `webrtc:offer`, `webrtc:answer`, `webrtc:ice`, `webrtc:stop` → `webrtc:stream-end`
+- Sync / annotation: `sync:play|pause|seek`, `sync:pointer|draw|clear-draw`
+- Chat: `chat:message|typing|edit|delete`
+- Meet: `meet:join|signal|state-change|reaction|chat|leave`
+
+### HTTP
+`GET /health`, `GET /api/rooms` (off in production by default), `POST /api/token`.
 
 ---
 
-## 5. AI Engineering Rules (Do NOT Violate)
+## 5. AI Engineering Rules
 
-1. **Never Introduce Heavy CSS Frameworks**: Do not install Tailwind, Bootstrap, or component UI kits. Always use the established CSS variables in `client/src/styles/tokens.css`.
-2. **Never Route Media Through the Server**: Do not attempt to process video or audio streams on the Node.js server. Keep all media strictly peer-to-peer over WebRTC.
-3. **Maintain Zero-Account Privacy**: Do not add user registration tables, database requirements, or mandatory login gates.
-4. **Preserve Content-Security-Policy (CSP)**: Whenever adding external assets or workers, ensure `vercel.json` and `client/vercel.json` CSP directives (`script-src`, `worker-src`, `connect-src`) remain valid.
-5. **Always Run & Verify Tests**:
-   - Client tests: `cd client && npm test`
-   - Server tests: `cd server && npm test`
-   - Client build: `cd client && npm run build`
+1. **No heavy CSS frameworks.** Use the tokens in `client/src/styles/tokens.css`.
+2. **Never route media through the signaling server.**
+3. **Keep zero-account privacy**: no registration, no database requirement, no login gates.
+4. **Preserve CSP**: when adding external assets/workers, keep `vercel.json` and `client/vercel.json` directives valid.
+5. **Don't overclaim security**: media is not end-to-end encrypted; only chat is.
+6. **Always run and verify**:
+   - `cd server && npm test` (Vitest)
+   - `cd client && npm test` (Vitest)
+   - `cd client && npm run build` and `npm run lint`
+   CI runs the client on Node 18 and 20, so avoid relying on globals that only exist in newer Node.
+7. **Never commit `.env` files**; only `.env.example` templates are tracked.
 
 ---
 
 <div align="center">
-  <sub>ScreenLoop Project Memory • Maintained for seamless multi-agent and human developer continuity.</sub>
+  <sub>ScreenLoop Project Memory • Keep this file in sync with the code.</sub>
 </div>

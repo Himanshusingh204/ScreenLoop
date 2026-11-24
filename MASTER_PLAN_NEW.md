@@ -6,7 +6,7 @@
 > **Dual Engine**:  
 > 1. **Watch Party Engine**: **LiveKit SFU** (`livekit-server` + `@livekit/components-react` + `livekit-client`) with Cinema-Grade 48kHz Audio & Hybrid WebRTC P2P Fallback  
 > 2. **Video Meet Engine**: Multi-grid video conferencing, dynamic active speaker spotlighting, live emoji bursts, hand-raising, and in-call device switching  
-> **Security Certification**: E2EE (Insertable Streams), JWT Room Tokens, Timing-safe PIN verification, Strict CSP, Zero Sensitive Data on GitHub  
+> **Security Certification**: AES-256-GCM E2EE chat (media E2EE planned), JWT Room Tokens, Timing-safe PIN verification, Strict CSP, Zero Sensitive Data on GitHub  
 > **Quality Gates**: 75/75 Vitest Tests Passing | 0 ESLint Errors | Clean Vite Production Build | PWA Ready
 
 ---
@@ -57,7 +57,7 @@ flowchart TD
         MEET["Video Meet (/meet/:id)"]
         LK_HOOK["useLiveKitRoom (Hybrid SFU/P2P)"]
         MEET_RTC["useMeetRTC (Multi-Peer Mesh)"]
-        E2EE["E2EE Key Provider (URL Hash #key)"]
+        E2EE["Chat Key (URL Hash #key)"]
     end
 
     subgraph Signaling["Screenloop Signaling (Node.js/Express/Socket.io)"]
@@ -69,7 +69,7 @@ flowchart TD
 
     subgraph MediaRouter["LiveKit SFU (Cloud or Self-Hosted Docker)"]
         SFU["Selective Forwarding Unit (Ports 7880, 7881, 7882)"]
-        PASS_THRU["Blind Encrypted Frame Routing"]
+        PASS_THRU["DTLS-SRTP Media Relay"]
     end
 
     NAV --> WATCH
