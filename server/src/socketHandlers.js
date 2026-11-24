@@ -304,6 +304,13 @@ function registerHandlers(socket, io) {
     });
   });
 
+  // ─── WebRTC: Stop Stream (host ended the share) ─────────────────────────────
+  socket.on('webrtc:stop', ({ roomId }) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m) return;
+    io.to(roomId).emit('webrtc:stream-end', { roomId });
+  });
+
   // ─── Sync: Play ─────────────────────────────────────────────────────────────
   // Phase 2: server-side name (never trust client-sent "name").
   socket.on('sync:play', ({ roomId, currentTime }) => {
