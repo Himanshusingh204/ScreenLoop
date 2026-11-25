@@ -23,6 +23,11 @@ const SWEEP_INTERVAL_MS = 60 * 1000; // sweep every 60 seconds
  * Get a stable rate-limit key from a socket (IP address).
  */
 function getClientKey(socket) {
+  // Only trust X-Forwarded-For when explicitly behind our own proxy/LB, else it is spoofable.
+  if (process.env.TRUST_PROXY === 'true') {
+    const xff = socket.handshake?.headers?.['x-forwarded-for'];
+    if (typeof xff === 'string' && xff.trim()) return xff.split(',')[0].trim();
+  }
   return socket.handshake?.address || socket.id;
 }
 

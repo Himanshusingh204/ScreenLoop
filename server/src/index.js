@@ -11,13 +11,13 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { stopRoomSweep, listRooms, countMeets, getRoom, verifyPin, normalizeGender } = require('./roomManager');
-const { checkPinBruteForce, recordFailedPin, resetFailedPin } = require('./rateLimiter');
+const { getClientKey, checkPinBruteForce, recordFailedPin, resetFailedPin } = require('./rateLimiter');
 const { registerHandlers } = require('./socketHandlers');
 const { generateLiveKitToken, LIVEKIT_URL } = require('./livekitToken');
 const logger = require('./logger');
 const { register, tokenRequests, registerGauges } = require('./metrics');
 
-const MAX_IP_CONNECTIONS = 5;
+const MAX_IP_CONNECTIONS = parseInt(process.env.MAX_IP_CONNECTIONS, 10) || 5;
 const connectedIPs = new Map();
 
 const rateLimit = require('express-rate-limit');
@@ -27,6 +27,7 @@ const server = http.createServer(app);
 
 // ─── Disable X-Powered-By ───────────────────────────────────────────────────
 app.disable('x-powered-by');
+if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 
 // ─── Dynamic Origin Validator ───────────────────────────────────────────────
 const explicitOrigins = process.env.ALLOWED_ORIGIN
@@ -214,7 +215,7 @@ app.post('/api/token', tokenLimiter, async (req, res) => {
 
 // ─── Socket.io Connection ────────────────────────────────────────────────────
 io.on('connection', (socket) => {
-  const clientIP = socket.handshake.address;
+  const clientIP = getClientKey(socket);
   const ipCount = (connectedIPs.get(clientIP) || 0) + 1;
   connectedIPs.set(clientIP, ipCount);
 
