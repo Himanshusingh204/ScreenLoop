@@ -98,6 +98,33 @@ function payloadSize(value) {
   }
 }
 
+// ─── Sync / annotation payload validation ───────────────────────────────────
+// Shapes match client/src: media times are seconds; pointer and stroke
+// coordinates are 0..1 fractions of the video area (pointer uses -1 on leave;
+// touch strokes may drift a little past the edge, hence the wider stroke range).
+const MAX_MEDIA_TIME_S = 1e7;
+const MAX_STROKE_CHARS = 8192;
+// shortcut: allowlist mirrors ControlBar's five reactions, add new ones here too
+const REACTION_EMOJIS = new Set(['😂', '😲', '💖', '🍿', '🔥']);
+
+function isMediaTime(t) {
+  return typeof t === 'number' && Number.isFinite(t) && t >= 0 && t <= MAX_MEDIA_TIME_S;
+}
+
+function isPointerCoord(v) {
+  return typeof v === 'number' && ((v >= 0 && v <= 1) || v === -1);
+}
+
+function isStrokeCoord(v) {
+  return typeof v === 'number' && Number.isFinite(v) && v >= -1 && v <= 2;
+}
+
+function isValidStroke(s) {
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return false;
+  if (payloadSize(s) > MAX_STROKE_CHARS) return false;
+  return ['fromX', 'fromY', 'toX', 'toY'].every((k) => isStrokeCoord(s[k]));
+}
+
 // ─── Membership assertions (Phase 2: single source of truth) ────────────────
 // Every room/meet event must prove: socket claims this room AND the room exists
 // AND the socket is still a participant. Returns { room, participant } or null.
@@ -353,6 +380,7 @@ function registerHandlers(socket, io) {
   socket.on('sync:play', ({ roomId, currentTime }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
+    if (currentTime !== undefined && !isMediaTime(currentTime)) return;
     socket.to(roomId).emit('sync:play', { name: m.participant.name, currentTime });
   });
 
@@ -360,6 +388,7 @@ function registerHandlers(socket, io) {
   socket.on('sync:pause', ({ roomId, currentTime }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
+    if (currentTime !== undefined && !isMediaTime(currentTime)) return;
     socket.to(roomId).emit('sync:pause', { name: m.participant.name, currentTime });
   });
 
@@ -367,6 +396,7 @@ function registerHandlers(socket, io) {
   socket.on('sync:seek', ({ roomId, time }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
+    if (!isMediaTime(time)) return;
     socket.to(roomId).emit('sync:seek', { name: m.participant.name, time });
   });
 
@@ -443,8 +473,9 @@ function registerHandlers(socket, io) {
     if (!m) return;
     const { room } = m;
     if (room.hostId !== socket.id) return;
+    if (typeof enabled !== 'boolean') return;
     // Task 42: persist state on the room object so late joiners get it
-    room.hostOnlyControls = !!enabled;
+    room.hostOnlyControls = enabled;
     io.to(roomId).emit('room:host-only-changed', { enabled: room.hostOnlyControls });
   });
 
@@ -454,7 +485,7 @@ function registerHandlers(socket, io) {
     if (!m) return;
     if (!checkSpam(socket)) return;
     if (!checkReactionRate(socket)) return;
-    if (!emoji || typeof emoji !== 'string' || emoji.length > 10) return;
+    if (!REACTION_EMOJIS.has(emoji)) return;
 
     // Use server-side name to prevent impersonation
     const { participant } = m;
@@ -468,14 +499,12 @@ function registerHandlers(socket, io) {
 
   socket.on('sync:pointer', ({ roomId, x, y }) => {
     if (!requireRoomMember(socket, roomId)) return;
-    if (typeof x !== 'number' || typeof y !== 'number') return;
-    if (!isFinite(x) || !isFinite(y)) return;
+    if (!isPointerCoord(x) || !isPointerCoord(y)) return;
     socket.to(roomId).emit('sync:pointer', { x, y });
   });
 
   socket.on('sync:draw', ({ roomId, stroke }) => {
-    if (!requireRoomMember(socket, roomId) || !stroke) return;
-    if (!Array.isArray(stroke) || stroke.length > 5000) return;
+    if (!requireRoomMember(socket, roomId) || !isValidStroke(stroke)) return;
     socket.to(roomId).emit('sync:draw', { stroke });
   });
 
