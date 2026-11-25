@@ -1,5 +1,8 @@
 // ConfirmModal.jsx — Custom confirmation dialog replacing window.confirm()
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * @param {object} props
@@ -22,21 +25,48 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }) {
-  const confirmRef = useRef(null);
+  const dialogRef = useRef(null);
+  const cancelRef = useRef(null);
+  const titleId = useId();
+  const messageId = useId();
 
-  useEffect(() => {
-    if (open && confirmRef.current) {
-      confirmRef.current.focus();
-    }
-  }, [open]);
-
+  // Focus the safest control (cancel) on open; hand focus back to the opener on close.
   useEffect(() => {
     if (!open) return;
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') onCancel();
+    const opener = document.activeElement;
+    cancelRef.current?.focus();
+    return () => {
+      if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+  }, [open]);
+
+  // Escape closes; Tab and Shift+Tab cycle focus inside the dialog.
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        onCancel();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const items = dialogRef.current.querySelectorAll(FOCUSABLE);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      const inside = dialogRef.current.contains(active);
+      if (e.shiftKey) {
+        if (!inside || active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (!inside || active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
   }, [open, onCancel]);
 
   if (!open) return null;
@@ -44,16 +74,24 @@ export function ConfirmModal({
   const variantClass = variant === 'danger' ? 'btn-danger' : variant === 'warning' ? 'btn-warning' : 'btn-primary';
 
   return (
-    <div className="modal-backdrop" onClick={onCancel} role="dialog" aria-modal="true" aria-label={title}>
+    <div
+      ref={dialogRef}
+      className="modal-backdrop"
+      onClick={onCancel}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      aria-labelledby={titleId}
+      aria-describedby={messageId}
+    >
       <div className="confirm-modal-card" onClick={(e) => e.stopPropagation()}>
-        <h3 className="confirm-modal-title">{title}</h3>
-        <p className="confirm-modal-message">{message}</p>
+        <h3 id={titleId} className="confirm-modal-title">{title}</h3>
+        <p id={messageId} className="confirm-modal-message">{message}</p>
         <div className="confirm-modal-actions">
-          <button className="btn btn-ghost btn-sm" onClick={onCancel} type="button">
+          <button ref={cancelRef} className="btn btn-ghost btn-sm" onClick={onCancel} type="button">
             {cancelText}
           </button>
           <button
-            ref={confirmRef}
             className={`btn btn-sm ${variantClass}`}
             onClick={onConfirm}
             type="button"
