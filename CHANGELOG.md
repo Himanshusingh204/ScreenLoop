@@ -10,18 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - Upcoming
 
 ### Added
-- **LiveKit SFU media engine**: watch rooms stream through LiveKit (1 upload, many viewers) with P2P mesh fallback when no LiveKit credentials are set.
-- **Video Meet (`/meet`)**: multi-tile video grid, active speaker detection, pre-call lobby, device settings modal, emoji reactions, and hand raise.
+- **On-device live captions** (`CC` in watch rooms): Whisper in a Web Worker (WebGPU, WASM fallback), optional English translation, downloadable extractive recap. No audio or transcript leaves the device.
+- **Media-frame end-to-end encryption** for watch rooms (LiveKit `ExternalE2EEKeyProvider`, key from the URL `#fragment`), with per-recipient key rotation when the host removes someone (ECDH P-256 + HKDF salted with the room key + AES-GCM, epoch-ordered).
+- **Video Meet on the LiveKit SFU** (opt-in `VITE_MEET_SFU=true`) with automatic P2P mesh fallback.
+- **Scale-out**: optional Redis Socket.IO adapter (`REDIS_URL`), room-affinity load balancing, `/healthz`, Prometheus `/metrics` (optional `METRICS_TOKEN`), nginx / docker-compose / Kubernetes manifests, Socket.IO load test with published baseline.
+- **Live verification suite** (`e2e/`) driving real Chrome against a real LiveKit server; `docs/THREAT_MODEL.md`, `SYSTEM_DESIGN.md`, `VERIFICATION.md`, `AI_EVAL.md`, `CASE_STUDY.md`.
+- CI: dependency audit and a 3-node compose smoke test.
 
-- **On-device live captions** (`CC` button in watch rooms): Whisper runs in a Web Worker (WebGPU, WASM fallback); audio never leaves the browser. Optional English translation and a downloadable extractive recap.
-- **Scale-out**: optional Redis adapter (`REDIS_URL`), proxy-aware rate limits (`TRUST_PROXY`), `MAX_IP_CONNECTIONS`, `/healthz`, Prometheus `/metrics`, nginx and Kubernetes manifests with room-affinity routing, and a socket load test (`loadtest/`).
+### Changed
+- **LiveKit tokens are issued over the authenticated socket (`sfu:token`)**; the open `POST /api/token` endpoint was removed. Identity is the socket id, only the server-recorded host can publish, and kicked users are removed from the SFU.
+- LiveKit rooms are namespaced `w:<id>` / `m:<id>`; Meet Socket.IO rooms are namespaced `meet:<id>`.
+- Clicking Share while the SFU is still connecting now waits instead of silently falling back to P2P.
+- Dependency updates (`npm audit fix`): server 1 critical + 5 high advisories and client 3 high advisories resolved.
 
 ### Fixed
-- Per-IP limits collapsed to a single bucket behind a load balancer; they now read `X-Forwarded-For` when `TRUST_PROXY=true`.
+- Per-IP limits collapsed to one bucket behind a load balancer; they now use the rightmost `X-Forwarded-For` hop when `TRUST_PROXY=true` (nginx overwrites the header).
+- Multi-node: PIN could be bypassed via the token endpoint, and a same-named "shadow" room could be created on another node; sockets are now bound to their room.
+- `docker-compose.yml` could never start LiveKit (key format) and handed browsers an unreachable hostname.
+- `/healthz`, `/health`, `/metrics` returned 500 in production for requests without an `Origin` header.
+- Meet mesh fallback missed peers depending on join order; the "end-to-end encrypted" indicator no longer stays up after a fall back to P2P.
+- Captions: a single bad audio window no longer stops captions; unsupported browsers fail cleanly instead of crashing the page.
+
+### Known limitations
+- A kick is not a ban (the link is the credential). Meet is not frame-encrypted, and SFU and mesh Meet peers do not interoperate.
+- `deploy/k8s/` has not been applied to a cluster. Caption accuracy is measured on one clean synthetic clip only.
 
 ### Planned
-- **Chat message search & filter** (see `client/src/data/roadmap.js`).
-- **Audio description track support**.
+- Chat message search & filter (see `client/src/data/roadmap.js`).
+- Audio description track support.
 
 ---
 

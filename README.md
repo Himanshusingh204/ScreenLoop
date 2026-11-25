@@ -63,7 +63,8 @@ Chat messages are encrypted client-side with **AES-256-GCM** via the Web Crypto 
 - **No software or extension downloads**
 - **The signaling server never handles media** (media goes through LiveKit or directly between peers)
 - **Chat decryption keys never leave the browser URL fragment**
-- **Media is encrypted in transit (DTLS-SRTP).** In watch rooms, when the link carries the key (`#...`), media frames are additionally end-to-end encrypted (LiveKit `ExternalE2EEKeyProvider`, key derived from the URL fragment), so the SFU forwards ciphertext; when the host removes someone it rotates the key per recipient (ECDH-wrapped). Video Meet and the P2P fallback are not frame-encrypted. **Status: unit-tested key logic and a clean build; not yet verified against a live LiveKit server.**
+- **Captions and recap run on your device**; audio is never sent to a captioning service
+- **Media is encrypted in transit (DTLS-SRTP).** In watch rooms, when the link carries the key (`#...`), media frames are additionally end-to-end encrypted (LiveKit `ExternalE2EEKeyProvider`, key derived from the URL fragment), so the SFU forwards ciphertext; when the host removes someone it rotates the key per recipient (ECDH-wrapped). Video Meet and the P2P fallback are not frame-encrypted. **Status: unit-tested and verified against a real LiveKit server in Chrome (see `docs/VERIFICATION.md`).**
 
 ---
 
@@ -77,6 +78,20 @@ Chat messages are encrypted client-side with **AES-256-GCM** via the Web Crypto 
 | **Account Required** | Yes (email, OAuth, or phone verification) | **None (Zero registration, instant ephemeral rooms)** |
 | **Decryption Key Storage** | Server databases / Key management services | **URL Hash Fragment (Never transmitted over network)** |
 | **Installation** | Client downloads or browser extensions | **Pure Web Standards (Works out-of-the-box)** |
+
+---
+
+## What's new in this release
+
+| Area | What shipped | Verified how |
+| :--- | :--- | :--- |
+| **On-device AI captions** | `CC` button: Whisper runs in a Web Worker (WebGPU, WASM fallback); optional English translation; downloadable recap. **No audio or transcript leaves the device.** | Real Chrome, via the E2EE SFU path: ready in 19 s, first caption 6.8 s, WER 5.1 % on one clean clip ([AI_EVAL](docs/AI_EVAL.md)) |
+| **Media-frame E2EE** (watch rooms) | LiveKit `ExternalE2EEKeyProvider`, key from the URL `#fragment`; the host rotates the key on a kick (ECDH + HKDF bound to the room key) | Live: keyless viewer decodes 0 frames; rotation reaches remaining viewers; late joiner decodes |
+| **Meet on the SFU** (opt-in `VITE_MEET_SFU=true`) | One upload per user via LiveKit, automatic mesh fallback | Live: 3 tabs, and fallback with LiveKit stopped |
+| **Server-authorized media** | LiveKit tokens issued over the authenticated socket (`sfu:token`); identity = socket id; only the recorded host can publish; kicked users removed from the SFU | Live + unit |
+| **Scale-out** | Optional Redis adapter, room-affinity load balancing, `/healthz`, Prometheus `/metrics`, nginx + Kubernetes manifests, load test | Docker stack (3 nodes + Redis + LiveKit) run end-to-end; baseline 500 sockets, p95 372 ms on one process; `deploy/k8s/` not run |
+
+Details: [Threat model](docs/THREAT_MODEL.md) · [System design](docs/SYSTEM_DESIGN.md) · [Verification log](docs/VERIFICATION.md) · [Case study](docs/CASE_STUDY.md) · [Load test](loadtest/README.md) · [Live e2e suite](e2e/README.md).
 
 ---
 
@@ -94,6 +109,10 @@ Chat messages are encrypted client-side with **AES-256-GCM** via the Web Crypto 
 - **RFC 3986 URL Hash Isolation**: The cryptographic room key resides in the URL `#hash` fragment and is never sent to the signaling server in HTTP requests.
 - **Optional Room PIN Protection**: Salted/hashed PIN protection prevents unauthorized room entry.
 - **Strict Content-Security-Policy**: Hardened headers prevent XSS, clickjacking, and unauthorized origin framing.
+
+- **Media-frame E2EE (watch rooms)**: with the full link (`#key`), the SFU forwards ciphertext; the key rotates when the host removes someone.
+- **Server-authorized media**: publish rights come from the server's record of the host, never from the client.
+- **On-device captions & recap**: Whisper in a Web Worker, optional English translation, local Markdown recap.
 
 ### 🤝 Real-Time Collaboration & Room Control
 - **Live Canvas Annotations**: Freehand drawing tools and synchronized laser pointer overlay directly on the stream.
@@ -227,6 +246,13 @@ Copy `client/.env.example` and `server/.env.example` to `.env` files. Main varia
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit credentials for token minting (`sfu:token`) | see `.env.example` |
 | `MAX_PARTICIPANTS`, `MAX_MEET_PARTICIPANTS`, `MAX_ROOMS`, `ROOM_TTL_MS`, `MEET_TTL_MS` | Capacity and lifecycle limits | see `.env.example` |
 | `ROOM_LISTING_ENABLED` | Expose `/api/rooms` (off in production by default) | on in dev |
+| `LIVEKIT_API_URL` | How the server reaches LiveKit internally (when `LIVEKIT_URL` is the browser-facing URL) | falls back to `LIVEKIT_URL` |
+| `REDIS_URL` | Enables the Socket.IO Redis adapter (multi-node). Requires an LB hashing on `?room=` | unset (single node) |
+| `TRUST_PROXY` | `true` only behind your own proxy that overwrites `X-Forwarded-For` | unset |
+| `MAX_IP_CONNECTIONS`, `SPAM_MAX_EVENTS` | Per-IP limits (raise behind a shared NAT/LB) | `5`, `20` |
+| `METRICS_TOKEN` | Require `Authorization: Bearer` on `/metrics` | unset (open) |
+
+Client build flag: `VITE_MEET_SFU=true` runs Video Meet on LiveKit (mesh fallback on failure).
 
 ---
 
@@ -260,6 +286,10 @@ cd client
 npm run build
 ```
 
+Current baseline: **server 83 tests, client 84 tests, lint clean, build OK**.
+
+Beyond unit tests, `e2e/` drives real Chrome against a real LiveKit server (Meet on the SFU and its fallback, media E2EE, kick and key rotation, captions benchmark). See [e2e/README.md](e2e/README.md) and [docs/VERIFICATION.md](docs/VERIFICATION.md). `loadtest/` holds the Socket.IO load test and published baseline.
+
 ---
 
 ## Repository Structure
@@ -278,16 +308,23 @@ ScreenLoop/
 │   │   ├── hooks/             # LiveKit, WebRTC, Meet, signaling, wake lock & recording hooks
 │   │   ├── pages/             # Route pages (Home, Room, Security, Roadmap, etc.)
 │   │   ├── styles/            # Vanilla CSS design tokens & component styles
-│   │   └── utils/             # AES crypto, audio booster, linkifier, sanitizers
+│   │   ├── ai/                # On-device captions: chunker, worker, recap
+│   │   └── utils/             # AES crypto, media-key rotation, SFU helpers, audio booster, sanitizers
 │   └── vercel.json            # Client-specific Vercel routing & headers
 ├── server/                    # Node.js Socket.IO signaling service
 │   ├── src/
 │   │   ├── index.js           # Server bootstrap & health check endpoints
 │   │   ├── roomManager.js     # Ephemeral in-memory room state
 │   │   ├── livekitToken.js    # LiveKit access-token minting
+│   │   ├── livekitAdmin.js    # Server-side SFU control (remove kicked users)
+│   │   ├── redisAdapter.js    # Optional multi-node Socket.IO adapter
+│   │   ├── metrics.js         # Prometheus metrics
 │   │   ├── socketHandlers.js  # Signaling, chat, sync & Meet event router
 │   │   └── rateLimiter.js     # IP & socket connection rate limiting
 │   └── __tests__/             # Server vitest test suites
+├── deploy/                    # nginx LB, 3-node compose, Kubernetes manifests
+├── e2e/                       # Live real-browser + real-LiveKit checks
+├── loadtest/                  # Socket.IO load test and baseline
 ├── vercel.json                # Root zero-config Vercel deployment configuration
 ├── CONTRIBUTING.md            # Contributor setup & branching guides
 ├── CODE_OF_CONDUCT.md         # Contributor Covenant Code of Conduct
@@ -303,7 +340,7 @@ ScreenLoop/
 
 - **Zero Data Collection**: ScreenLoop maintains no persistent databases, logs no user accounts, and stores no analytical tracking scripts.
 - **Ephemeral State**: Rooms and connection metadata exist only in memory on the signaling server and are immediately garbage-collected when the host disconnects.
-- **DTLS-SRTP Encryption**: Audio/video is encrypted in transit under mandatory WebRTC DTLS-SRTP. Through the LiveKit SFU the media is not end-to-end encrypted (the SFU terminates DTLS-SRTP); chat is end-to-end encrypted.
+- **Encryption**: media is DTLS-SRTP encrypted in transit; in watch rooms the full link additionally end-to-end encrypts media frames (the SFU sees ciphertext), and chat is end-to-end encrypted. Video Meet and the P2P fallback are not frame-encrypted. See [THREAT_MODEL](docs/THREAT_MODEL.md) for limits (a kick is not a ban; the link is the credential).
 - **Vulnerability Disclosures**: If you discover a security vulnerability, please report it via [GitHub Security Advisories](https://github.com/Himanshusingh204/ScreenLoop/security/advisories/new) as detailed in our [Security Policy](SECURITY.md).
 
 ---

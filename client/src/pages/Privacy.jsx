@@ -52,7 +52,7 @@ const privacySections = [
     title: '4. WebRTC Media Connections',
     content: (
       <p>
-        When you share your screen, media travels over encrypted WebRTC (DTLS-SRTP). In watch rooms it is relayed live through a LiveKit media server, which can process the stream in memory but does not record or store it; in fallback mode and in Video Meet it flows directly between participants. The Screenloop signaling server only sets up connections (SDP offers/answers and ICE candidates) and never receives video or audio. Chat messages are end-to-end encrypted in your browser.
+        When you share your screen, media travels over encrypted WebRTC (DTLS-SRTP). In watch rooms it is relayed live through a LiveKit media server that does not record or store it, and when you use the full link the media is end-to-end encrypted so that server only sees ciphertext; in fallback mode and in Video Meet it flows directly between participants. The Screenloop signaling server only sets up connections (SDP offers/answers and ICE candidates) and never receives video or audio. Chat messages are end-to-end encrypted in your browser. Live captions, if you turn them on, are produced on your own device: no audio or transcript is sent to us or to any captioning service.
       </p>
     ),
   },

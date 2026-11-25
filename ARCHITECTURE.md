@@ -85,6 +85,8 @@
 | Annotation | `sync:pointer`, `sync:draw`, `sync:clear-draw` |
 | Chat | `chat:message`, `chat:typing`, `chat:edit`, `chat:delete` |
 | Meet | `meet:join`, `meet:signal`, `meet:state-change`, `meet:reaction`, `meet:chat`, `meet:leave` |
+| SFU access | `sfu:token` (ack: `{token,url}`) for kind `watch` or `meet`; members only |
+| Media E2EE | `e2ee:hello` (publish ECDH public key), `e2ee:rekey` (host-only; wrapped key + epoch; relayed to one member) |
 
 Handlers verify the sender is a member of the target room before relaying. The server resolves display names itself and never trusts a client-sent name for sync events.
 
@@ -107,7 +109,7 @@ Handlers verify the sender is a member of the target room before relaying. The s
 2. Browsers never send the fragment in HTTP or WebSocket requests, so the server never sees the key.
 3. Each message is encrypted with a fresh 12-byte IV; the payload is `IV || ciphertext`, base64url encoded. The server relays ciphertext only. A wrong key makes decryption return `null`.
 
-**What is not end-to-end encrypted: media.** Audio/video is protected in transit by WebRTC DTLS-SRTP. In P2P mode that is effectively peer-to-peer; in LiveKit mode the SFU terminates DTLS-SRTP and can access media. Watch-room media-frame E2EE is **implemented but unverified against a live SFU**: `useLiveKitRoom` enables LiveKit's `ExternalE2EEKeyProvider` with the URL-fragment key, and `MediaKeyCoordinator` (`client/src/utils/mediaKeyCoordinator.js`) rotates it on a kick by wrapping a fresh key to each remaining peer's ECDH public key; the server only relays (`e2ee:hello`, `e2ee:rekey`, host-only). A viewer whose link lacks the `#key` cannot decode an encrypted stream. A kick is not a ban: the link is the credential, so a removed user who rejoins with it is given the current key. Video Meet is not frame-encrypted.
+**Media encryption.** Audio/video is protected in transit by WebRTC DTLS-SRTP everywhere. Watch-room frames are additionally end-to-end encrypted (below); Meet and the P2P fallback are not. In P2P mode that is effectively peer-to-peer; in LiveKit mode the SFU terminates DTLS-SRTP and can access media. Watch-room media-frame E2EE is **implemented and verified against a live SFU** (`docs/VERIFICATION.md`): `useLiveKitRoom` enables LiveKit's `ExternalE2EEKeyProvider` with the URL-fragment key, and `MediaKeyCoordinator` (`client/src/utils/mediaKeyCoordinator.js`) rotates it on a kick by wrapping a fresh key to each remaining peer's ECDH public key; the server only relays (`e2ee:hello`, `e2ee:rekey`, host-only). A viewer whose link lacks the `#key` cannot decode an encrypted stream. A kick is not a ban: the link is the credential, so a removed user who rejoins with it is given the current key. Video Meet is not frame-encrypted.
 
 ## 7. Security Layers
 
@@ -152,3 +154,9 @@ npm run build --prefix client
 - **New socket event:** add the handler in `server/src/socketHandlers.js` (validate membership first), add a test in `server/__tests__/`, then consume it in the relevant hook.
 - **Styling:** use tokens from `styles/tokens.css`; do not add a CSS framework.
 - **Icons:** export from `components/icons/index.js` (Phosphor).
+
+## 11. Scaling, security and verification (see `docs/`)
+- **Scale-out:** rooms live in one node's memory; the load balancer hashes on `?room=`; the optional Redis adapter relays broadcasts. Deploy files are in `deploy/`. See `docs/SYSTEM_DESIGN.md`.
+- **Threats and limits:** `docs/THREAT_MODEL.md`.
+- **What has been run for real:** `docs/VERIFICATION.md` and `e2e/`.
+- **On-device AI:** `client/src/ai/` (chunker, worker, recap), `useLiveCaptions`, `CaptionsLayer`; benchmark in `docs/AI_EVAL.md`.

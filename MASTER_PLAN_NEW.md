@@ -24,16 +24,17 @@ Screenloop is a **zero-account** place to watch together and meet face to face: 
 | Area | State | Evidence |
 |---|---|---|
 | Watch rooms (LiveKit + P2P fallback) | ✅ Shipped | `useLiveKitRoom`, `useWebRTC`, `sfu:token` |
-| Video Meet (P2P mesh) | ✅ Shipped | `useMeetRTC`, `components/meet/*` |
+| Video Meet (P2P mesh; opt-in SFU with fallback) | ✅ Shipped, SFU verified live | `useMeetRTC`, `useMeetLiveKit`, `components/meet/*` |
 | Chat (AES-256-GCM, search, edit/delete, typing) | ✅ Shipped | `crypto.js`, `ChatSidebar.jsx` |
 | Security hardening (CORS, rate limits, PIN lockout, 1 MB cap) | ✅ Shipped | `server/src/*`, 40 server tests |
 | CI (Node 18/20 tests, build, smoke, CodeQL) | ✅ Green | GitHub Actions |
 | Wave footer + visual polish layer | ✅ Shipped | `polish.css`, `SiteFooter.jsx` |
-| Media-frame E2EE | ❌ Not built | see P1 |
-| Multi-node scaling | ❌ Not built | see P2 |
+| Media-frame E2EE (watch rooms) | ✅ Shipped, verified live | `useLiveKitRoom`, `mediaKeyCoordinator.js` |
+| Multi-node scaling | ✅ Redis adapter + room affinity; compose stack run live; k8s not run | `deploy/`, `docs/SYSTEM_DESIGN.md` |
+| On-device captions + recap | ✅ Shipped (1 clip benchmarked) | `client/src/ai/`, `docs/AI_EVAL.md` |
 | Described-audio track | ❌ Not built | see P3 |
 
-Quality gates today: server 40/40, client 35/35, lint 0 errors (53 unused-import warnings), production build OK.
+Quality gates today: server 83/83, client 84/84, lint clean, production build OK, live e2e suite in `e2e/` passing.
 
 ## 3. Roadmap (priority order)
 

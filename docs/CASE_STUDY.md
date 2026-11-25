@@ -17,12 +17,15 @@ Screenloop lets people watch together with no account. Two gaps: (1) one in-memo
 | Each viewer transcribes locally | Host transcribes and broadcasts | No new server events, no abuse surface, no trust in the host's text |
 | Extractive recap | On-device LLM | No extra model download; honest about being a summary of what was said, not an abstraction |
 
+## Security design and what review and live testing found
+Tokens are issued over the authenticated socket, not an open HTTP endpoint: identity is the socket id, only the recorded host can publish, rooms are bound to the handshake, and rotated media keys are bound to the URL-fragment room key so the signaling server cannot read or forge them. An independent reviewer found 3 critical and 6 important flaws in the first version (e.g. a multi-node PIN bypass and spoofable client IPs); all were fixed with tests. Running the real stack then found five more: the repo's compose file could never start LiveKit, Meet's mesh fallback depended on join order, Share-before-SFU silently used P2P, health probes returned 500 in production, and the server's production dependencies carried 1 critical and 5 high advisories. See `docs/THREAT_MODEL.md` and `docs/VERIFICATION.md`.
+
 ## A bug found on the way
 Every per-IP limit (5 connections, spam, PIN lockout) read the socket's peer address. Behind any load balancer that is one shared IP, so the whole fleet would share 5 connections. Fixed with a proxy-aware key that trusts `X-Forwarded-For` only when `TRUST_PROXY=true` (test-covered); the caps are now env-configurable.
 
 ## What is not done (be honest)
-- Meet-on-SFU and media E2EE are implemented and unit-tested at the logic level (token mapping, track reducers, key wrapping, rotation protocol, server relay) but have **never run against a live LiveKit server**. Mixed modes do not interoperate: a Meet participant whose SFU connected cannot see one who fell back to the mesh.
+- Meet-on-SFU, media E2EE, kick-triggered key rotation and mesh fallback were verified live (real Chrome + real LiveKit, also through a 3-node Docker stack): `docs/VERIFICATION.md`. Mixed modes do not interoperate: a Meet participant whose SFU connected cannot see one who fell back to the mesh.
 - A kick is not a ban: the link is the credential, so a removed user who rejoins with it gets the current key. Viewers on browsers without insertable-streams support cannot decode an encrypted stream.
-- The multi-node path is tested with a mock Redis; the docker-compose and k8s manifests were not run (no Docker daemon available when written).
-- The caption model has not been benchmarked in a browser (`docs/AI_EVAL.md`).
+- The compose stack (nginx + 3 signaling nodes + Redis + LiveKit) was run and the full live suite passes through it; `deploy/k8s/` was not applied to a cluster, and nothing beyond 3 nodes was tested.
+- Captions were benchmarked on one clean synthetic clip (5.1 % WER, first caption 6.8 s, model ready 19 s); real speech, accents, music, WASM-only and mobile are untested (`docs/AI_EVAL.md`).
 - "Millions of users" is a design direction; the only measured number is the single-node baseline above.

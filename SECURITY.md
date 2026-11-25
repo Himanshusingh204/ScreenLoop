@@ -17,16 +17,16 @@ We actively provide security updates and bug fixes for the following versions of
 
 ## Security Model & Guarantees
 
-- **End-to-End Media Encryption (DTLS-SRTP)**:
-  ScreenLoop leverages the browser WebRTC standard. All audio and video streams travel peer-to-peer and are encrypted using DTLS (Datagram Transport Layer Security) and SRTP (Secure Real-time Transport Protocol). Media never transits or gets stored on our signaling servers.
+- **Media**: WebRTC media is encrypted in transit (DTLS-SRTP) and never touches our signaling servers. In watch rooms, when the link includes its `#key`, media frames are also end-to-end encrypted (LiveKit E2EE), so the SFU forwards ciphertext; the host rotates the key when removing someone. Video Meet and the P2P fallback are not frame-encrypted. Chat is end-to-end encrypted (AES-256-GCM).
 
 - **Signaling Security**:
-  Signaling messages (SDP handshakes, ICE candidates, and text chat) are exchanged via Socket.IO over secure TLS/WSS connections.
+  Signaling messages are exchanged via Socket.IO over TLS/WSS. LiveKit tokens are issued only over an authenticated socket that is already a room member (PIN enforced); identity is the socket id, and only the server-recorded host may publish.
 
 - **Room Protection & Access Control**:
-  - Rooms can be PIN-protected with salted/hashed checks to prevent unauthorized entry.
-  - Hosts have the ability to kick or ban abusive participants.
-  - Server-side rate limiting on room creation, connection requests, and chat messaging prevents abuse and DoS attacks.
+  - Rooms can be PIN-protected with salted/hashed checks and brute-force lockout.
+  - The host can kick participants. A kick removes them from the room and the SFU and rotates the media key; it is **not** a ban, because the link is the credential.
+  - Server-side rate limiting (per client IP, honoring `TRUST_PROXY` safely), connection, room and payload caps limit abuse.
+  - Multi-node deployments bind each socket to its room (`?room=`) so a same-named "shadow" room cannot be created on another node.
 
 - **Client Input Sanitization**:
   User-supplied content (chat messages, participant names, room titles) is strictly sanitized and escaped to eliminate Cross-Site Scripting (XSS) risks.

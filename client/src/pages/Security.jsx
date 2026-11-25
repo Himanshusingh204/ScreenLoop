@@ -22,7 +22,7 @@ const SECURITY_PILLARS = [
   {
     icon: <Broadcast size={28} weight="duotone" />,
     title: 'DTLS-SRTP Encrypted Media',
-    desc: 'All WebRTC screen and audio streams are encrypted in transit via DTLS and SRTP. Media is not end-to-end encrypted when relayed through the LiveKit server; chat is end-to-end encrypted.',
+    desc: 'All WebRTC screen and audio streams are encrypted in transit via DTLS and SRTP. In watch rooms, when you open the full link (including the part after #), media frames are also end-to-end encrypted so the LiveKit server only forwards ciphertext. Video Meet and the peer-to-peer fallback are encrypted in transit but not frame-encrypted. Chat is always end-to-end encrypted.',
   },
   {
     icon: <EyeSlash size={28} weight="duotone" />,

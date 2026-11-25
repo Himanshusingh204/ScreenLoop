@@ -17,7 +17,7 @@
 1. **Zero registration / zero accounts**: no database, no passwords, no email. Rooms are ephemeral, in server memory.
 2. **The signaling server never handles media.** Media goes through LiveKit or directly between peers.
 3. **Cinema-grade audio**: `CINEMA_AUDIO_PRESET` (48 kHz stereo, echo cancellation / noise suppression / AGC off) in `client/src/utils/audioPresets.js`.
-4. **Chat is end-to-end encrypted** with AES-256-GCM (Web Crypto). The key lives only in the URL `#hash`. **Media is not E2EE** (DTLS-SRTP in transit; the SFU can access media). Media E2EE via Insertable Streams is planned, not built.
+4. **Chat is end-to-end encrypted** with AES-256-GCM (Web Crypto). The key lives only in the URL `#hash`. **Watch-room media is E2EE when the link carries the `#key`** (LiveKit ExternalE2EEKeyProvider; verified live); Meet and the P2P fallback are DTLS-SRTP only. A kick is not a ban. Do not claim more than `docs/VERIFICATION.md` supports.
 5. **No CSS frameworks**: vanilla CSS with tokens in `client/src/styles/tokens.css`. Never add Tailwind, Bootstrap or Material UI.
 
 ---
@@ -67,7 +67,7 @@ ScreenLoop/
 | Media | `livekit-client`, `@livekit/components-react`, WebRTC (`RTCPeerConnection`), Web Audio API |
 | Signaling | Socket.IO 4, Express 4, Pino |
 | LiveKit | `livekit-server-sdk` (JWT minting over the `sfu:token` socket event); LiveKit Cloud or Docker |
-| Crypto | Web Crypto API, AES-256-GCM (chat only) |
+| Crypto | Web Crypto API: AES-256-GCM (chat), ECDH P-256 + HKDF + AES-GCM (media key delivery) |
 | Deploy | Vercel (client), Render (server), `docker-compose.yml` (full stack) |
 | CI | GitHub Actions: tests on Node 18.x/20.x, build, server smoke test, CodeQL |
 
