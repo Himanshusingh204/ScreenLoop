@@ -49,7 +49,7 @@ ScreenLoop/
 │   └── src/
 │       ├── roomManager.js     # In-memory room state management
 │       ├── socketHandlers.js  # Socket.IO event controllers & signaling
-│       ├── livekitToken.js    # LiveKit access-token minting (POST /api/token)
+│       ├── livekitToken.js    # LiveKit access-token minting (used by the sfu:token socket event)
 │       ├── rateLimiter.js     # Leaky-bucket / sliding window rate limiting
 │       └── index.js           # Server entry point & health check
 └── .github/             # GitHub actions CI/CD, issue/PR templates

@@ -25,7 +25,7 @@
 │  /room/:id  Watch Party      /meet/:id  Video Meet      static info pages │
 │  useLiveKitRoom + useWebRTC   useMeetRTC (mesh)                           │
 └───────┬──────────────────────────────┬─────────────────────┬──────────────┘
-        │ Socket.IO (signaling, chat)  │ POST /api/token     │ wss:// media
+        │ Socket.IO (signaling, chat)  │ sfu:token (socket)  │ wss:// media
         ▼                              ▼                     ▼
 ┌─────────────── Signaling Server (Node + Express + Socket.IO) ┐   ┌── LiveKit SFU ──┐
 │ rooms, PIN checks, rate limits, chat relay, SDP/ICE relay,   │   │ cloud or Docker │
@@ -45,7 +45,7 @@
 
 **Watch Party flow**
 
-1. The client calls `POST /api/token` with `roomId`, `participantName`, `pin`, `isHost`, `gender`.
+1. After joining the room over Socket.IO (membership and PIN already enforced), the client emits `sfu:token` `{kind, roomId}` and receives `{token, url}` in the ack. Identity is the socket id; only the recorded host may publish. There is no HTTP token endpoint.
 2. The server verifies the room PIN (timing-safe) and mints a LiveKit JWT with `livekit-server-sdk`.
 3. `useLiveKitRoom` connects to `LIVEKIT_URL` and publishes/subscribes tracks.
 4. If LiveKit is unconfigured or unreachable, `useWebRTC` is used: the host sends an SDP offer per viewer (`webrtc:offer` / `webrtc:answer` / `webrtc:ice`).
@@ -60,7 +60,7 @@
 
 | File | Responsibility |
 |---|---|
-| `index.js` | Express app, CORS allow-list, security headers, Socket.IO bootstrap, `/health`, `/api/rooms`, `/api/token`, graceful shutdown |
+| `index.js` | Express app, CORS allow-list, security headers, Socket.IO bootstrap, `/health`, `/healthz`, `/metrics`, `/api/rooms`, graceful shutdown (LiveKit tokens: `sfu:token` in `socketHandlers.js`) |
 | `socketHandlers.js` | All Socket.IO event handlers (rooms, WebRTC relay, sync, chat, Meet) |
 | `roomManager.js` | In-memory room and meet registries, PIN verification, TTL sweep, `socketToRoom` / `socketToMeet` O(1) reverse maps |
 | `rateLimiter.js` | Sliding-window / leaky-bucket limits (events, room creation, PIN attempts) |
@@ -73,7 +73,7 @@
 |---|---|---|
 | GET | `/health` | Liveness probe (`status`, `uptime`, `timestamp`, `version`) |
 | GET | `/api/rooms` | Room listing; dev default on, production default off (`ROOM_LISTING_ENABLED`), rate limited per IP |
-| POST | `/api/token` | Mint a LiveKit token after validating room ID, name and PIN |
+| GET | `/healthz`, `/metrics` | Liveness; Prometheus metrics (optional `METRICS_TOKEN` bearer) |
 
 ## 4. Socket Events
 

@@ -23,7 +23,7 @@ Screenloop is a **zero-account** place to watch together and meet face to face: 
 
 | Area | State | Evidence |
 |---|---|---|
-| Watch rooms (LiveKit + P2P fallback) | ✅ Shipped | `useLiveKitRoom`, `useWebRTC`, `/api/token` |
+| Watch rooms (LiveKit + P2P fallback) | ✅ Shipped | `useLiveKitRoom`, `useWebRTC`, `sfu:token` |
 | Video Meet (P2P mesh) | ✅ Shipped | `useMeetRTC`, `components/meet/*` |
 | Chat (AES-256-GCM, search, edit/delete, typing) | ✅ Shipped | `crypto.js`, `ChatSidebar.jsx` |
 | Security hardening (CORS, rate limits, PIN lockout, 1 MB cap) | ✅ Shipped | `server/src/*`, 40 server tests |

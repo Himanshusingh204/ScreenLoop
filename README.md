@@ -112,7 +112,7 @@ ScreenLoop separates the **signaling plane** from the **media plane**:
 ```
         ┌──────────────── Signaling Server (Node.js + Express + Socket.IO) ───────────────┐
         │  ephemeral rooms · PIN checks · rate limiting · chat relay · SDP/ICE relay       │
-        │  POST /api/token → LiveKit JWT                                                   │
+        │  sfu:token (socket) → LiveKit JWT                                                  │
         └───────────▲──────────────────────────────────────────────────▲──────────────────┘
                     │ Socket.IO                                        │ Socket.IO
         ┌───────────┴──────────┐        media (wss)        ┌───────────┴──────────┐
@@ -224,7 +224,7 @@ Copy `client/.env.example` and `server/.env.example` to `.env` files. Main varia
 | :--- | :--- | :--- |
 | `PORT` | Listening port | `4000` |
 | `ALLOWED_ORIGIN` | Comma-separated CORS origins | `http://localhost:5173` |
-| `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit credentials for `/api/token` | see `.env.example` |
+| `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit credentials for token minting (`sfu:token`) | see `.env.example` |
 | `MAX_PARTICIPANTS`, `MAX_MEET_PARTICIPANTS`, `MAX_ROOMS`, `ROOM_TTL_MS`, `MEET_TTL_MS` | Capacity and lifecycle limits | see `.env.example` |
 | `ROOM_LISTING_ENABLED` | Expose `/api/rooms` (off in production by default) | on in dev |
 

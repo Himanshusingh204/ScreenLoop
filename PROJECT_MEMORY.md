@@ -66,7 +66,7 @@ ScreenLoop/
 | UI | Vanilla CSS + custom properties, `@phosphor-icons/react`, `framer-motion`, `canvas-confetti` |
 | Media | `livekit-client`, `@livekit/components-react`, WebRTC (`RTCPeerConnection`), Web Audio API |
 | Signaling | Socket.IO 4, Express 4, Pino |
-| LiveKit | `livekit-server-sdk` (JWT minting at `POST /api/token`); LiveKit Cloud or Docker |
+| LiveKit | `livekit-server-sdk` (JWT minting over the `sfu:token` socket event); LiveKit Cloud or Docker |
 | Crypto | Web Crypto API, AES-256-GCM (chat only) |
 | Deploy | Vercel (client), Render (server), `docker-compose.yml` (full stack) |
 | CI | GitHub Actions: tests on Node 18.x/20.x, build, server smoke test, CodeQL |
@@ -86,7 +86,7 @@ Host generates a 256-bit AES-GCM key → placed in URL hash `/room/ID#KEY` → b
 - Meet: `meet:join|signal|state-change|reaction|chat|leave`
 
 ### HTTP
-`GET /health`, `GET /api/rooms` (off in production by default), `POST /api/token`.
+`GET /health`, `GET /healthz`, `GET /metrics`, `GET /api/rooms` (off in production by default). LiveKit tokens are issued over the socket (`sfu:token`), not HTTP.
 
 ---
 
