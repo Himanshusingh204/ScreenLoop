@@ -286,7 +286,7 @@ cd client
 npm run build
 ```
 
-Current baseline: **server 86 tests, client 84 tests, lint clean, build OK**.
+Current baseline: **server 175 tests, client 90 tests, lint clean, build OK**.
 
 Beyond unit tests, `e2e/` drives real Chrome against a real LiveKit server (Meet on the SFU and its fallback, media E2EE, kick and key rotation, captions benchmark). See [e2e/README.md](e2e/README.md) and [docs/VERIFICATION.md](docs/VERIFICATION.md). `loadtest/` holds the Socket.IO load test and published baseline.
 

@@ -26,7 +26,19 @@ Setup: `e2e/bench.js`, headless Chrome on a Windows laptop. The host shares a Wi
 
 Cadence: one caption per 5 s window in every run (median gap 4.6–5.5 s), so real time was kept up on both backends. "Model ready" is cold-cache download plus init; the WASM path was ready sooner here because it skips WebGPU shader compilation.
 
-**What the errors actually are.** Not noise: the noisy run scored better than a clean one. They are (1) words lost at the hard 5 s window boundaries (no overlap), (2) the trailing partial window never being transcribed (clip 2 loses its last sentence), and (3) tiny-model slips ("Eat a little olive oil", "into soup"). Fixes in order of value: transcribe the final partial window on stop, add 0.5 s overlap with text de-duplication, try `whisper-base`.
+**What the errors actually are.** Not noise: the noisy run scored better than a clean one. They are (1) words lost at the hard 5 s window boundaries (no overlap), (2) the trailing partial window never being transcribed (clip 2 loses its last sentence), and (3) tiny-model slips ("Eat a little olive oil", "into soup"). Untried fixes: `whisper-base`, or word-level timestamps with stitching. Plain overlap + de-duplication was tried and made things worse (below).
+
+**Tried and rejected: window overlap + text de-duplication.** Hypothesis: the boundary losses above would shrink with 0.5 s overlap between windows plus a pure function that drops the repeated word-prefix. It was implemented test-first (chunker `flush()`, `mergeCaption`) and re-measured on the same four clips and normalizer:
+
+| Clip | Before | With overlap + dedupe |
+|---|---|---|
+| 1 (WebGPU) | 1.7 % | 15.3 % |
+| 2 (WebGPU) | 26.5 % | 22.4 % |
+| 3 (WASM) | 26.4 % | 41.5 % |
+| 3 + noise (WebGPU) | 13.2 % | 20.8 % |
+| **Pooled** | **16.4 %** | **24.8 %** |
+
+Worse on 3 of 4 clips (single runs; start offset against the 5 s grid adds some run-to-run noise, but not +8 points). whisper-tiny re-transcribes the overlapped half-second differently each time, so repeated or hallucinated fragments slip past the de-duplication ("Everyone who worked...", "to small pieces"). The change was reverted and is not in the product. A larger model (`whisper-base`) or word-level timestamps with proper stitching are the untried alternatives; do not retry plain overlap.
 
 Earlier single-clip figure of 5.1 % (un-normalized, clip 1 only) was an optimistic best case; use the pooled number.
 

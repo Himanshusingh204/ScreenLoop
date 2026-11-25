@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Scale-out**: optional Redis Socket.IO adapter (`REDIS_URL`), room-affinity load balancing, `/healthz`, Prometheus `/metrics` (optional `METRICS_TOKEN`), nginx / docker-compose / Kubernetes manifests, Socket.IO load test with published baseline.
 - **Live verification suite** (`e2e/`) driving real Chrome against a real LiveKit server; `docs/THREAT_MODEL.md`, `SYSTEM_DESIGN.md`, `VERIFICATION.md`, `AI_EVAL.md`, `CASE_STUDY.md`.
 - CI: dependency audit and a 3-node compose smoke test.
+- Server-side validation of playback, pointer, reaction and annotation payloads (also fixes live annotations being silently dropped: the client sends one stroke segment, the old check required an array).
 - Opt-in "kick and block rejoin"; `deploy/k8s/check.py` static manifest check; multi-node load test (1,500 clients, 100% delivered).
 
 ### Changed
@@ -32,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/healthz`, `/health`, `/metrics` returned 500 in production for requests without an `Origin` header.
 - Meet mesh fallback missed peers depending on join order; the "end-to-end encrypted" indicator no longer stays up after a fall back to P2P.
 - Captions: a single bad audio window no longer stops captions; unsupported browsers fail cleanly instead of crashing the page.
+
+### Accessibility
+- `ConfirmModal` traps and restores focus, closes on Escape, and is labelled/described for screen readers.
 
 ### Known limitations
 - A plain kick is not a ban (the link is the credential); the host can now opt in to blocking rejoin for the room's lifetime (keyed like the other abuse limits, so people behind one NAT may be blocked too). Meet is not frame-encrypted, and SFU and mesh Meet peers do not interoperate.
