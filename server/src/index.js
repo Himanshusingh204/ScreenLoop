@@ -10,11 +10,12 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const { stopRoomSweep, listRooms, getRoom, verifyPin, normalizeGender } = require('./roomManager');
+const { stopRoomSweep, listRooms, countMeets, getRoom, verifyPin, normalizeGender } = require('./roomManager');
 const { checkPinBruteForce, recordFailedPin, resetFailedPin } = require('./rateLimiter');
 const { registerHandlers } = require('./socketHandlers');
 const { generateLiveKitToken, LIVEKIT_URL } = require('./livekitToken');
 const logger = require('./logger');
+const { register, tokenRequests, registerGauges } = require('./metrics');
 
 const MAX_IP_CONNECTIONS = 5;
 const connectedIPs = new Map();
@@ -108,6 +109,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/healthz', (req, res) => res.json({ ok: true }));
+
+registerGauges({
+  countRooms: () => listRooms().length,
+  countMeets,
+  countSockets: () => io.engine.clientsCount,
+});
+// shortcut: /metrics is open; restrict at the ingress (or add a bearer) before exposing publicly.
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
+
 // ─── Room Listing (Phase 1: gated — prevents unauthenticated enumeration) ───
 // Set ROOM_LISTING_ENABLED=true to expose (dev default: on, prod default: off).
 // Lightweight per-IP rate limit included (no extra dependency).
@@ -150,6 +164,7 @@ app.get('/api/rooms', (req, res) => {
 
 // ─── LiveKit Token Minting ──────────────────────────────────────────────────
 app.post('/api/token', tokenLimiter, async (req, res) => {
+  tokenRequests.inc();
   try {
     const { roomId, participantName, pin, isHost, gender } = req.body || {};
 

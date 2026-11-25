@@ -187,6 +187,10 @@ function getParticipants(roomId) {
 /**
  * Get summary of all active rooms (for the /api/rooms endpoint).
  */
+function countMeets() {
+  return meets.size;
+}
+
 function listRooms() {
   return Array.from(rooms.values()).map((room) => ({
     id: room.id,
@@ -391,5 +395,6 @@ module.exports = {
   leaveMeet,
   findMeetBySocket,
   getMeetParticipants,
+  countMeets,
   MAX_MEET_PARTICIPANTS,
 };
