@@ -15,6 +15,7 @@ const { getClientKey, checkPinBruteForce, recordFailedPin, resetFailedPin } = re
 const { registerHandlers } = require('./socketHandlers');
 const { generateLiveKitToken, LIVEKIT_URL } = require('./livekitToken');
 const logger = require('./logger');
+const { attachRedisAdapter } = require('./redisAdapter');
 const { register, tokenRequests, registerGauges } = require('./metrics');
 
 const MAX_IP_CONNECTIONS = parseInt(process.env.MAX_IP_CONNECTIONS, 10) || 5;
@@ -99,6 +100,8 @@ const io = new Server(server, {
   maxHttpBufferSize: 1e6, // 1MB payload ceiling prevents memory exhaustion
   transports: ['websocket', 'polling'],
 });
+
+attachRedisAdapter(io, process.env.REDIS_URL);
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {

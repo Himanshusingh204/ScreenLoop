@@ -25,7 +25,7 @@ function client(roomId, idx) {
     s.on('connect', () => {
       connected++;
       s.emit(idx === 0 ? 'room:create' : 'room:join', { roomId, name: `u${idx}` });
-      setTimeout(() => resolve(s), 300);
+      setTimeout(() => resolve(s), 60);
     });
   });
 }
