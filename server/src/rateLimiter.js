@@ -26,7 +26,11 @@ function getClientKey(socket) {
   // Only trust X-Forwarded-For when explicitly behind our own proxy/LB, else it is spoofable.
   if (process.env.TRUST_PROXY === 'true') {
     const xff = socket.handshake?.headers?.['x-forwarded-for'];
-    if (typeof xff === 'string' && xff.trim()) return xff.split(',')[0].trim();
+    if (typeof xff === 'string') {
+      // The client controls everything to the LEFT; our proxy appends the real peer address at the right.
+      const hops = xff.split(',').map((h) => h.trim()).filter(Boolean);
+      if (hops.length) return hops[hops.length - 1];
+    }
   }
   return socket.handshake?.address || socket.id;
 }

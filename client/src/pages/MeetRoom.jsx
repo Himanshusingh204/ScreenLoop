@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMediaDevices } from '../hooks/useMediaDevices';
 import { useMeetRTC } from '../hooks/useMeetRTC';
 import { useMeetLiveKit } from '../hooks/useMeetLiveKit';
+import { pendingOffers } from '../utils/meshFallback';
 import { useActiveSpeaker } from '../hooks/useActiveSpeaker';
 import { useSignalingSocket } from '../hooks/useSignalingSocket';
 import MeetLobby from '../components/meet/MeetLobby';
@@ -54,15 +55,22 @@ export default function MeetRoom() {
   } = useMediaDevices();
 
   // SFU mode (VITE_MEET_SFU=true): one upload per user via LiveKit; falls back to the P2P mesh if it can't connect.
-  const sfu = useMeetLiveKit({ meetId, name, socketId: socket?.id, localStream, enabled: SFU_ENABLED && !inLobby });
+  const sfu = useMeetLiveKit({ meetId, socket, localStream, enabled: SFU_ENABLED && !inLobby });
   const mesh = useMeetRTC(socketRef, localStream);
   const sfuActive = SFU_ENABLED && !sfu.failed;
   const noop = () => {};
-  const remoteStreams = sfuActive ? sfu.remoteStreams : mesh.remoteStreams;
-  const sendOffer = sfuActive ? noop : mesh.sendOffer;
-  const handleSignal = sfuActive ? noop : mesh.handleSignal;
+  // Union: SFU tiles while connected, mesh tiles for peers reached through the fallback. Their key sets never overlap.
+  const remoteStreams = { ...mesh.remoteStreams, ...(sfuActive ? sfu.remoteStreams : {}) };
+  // In SFU mode the fallback effect below owns offers. Signals are ALWAYS accepted: a peer that already fell back may
+  // offer to us before we noticed our own SFU failure, and dropping that offer would leave the pair disconnected.
+  const sendOffer = SFU_ENABLED ? noop : mesh.sendOffer;
+  const handleSignal = mesh.handleSignal;
   const replaceTrack = (track, kind) => (sfuActive ? sfu.replaceTrack(track, kind) : mesh.replaceTrack(track, kind));
-  const removePeer = sfuActive ? noop : mesh.removePeer;
+  const offeredRef = useRef(new Set());
+  const removePeer = (id) => {
+    offeredRef.current.delete(id);
+    mesh.removePeer(id);
+  };
   const cleanupRTC = mesh.cleanup;
 
   const { activeSpeaker } = useActiveSpeaker(remoteStreams, participants);
@@ -166,15 +174,16 @@ export default function MeetRoom() {
     };
   }, [socket, meetId, inLobby, name, gender, micOn, cameraOn, navigate]);
 
-  // SFU unreachable: bring up the mesh with the people already here. The lower socket id offers, so both sides don't (glare).
-  // Limitation: a peer whose SFU connected cannot see a peer who fell back (mixed modes don't interoperate).
+  // SFU unreachable: reach every peer over the mesh. The lower socket id offers (no glare), including peers who arrive
+  // later. Limitation: a peer whose SFU connected cannot see a peer who fell back (mixed modes don't interoperate).
   useEffect(() => {
     if (!SFU_ENABLED || !sfu.failed || !socket?.id) return;
-    participants.forEach((p) => {
-      if (socket.id < p.socketId) mesh.sendOffer(p.socketId);
+    pendingOffers(socket.id, participants.map((p) => p.socketId), offeredRef.current).forEach((id) => {
+      offeredRef.current.add(id);
+      mesh.sendOffer(id);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sfu.failed]);
+  }, [sfu.failed, participants, socket?.id]);
 
   // Teardown media on unmount only (socket is owned by useSignalingSocket).
   useEffect(() => {

@@ -7,20 +7,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Room, RoomEvent, Track, ExternalE2EEKeyProvider, isE2EESupported } from 'livekit-client';
 import { CINEMA_AUDIO_PRESET } from '../utils/audioPresets';
-
-const SERVER_URL =
-  import.meta.env.VITE_SERVER_URL ||
-  (import.meta.env.DEV
-    ? 'http://localhost:4000'
-    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000'));
+import { requestSfuToken } from '../utils/sfuToken';
 
 /**
  * Hook to manage LiveKit SFU room connection and media streams
  */
 export function useLiveKitRoom({
+  socket, // authenticated signaling socket: the server issues our LiveKit token over it
   roomId,
   name,
-  pin,
   isHost,
   e2eeKey = null, // URL-hash room key: when set (and supported), media frames are end-to-end encrypted
   enabled = true,
@@ -37,6 +32,9 @@ export function useLiveKitRoom({
   const [e2eeActive, setE2eeActive] = useState(false);
   const roomRef = useRef(null);
   const keyProviderRef = useRef(null);
+  // Latest rotated media key + epoch. Survives LiveKit reconnects (e.g. when promoted to host) so a rebuild never
+  // falls back to the URL-fragment key that a removed user still holds.
+  const keyStateRef = useRef({ key: null, epoch: 0 });
 
   // Keep latest callbacks in refs so the connection effect doesn't re-run
   // (and tear down the SFU room) on every parent render.
@@ -49,7 +47,7 @@ export function useLiveKitRoom({
 
   // Connect to LiveKit Room when enabled and name/roomId are present
   useEffect(() => {
-    if (!enabled || !roomId || !name) return;
+    if (!enabled || !roomId || !name || !socket) return;
 
     let isMounted = true;
     const keyProvider = e2eeKey && isE2EESupported() ? new ExternalE2EEKeyProvider() : null;
@@ -68,27 +66,8 @@ export function useLiveKitRoom({
       setError(null);
 
       try {
-        // 1. Fetch access token from our Express backend
-        const res = await fetch(`${SERVER_URL}/api/token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            roomId,
-            participantName: name,
-            pin: pin || undefined,
-            isHost: !!isHost,
-          }),
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `Server returned ${res.status}`);
-        }
-
-        const { token, url } = await res.json();
-        if (!token || !url) {
-          throw new Error('Invalid token response from server');
-        }
+        // 1. Token over the authenticated socket (membership + PIN already enforced; host-only publish decided server-side)
+        const { token, url } = await requestSfuToken(socket, 'watch', roomId);
 
         if (!isMounted) return;
 
@@ -105,6 +84,7 @@ export function useLiveKitRoom({
           if (!isMounted) return;
           console.log('[LiveKit] Disconnected from room');
           setIsConnected(false);
+          setE2eeActive(false);
           setIsSharing(false);
           setRemoteScreenStream(null);
           setRemoteAudioStream(null);
@@ -153,15 +133,17 @@ export function useLiveKitRoom({
 
         // 3. Key first, then enable E2EE, then connect: no frame is ever sent unencrypted
         if (keyProvider) {
-          await keyProvider.setKey(e2eeKey);
+          await keyProvider.setKey(keyStateRef.current.key ?? e2eeKey);
           await lkRoom.setE2EEEnabled(true);
-          if (isMounted) setE2eeActive(true);
         }
         await lkRoom.connect(url, token);
+        // Only claim E2EE once actually connected (a failed connect falls back to P2P, which is not frame-encrypted)
+        if (keyProvider && isMounted) setE2eeActive(true);
       } catch (err) {
         if (!isMounted) return;
         console.warn('[LiveKit] SFU Connection could not be established (using P2P fallback):', err.message);
         setError(err.message);
+        setE2eeActive(false);
         setIsConnecting(false);
       }
     }
@@ -177,7 +159,7 @@ export function useLiveKitRoom({
         roomRef.current = null;
       }
     };
-  }, [roomId, name, pin, isHost, enabled, e2eeKey]);
+  }, [socket, roomId, name, isHost, enabled, e2eeKey]);
 
   // Start Screen Sharing with Cinema Audio
   const startScreenShare = useCallback(async () => {
@@ -209,13 +191,15 @@ export function useLiveKitRoom({
   }, []);
 
   // Swap in a rotated media key (delivered per-recipient by MediaKeyCoordinator)
-  const rotateKey = useCallback(async (key) => {
+  const rotateKey = useCallback(async (key, epoch = 0) => {
+    keyStateRef.current = { key, epoch };
     await keyProviderRef.current?.setKey(key);
   }, []);
 
   return {
     e2eeActive,
     rotateKey,
+    keyStateRef,
     remoteAudioStream,
     room,
     isConnected,

@@ -26,14 +26,4 @@ describe('observability', () => {
       expect(body).toContain(name);
     }
   });
-
-  it('counts token requests', async () => {
-    await fetch(`${base}/api/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roomId: 'metr1', participantName: 'Bob' }),
-    });
-    const body = await (await fetch(`${base}/metrics`)).text();
-    expect(body).toMatch(/token_requests_total\s+[1-9]/);
-  });
 });

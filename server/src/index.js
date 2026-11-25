@@ -10,19 +10,16 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const { stopRoomSweep, listRooms, countMeets, getRoom, verifyPin, normalizeGender } = require('./roomManager');
-const { getClientKey, checkPinBruteForce, recordFailedPin, resetFailedPin } = require('./rateLimiter');
+const { stopRoomSweep, listRooms, countMeets } = require('./roomManager');
+const { getClientKey } = require('./rateLimiter');
 const { registerHandlers } = require('./socketHandlers');
-const { generateLiveKitToken, LIVEKIT_URL } = require('./livekitToken');
 const logger = require('./logger');
 const { attachRedisAdapter } = require('./redisAdapter');
-const { register, tokenRequests, registerGauges } = require('./metrics');
+const { register, registerGauges } = require('./metrics');
 
 const MAX_IP_CONNECTIONS = parseInt(process.env.MAX_IP_CONNECTIONS, 10) || 5;
 const connectedIPs = new Map();
 
-const rateLimit = require('express-rate-limit');
-const tokenLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
 const app = express();
 const server = http.createServer(app);
 
@@ -166,60 +163,7 @@ app.get('/api/rooms', (req, res) => {
   res.json({ count: rooms.length, rooms });
 });
 
-// ─── LiveKit Token Minting ──────────────────────────────────────────────────
-app.post('/api/token', tokenLimiter, async (req, res) => {
-  tokenRequests.inc();
-  try {
-    const { roomId, participantName, pin, isHost, gender, socketId } = req.body || {};
-
-    if (!roomId || typeof roomId !== 'string' || !/^[A-Za-z0-9_-]{1,32}$/.test(roomId)) {
-      return res.status(400).json({ error: 'Invalid room ID format' });
-    }
-    if (
-      !participantName ||
-      typeof participantName !== 'string' ||
-      participantName.trim().length === 0 ||
-      participantName.length > 30
-    ) {
-      return res.status(400).json({ error: 'Participant name must be between 1 and 30 characters' });
-    }
-
-    // Verify PIN if room exists and has a PIN
-    const existingRoom = getRoom(roomId);
-    if (existingRoom && existingRoom.pin) {
-      // Share the socket PIN brute-force limiter so /api/token can't be used to bypass it
-      const limiterKey = { handshake: { address: req.ip } };
-      if (!checkPinBruteForce(limiterKey)) {
-        return res.status(429).json({ error: 'Too many failed PIN attempts' });
-      }
-      if (!verifyPin(existingRoom.pin, pin)) {
-        recordFailedPin(limiterKey);
-        return res.status(401).json({ error: 'Incorrect room PIN' });
-      }
-      resetFailedPin(limiterKey);
-    }
-
-    const token = await generateLiveKitToken({
-      roomId,
-      participantName: participantName.trim(),
-      isHost: !!isHost,
-      // socketId lets Meet map an SFU participant to its signaling presence (tile, mic, hand).
-      // Display-only: it grants nothing, so a client claiming another's id can only mislabel its own tile.
-      metadata: {
-        gender: normalizeGender(gender),
-        ...(typeof socketId === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(socketId) ? { socketId } : {}),
-      },
-    });
-
-    res.json({
-      token,
-      url: process.env.LIVEKIT_URL || LIVEKIT_URL,
-    });
-  } catch (err) {
-    logger.error({ err: err.message }, 'Failed to mint LiveKit token');
-    res.status(500).json({ error: 'Failed to mint access token' });
-  }
-});
+// LiveKit tokens are issued over the authenticated socket ('sfu:token' in socketHandlers.js), not over open HTTP.
 
 // ─── Socket.io Connection ────────────────────────────────────────────────────
 io.on('connection', (socket) => {

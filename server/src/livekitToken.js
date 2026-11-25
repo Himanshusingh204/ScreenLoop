@@ -24,6 +24,8 @@ async function generateLiveKitToken({
   participantName,
   participantIdentity,
   isHost = false,
+  canPublish = true,
+  canPublishData = true,
   metadata = {},
 }) {
   if (!roomId || typeof roomId !== 'string') {
@@ -48,9 +50,9 @@ async function generateLiveKitToken({
   at.addGrant({
     roomJoin: true,
     room: roomId,
-    canPublish: true,
+    canPublish,
     canSubscribe: true,
-    canPublishData: true,
+    canPublishData,
   });
 
   return await at.toJwt();

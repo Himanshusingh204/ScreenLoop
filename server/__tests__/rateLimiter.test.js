@@ -93,7 +93,7 @@ describe('sweepExpiredEntries', () => {
 
 describe('getClientKey behind a proxy', () => {
   const { getClientKey } = require('../src/rateLimiter');
-  const sock = { id: 's1', handshake: { address: '10.0.0.1', headers: { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' } } };
+  const sock = { id: 's1', handshake: { address: '10.0.0.1', headers: { 'x-forwarded-for': 'spoofed-by-client, 203.0.113.7' } } };
 
   afterEach(() => { delete process.env.TRUST_PROXY; });
 
@@ -101,7 +101,7 @@ describe('getClientKey behind a proxy', () => {
     expect(getClientKey(sock)).toBe('10.0.0.1');
   });
 
-  it('uses the first X-Forwarded-For hop when TRUST_PROXY=true', () => {
+  it('uses the LAST X-Forwarded-For hop (the one our proxy appended) when TRUST_PROXY=true', () => {
     process.env.TRUST_PROXY = 'true';
     expect(getClientKey(sock)).toBe('203.0.113.7');
   });

@@ -35,7 +35,10 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
     worker.onmessage = ({ data }) => {
       if (data.type === 'progress') setProgress(Math.round(data.progress));
       else if (data.type === 'ready') { ready = true; clearTimeout(timer); setStatus('ready'); }
-      else if (data.type === 'error') fail(data.message);
+      else if (data.type === 'error') {
+        if (data.fatal) fail(data.message);
+        else backlog = Math.max(0, backlog - 1); // one bad window: skip it, keep captioning
+      }
       else { // 'caption' or 'idle': one window finished
         backlog = Math.max(0, backlog - 1);
         if (data.type === 'caption') setCaptions((c) => [...c, { text: data.text, ts: data.ts }].slice(-MAX_LINES));
@@ -44,25 +47,33 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
     worker.onerror = (e) => fail(e.message || 'Caption worker crashed.');
     worker.postMessage({ type: 'load' });
 
-    const AC = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AC({ sampleRate: RATE });
-    const src = ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
-    // shortcut: ScriptProcessor is deprecated but works everywhere; move to AudioWorklet if it is removed.
-    const proc = ctx.createScriptProcessor(4096, 1, 1);
-    const mute = ctx.createGain();
-    mute.gain.value = 0; // processor must reach destination to run, but we never play this copy
-    const chunker = new AudioChunker({ rate: RATE, windowSec: 5 });
-    proc.onaudioprocess = (e) => {
-      if (!ready) return;
-      for (const audio of chunker.push(new Float32Array(e.inputBuffer.getChannelData(0)))) {
-        if (backlog >= MAX_BACKLOG) continue;
-        backlog += 1;
-        worker.postMessage({ type: 'audio', audio, ts: Date.now() - t0, translate: translateRef.current }, [audio.buffer]);
-      }
-    };
-    src.connect(proc);
-    proc.connect(mute);
-    mute.connect(ctx.destination);
+    let ctx; let src; let proc; let mute;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC({ sampleRate: RATE });
+      src = ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
+      // shortcut: ScriptProcessor is deprecated but works everywhere; move to AudioWorklet if it is removed.
+      proc = ctx.createScriptProcessor(4096, 1, 1);
+      mute = ctx.createGain();
+      mute.gain.value = 0; // processor must reach destination to run, but we never play this copy
+      const chunker = new AudioChunker({ rate: RATE, windowSec: 5 });
+      proc.onaudioprocess = (e) => {
+        if (!ready) return;
+        for (const audio of chunker.push(new Float32Array(e.inputBuffer.getChannelData(0)))) {
+          if (backlog >= MAX_BACKLOG) continue;
+          backlog += 1;
+          worker.postMessage({ type: 'audio', audio, ts: Date.now() - t0, translate: translateRef.current }, [audio.buffer]);
+        }
+      };
+      src.connect(proc);
+      proc.connect(mute);
+      mute.connect(ctx.destination);
+    } catch (e) {
+      worker.terminate();
+      clearTimeout(timer);
+      fail('Captions are not supported for this audio source in your browser.');
+      return undefined;
+    }
 
     return () => {
       clearTimeout(timer);

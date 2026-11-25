@@ -25,6 +25,10 @@ const {
   getMeetParticipants,
 } = require('./roomManager');
 
+const { generateLiveKitToken, LIVEKIT_URL } = require('./livekitToken');
+const { tokenRequests } = require('./metrics');
+const lkAdmin = require('./livekitAdmin');
+
 const {
   checkSpam,
   checkReactionRate,
@@ -104,6 +108,17 @@ function requireRoomMember(socket, roomId) {
   return { room, participant };
 }
 
+// Meets use their own Socket.IO room namespace so a meet and a watch room with the same id cannot cross-talk.
+const meetRoom = (meetId) => `meet:${meetId}`;
+
+// With several nodes behind an affinity LB, a socket may only act on the room it was routed for; otherwise an
+// attacker could create a same-named "shadow" room on another node and, via the Redis adapter, hear/forge the real one.
+function roomBindingOk(socket, id) {
+  const q = socket.handshake?.query?.room;
+  if (q === undefined) return !process.env.REDIS_URL; // legacy clients are only tolerated single-node
+  return q === id;
+}
+
 function requireMeetMember(socket) {
   const meetId = socket.data?.meetId;
   if (!meetId) return null;
@@ -162,6 +177,7 @@ function registerHandlers(socket, io) {
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
       // A socket in a room must leave first, or its old membership leaks
       if (socket.data.roomId) return;
+      if (!roomBindingOk(socket, roomId)) return;
 
       // Task 43: Rate-limit room creation per IP
       if (!checkSpam(socket)) {
@@ -209,6 +225,7 @@ function registerHandlers(socket, io) {
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (pin && (typeof pin !== 'string' || pin.length > 20)) return;
       if (socket.data.roomId) return;
+      if (!roomBindingOk(socket, roomId)) return;
 
       if (!checkPinBruteForce(socket)) {
         socket.emit('room:error', {
@@ -477,6 +494,8 @@ function registerHandlers(socket, io) {
     if (!result) return;
 
     io.to(targetId).emit('room:kicked');
+    // Defense in depth: drop them from the SFU too (their LiveKit identity is their socket id)
+    lkAdmin.removeParticipant(`w:${roomId}`, targetId);
     const victim = io.sockets.sockets.get(targetId);
     victim?.leave(roomId);
     // Clear server-side membership so a stale socket.data can't relay signaling
@@ -500,6 +519,50 @@ function registerHandlers(socket, io) {
     }
   });
 
+  // ─── LiveKit token issuance (replaces the open /api/token endpoint) ─────────
+  // Issued only over an authenticated socket that is already a member (PIN passed). Identity is the socket id, so a
+  // tile cannot be claimed by someone else; only the server-recorded host may publish into a watch room.
+  socket.on('sfu:token', async (req, ack) => {
+    if (typeof ack !== 'function') return;
+    const fail = (error) => ack({ error });
+    try {
+      const { kind, roomId } = req || {};
+      if (typeof roomId !== 'string' || (kind !== 'watch' && kind !== 'meet')) return fail('Invalid request');
+      if (!checkSpam(socket)) return fail('Too many requests');
+      let name;
+      let lkRoom;
+      let canPublish;
+      let metadata = {};
+      if (kind === 'watch') {
+        const m = requireRoomMember(socket, roomId);
+        if (!m) return fail('Not in this room');
+        name = m.participant.name;
+        lkRoom = `w:${roomId}`;
+        canPublish = m.room.hostId === socket.id;
+        metadata = { isHost: canPublish, gender: normalizeGender(m.participant.gender) };
+      } else {
+        const m = requireMeetMember(socket);
+        if (!m || m.meetId !== roomId) return fail('Not in this meeting');
+        name = m.participant.name;
+        lkRoom = `m:${roomId}`;
+        canPublish = true;
+      }
+      const token = await generateLiveKitToken({
+        roomId: lkRoom,
+        participantName: name,
+        participantIdentity: socket.id,
+        canPublish,
+        canPublishData: false,
+        metadata,
+      });
+      tokenRequests.inc();
+      ack({ token, url: process.env.LIVEKIT_URL || LIVEKIT_URL });
+    } catch (err) {
+      logger.error({ err: err.message }, 'Failed to mint LiveKit token');
+      fail('Failed to mint access token');
+    }
+  });
+
   // ─── Media E2EE key delivery ───────────────────────────────────────────────
   // Server only relays: public keys (so the host can wrap) and wrapped keys (opaque to us).
   const B64 = /^[A-Za-z0-9_-]+$/;
@@ -507,17 +570,19 @@ function registerHandlers(socket, io) {
 
   socket.on('e2ee:hello', ({ roomId, pub } = {}) => {
     const m = requireRoomMember(socket, roomId);
-    if (!m || !okB64(pub, 200)) return;
+    if (!m || !okB64(pub, 200) || !checkSpam(socket)) return;
     m.participant.e2ePub = pub;
     socket.to(roomId).emit('e2ee:hello', { from: socket.id, pub });
   });
 
-  socket.on('e2ee:rekey', ({ roomId, to, hostPub, iv, ct } = {}) => {
+  socket.on('e2ee:rekey', ({ roomId, to, hostPub, iv, ct, epoch } = {}) => {
     const m = requireRoomMember(socket, roomId);
     if (!m || m.room.hostId !== socket.id) return;
     if (typeof to !== 'string' || !m.room.participants.has(to)) return;
     if (!okB64(hostPub, 200) || !okB64(iv, 32) || !okB64(ct, 300)) return;
-    io.to(to).emit('e2ee:rekey', { from: socket.id, hostPub, iv, ct });
+    // epoch orders rotations so a slow older key can never overwrite a newer one on the receiver
+    if (!Number.isInteger(epoch) || epoch < 0 || epoch > 1e9) return;
+    io.to(to).emit('e2ee:rekey', { from: socket.id, hostPub, iv, ct, epoch });
   });
 
   // ─── Transfer Host ──────────────────────────────────────────────────────────
@@ -537,6 +602,7 @@ function registerHandlers(socket, io) {
       if (!meetId || typeof meetId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(meetId)) return;
       if (!name || typeof name !== 'string' || name.length > 30) return;
       if (socket.data.meetId) return;
+      if (!roomBindingOk(socket, meetId)) return;
       if (!checkSpam(socket)) {
         socket.emit('room:error', { message: 'Too many requests.' });
         return;
@@ -546,7 +612,7 @@ function registerHandlers(socket, io) {
       if (!existing) {
         // First person creates the meet
         createMeet(meetId, socket.id, name, gender, micOn, cameraOn);
-        socket.join(meetId);
+        socket.join(meetRoom(meetId));
         socket.data.meetId = meetId;
         socket.emit('meet:joined', {
           meetId,
@@ -556,7 +622,7 @@ function registerHandlers(socket, io) {
       } else {
         // Join existing meet
         joinMeet(meetId, socket.id, name, gender, micOn, cameraOn);
-        socket.join(meetId);
+        socket.join(meetRoom(meetId));
         socket.data.meetId = meetId;
 
         socket.emit('meet:joined', {
@@ -566,7 +632,7 @@ function registerHandlers(socket, io) {
         });
 
         // Notify existing participants
-        socket.to(meetId).emit('meet:user-joined', {
+        socket.to(meetRoom(meetId)).emit('meet:user-joined', {
           socketId: socket.id,
           name,
           gender: normalizeGender(gender),
@@ -607,7 +673,7 @@ function registerHandlers(socket, io) {
     if (handRaised !== undefined) participant.handRaised = !!handRaised;
     meet.lastActivityAt = Date.now();
 
-    socket.to(meetId).emit('meet:state-change', {
+    socket.to(meetRoom(meetId)).emit('meet:state-change', {
       socketId: socket.id,
       micOn: participant.micOn,
       cameraOn: participant.cameraOn,
@@ -626,7 +692,7 @@ function registerHandlers(socket, io) {
 
     const { meetId, participant } = m;
 
-    io.to(meetId).emit('meet:reaction', {
+    io.to(meetRoom(meetId)).emit('meet:reaction', {
       from: socket.id,
       name: participant.name,
       emoji,
@@ -644,7 +710,7 @@ function registerHandlers(socket, io) {
     meet.lastActivityAt = Date.now();
 
     const msgId = `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-    io.to(meetId).emit('meet:chat', {
+    io.to(meetRoom(meetId)).emit('meet:chat', {
       id: msgId,
       socketId: socket.id,
       name: participant.name,
@@ -659,17 +725,17 @@ function registerHandlers(socket, io) {
     const meetId = socket.data.meetId;
 
     const result = leaveMeet(meetId, socket.id);
-    socket.leave(meetId);
+    socket.leave(meetRoom(meetId));
 
-    io.to(meetId).emit('meet:user-left', { socketId: socket.id });
+    io.to(meetRoom(meetId)).emit('meet:user-left', { socketId: socket.id });
 
     if (result?.meetClosed) {
-      io.to(meetId).emit('meet:closed', { message: 'Meeting ended.' });
+      io.to(meetRoom(meetId)).emit('meet:closed', { message: 'Meeting ended.' });
       const sockets = io.sockets.adapter.rooms.get(meetId);
       if (sockets) {
         for (const sid of sockets) {
           const s = io.sockets.sockets.get(sid);
-          if (s) s.leave(meetId);
+          if (s) s.leave(meetRoom(meetId));
         }
       }
     }
@@ -690,15 +756,15 @@ function registerHandlers(socket, io) {
 
         const meetResult = leaveMeet(meetId, socket.id);
 
-        io.to(meetId).emit('meet:user-left', { socketId: socket.id, name: meetName });
+        io.to(meetRoom(meetId)).emit('meet:user-left', { socketId: socket.id, name: meetName });
 
         if (meetResult?.meetClosed) {
-          io.to(meetId).emit('meet:closed', { message: 'Meeting ended.' });
+          io.to(meetRoom(meetId)).emit('meet:closed', { message: 'Meeting ended.' });
           const meetSockets = io.sockets.adapter.rooms.get(meetId);
           if (meetSockets) {
             for (const sid of meetSockets) {
               const s = io.sockets.sockets.get(sid);
-              if (s) s.leave(meetId);
+              if (s) s.leave(meetRoom(meetId));
             }
           }
         }

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { MediaKeyCoordinator } from '../mediaKeyCoordinator';
+import { generateKeyPair, exportPublic, wrapMediaKey, newMediaKey } from '../mediaKeys';
+
+const ROOM_KEY = 'url-fragment-room-key';
 
 // Fake signaling bus mimicking the server's e2ee relay (host-only rekey, hello to everyone else).
 function makeBus() {
@@ -13,7 +16,7 @@ function makeBus() {
       fire: (e, p) => Promise.all((handlers[e] || []).map((f) => f(p))),
       emit: (e, p) => {
         if (e === 'e2ee:hello') for (const [oid, o] of sockets) if (oid !== id) o.fire('e2ee:hello', { from: id, pub: p.pub });
-        if (e === 'e2ee:rekey') sockets.get(p.to)?.fire('e2ee:rekey', { from: id, hostPub: p.hostPub, iv: p.iv, ct: p.ct });
+        if (e === 'e2ee:rekey') sockets.get(p.to)?.fire('e2ee:rekey', { from: id, hostPub: p.hostPub, iv: p.iv, ct: p.ct, epoch: p.epoch });
       },
     };
     sockets.set(id, s);
@@ -23,11 +26,12 @@ function makeBus() {
 }
 
 const tick = () => new Promise((r) => setTimeout(r, 20));
+const until = async (cond) => { for (let i = 0; i < 100 && !cond(); i++) await new Promise((r) => setTimeout(r, 20)); };
 
-async function peer(bus, id, isHost) {
+async function peer(bus, id, isHost, extra = {}) {
   const socket = bus.mk(id);
   const applied = [];
-  const c = new MediaKeyCoordinator({ socket, roomId: 'r', isHost: () => isHost, applyKey: async (k) => applied.push(k) });
+  const c = new MediaKeyCoordinator({ socket, roomId: 'r', isHost: () => isHost, applyKey: async (k) => applied.push(k), roomKey: ROOM_KEY, ...extra });
   await c.start();
   return { socket, c, applied };
 }
@@ -44,7 +48,7 @@ describe('MediaKeyCoordinator', () => {
       kicked: true,
       participants: [{ socketId: 'host' }, { socketId: 'g1' }, { socketId: 'g2' }],
     });
-    await tick();
+    await until(() => g1.applied.length && g2.applied.length);
 
     expect(host.applied).toHaveLength(1);
     expect(g1.applied).toEqual(host.applied);
@@ -83,7 +87,7 @@ describe('MediaKeyCoordinator', () => {
     await host.socket.fire('room:user-left', { kicked: true, participants: [{ socketId: 'g1' }] });
     await tick();
     const late = await peer(bus, 'late', false);
-    await tick();
+    await until(() => late.applied.length > 0);
     expect(late.applied).toEqual(host.applied);
     expect(g1.applied).toEqual(host.applied);
   });
@@ -91,7 +95,7 @@ describe('MediaKeyCoordinator', () => {
   it('ignores a rekey it cannot decrypt (wrong recipient) without applying anything', async () => {
     const bus = makeBus();
     const a = await peer(bus, 'a', false);
-    await a.socket.fire('e2ee:rekey', { from: 'x', hostPub: 'AAAA', iv: 'AAAA', ct: 'AAAA' });
+    await a.socket.fire('e2ee:rekey', { from: 'x', hostPub: 'AAAA', iv: 'AAAA', ct: 'AAAA', epoch: 1 });
     expect(a.applied).toHaveLength(0);
   });
 
@@ -101,5 +105,47 @@ describe('MediaKeyCoordinator', () => {
     host.c.stop();
     await host.socket.fire('room:user-left', { kicked: true, participants: [{ socketId: 'host' }] });
     expect(host.applied).toHaveLength(0);
+  });
+
+  it('start() is idempotent: a reconnect does not double-register listeners', async () => {
+    const bus = makeBus();
+    const host = await peer(bus, 'host', true);
+    await host.c.start();
+    await host.c.start();
+    await host.socket.fire('room:user-left', { kicked: true, participants: [{ socketId: 'host' }] });
+    expect(host.applied).toHaveLength(1);
+  });
+
+  it('ignores an older epoch that arrives after a newer one (out-of-order rotations)', async () => {
+    const bus = makeBus();
+    const g = await peer(bus, 'g', false);
+    const hostPair = await generateKeyPair();
+    const hostPub = await exportPublic(hostPair.publicKey);
+    const [k1, k2] = [newMediaKey(), newMediaKey()];
+    const send = async (key, epoch) =>
+      g.socket.fire('e2ee:rekey', { from: 'h', hostPub, epoch, ...(await wrapMediaKey(key, hostPair.privateKey, g.c.myPub, ROOM_KEY)) });
+    await send(k2, 2);
+    await send(k1, 1);
+    expect(g.applied).toEqual([k2]);
+  });
+
+  it('rejects a key wrapped without the room key (a server that substituted its own keys cannot inject one)', async () => {
+    const bus = makeBus();
+    const g = await peer(bus, 'g', false);
+    const evil = await generateKeyPair();
+    const evilPub = await exportPublic(evil.publicKey);
+    const w = await wrapMediaKey(newMediaKey(), evil.privateKey, g.c.myPub, 'guessed-key');
+    await g.socket.fire('e2ee:rekey', { from: 'h', hostPub: evilPub, epoch: 1, ...w });
+    expect(g.applied).toHaveLength(0);
+  });
+
+  it('a promoted host that inherited the rotated key and epoch hands it to a late joiner', async () => {
+    const bus = makeBus();
+    const inherited = newMediaKey();
+    const host = await peer(bus, 'newhost', true, { initialKey: inherited, initialEpoch: 3 });
+    const late = await peer(bus, 'late', false);
+    await until(() => late.applied.length > 0);
+    expect(late.applied).toEqual([inherited]);
+    expect(host.c.epoch).toBe(3);
   });
 });

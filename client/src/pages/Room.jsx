@@ -158,11 +158,12 @@ export default function Room() {
     error: lkError,
     rotateKey: rotateMediaKey,
     e2eeActive,
+    keyStateRef: mediaKeyStateRef,
     remoteAudioStream: lkAudioStream,
   } = useLiveKitRoom({
+    socket,
     roomId,
     name: myName,
-    pin: joinInfoRef.current?.pin,
     isHost: isActualHost,
     e2eeKey: roomKey || null,
     enabled: phase === 'room' && !!myName,
@@ -220,7 +221,7 @@ export default function Room() {
   addToastRef.current = addToast;
 
   // Media E2EE: the SFU only ever sees ciphertext; host rotates the key when it removes someone.
-  useMediaKeyRotation({ socket, roomId, enabled: e2eeActive, isHost: isActualHost, applyKey: rotateMediaKey, participants });
+  useMediaKeyRotation({ socket, roomId, roomKey, enabled: e2eeActive, isHost: isActualHost, applyKey: rotateMediaKey, keyStateRef: mediaKeyStateRef, participants });
   useEffect(() => {
     if (e2eeActive) addToast('🔒 Media is end-to-end encrypted');
   }, [e2eeActive, addToast]);
@@ -489,9 +490,19 @@ export default function Room() {
     }
   }, [intendedHost, roomId, socket]);
 
+  // Latest SFU state for async handlers (the Share click can land while the SFU is still connecting)
+  const sfuStateRef = useRef({ active: false, pending: false });
+  sfuStateRef.current = { active: isLiveKitActive, pending: phase === 'room' && !!myName && !isLiveKitActive && !lkError };
+
   const handleShareScreen = useCallback(async (quality = '1080p') => {
     try {
-      if (isLiveKitActive) {
+      // If the SFU is still connecting, wait for it to settle: silently falling back to P2P here would skip the SFU
+      // and its media E2EE for the whole session.
+      if (sfuStateRef.current.pending) {
+        addToast('⏳ Connecting to the secure media server…');
+        for (let i = 0; i < 100 && sfuStateRef.current.pending; i++) await new Promise((r) => setTimeout(r, 150));
+      }
+      if (sfuStateRef.current.active) {
         await startLiveKitScreenShare();
         setIsSharing(true);
         addToast('🖥 LiveKit HD Cinema Screen sharing started');
@@ -511,7 +522,7 @@ export default function Room() {
         addToast('❌ Could not start screen share: ' + err.message);
       }
     }
-  }, [isLiveKitActive, startLiveKitScreenShare, startScreenShare, participants, sendOfferToViewer, addToast]);
+  }, [startLiveKitScreenShare, startScreenShare, participants, sendOfferToViewer, addToast]);
 
   const handleStopShare = useCallback(() => {
     if (isLiveKitActive) {

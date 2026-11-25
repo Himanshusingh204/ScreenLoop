@@ -1,11 +1,8 @@
 // sfuTracks.js — pure helpers mapping LiveKit participants/tracks onto the Meet tile model (keyed by socketId).
+// The LiveKit identity is set by the server to the authenticated socket id, so it cannot be spoofed by a client.
 export function socketIdOf(participant) {
-  try {
-    const id = JSON.parse(participant?.metadata || '{}').socketId;
-    return typeof id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(id) ? id : null;
-  } catch {
-    return null;
-  }
+  const id = participant?.identity;
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(id) ? id : null;
 }
 
 export const withTrack = (map, id, track) =>

@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { socketIdOf, withTrack, withoutTrack, withoutPeer } from '../sfuTracks';
 
 describe('socketIdOf', () => {
-  it('reads socketId from participant metadata JSON', () => {
-    expect(socketIdOf({ metadata: JSON.stringify({ socketId: 'abc_1' }) })).toBe('abc_1');
+  it('uses the LiveKit identity, which the server sets to the authenticated socket id', () => {
+    expect(socketIdOf({ identity: 'abc_1' })).toBe('abc_1');
   });
-  it.each([[undefined], [{}], [{ metadata: 'not json' }], [{ metadata: '{"socketId":5}' }], [{ metadata: '{"socketId":"bad id"}' }]])(
-    'returns null for %j',
-    (p) => expect(socketIdOf(p)).toBeNull()
+  it('ignores client-controlled metadata (cannot be spoofed)', () => {
+    expect(socketIdOf({ identity: 'real', metadata: JSON.stringify({ socketId: 'victim' }) })).toBe('real');
+  });
+  it.each([[undefined], [{}], [{ identity: 'bad id' }], [{ identity: 5 }], [{ identity: 'x'.repeat(41) }]])('returns null for %j', (p) =>
+    expect(socketIdOf(p)).toBeNull()
   );
 });
 

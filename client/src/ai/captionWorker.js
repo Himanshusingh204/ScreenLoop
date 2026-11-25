@@ -21,6 +21,7 @@ self.onmessage = async ({ data }) => {
       else self.postMessage({ type: 'idle', ts: data.ts });
     }
   } catch (err) {
-    self.postMessage({ type: 'error', message: String(err?.message || err) });
+    // Only a failed model load is fatal; a bad audio window is reported but captioning continues
+    self.postMessage({ type: 'error', fatal: !asr, message: String(err?.message || err) });
   }
 };

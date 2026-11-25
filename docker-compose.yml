@@ -3,16 +3,16 @@ version: '3.9'
 services:
   # ─── LiveKit SFU Media Server (Local / Self-hosted) ────────────────────────
   livekit:
-    image: livekit/livekit-server:latest
+    image: livekit/livekit-server:v1.13.11 # pinned: :latest can change under you
     container_name: screenloop-livekit
-    command: --dev
+    command: --dev --node-ip 127.0.0.1 # --node-ip: advertise a reachable address to local browsers
     restart: unless-stopped
     ports:
-      - "7880:7880"       # WebSockets / Signaling
-      - "7881:7881"       # HTTP API
+      - "7880:7880"       # WebSocket signaling
+      - "7881:7881"       # WebRTC over TCP (fallback)
       - "7882:7882/udp"   # WebRTC UDP traffic
     environment:
-      - LIVEKIT_KEYS=devkey:secret
+      - "LIVEKIT_KEYS=devkey: secret" # LiveKit requires "key: secret" with the space
 
   # ─── Screenloop Signaling & Token Server ───────────────────────────────────
   server:

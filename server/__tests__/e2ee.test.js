@@ -1,5 +1,6 @@
 // Media-E2EE key relay: the server only forwards wrapped keys; it never sees a media key.
 const { registerHandlers } = require('../src/socketHandlers');
+const lkAdmin = require('../src/livekitAdmin');
 const { getParticipants } = require('../src/roomManager');
 
 function makeSocket(id, address) {
@@ -71,13 +72,13 @@ describe('e2ee:hello', () => {
 });
 
 describe('e2ee:rekey', () => {
-  const msg = (roomId, to) => ({ roomId, to, hostPub: PUB, iv: 'aXY', ct: 'Y3Q' });
+  const msg = (roomId, to) => ({ roomId, to, hostPub: PUB, iv: 'aXY', ct: 'Y3Q', epoch: 1 });
 
   it('relays host -> member only', () => {
     const { io, host, guest, roomId } = setup('e2ee3', 4);
     invoke(host, 'e2ee:rekey', msg(roomId, guest.id));
     expect(only(io.toBroadcasts, 'e2ee:rekey')).toEqual([
-      { targetId: guest.id, event: 'e2ee:rekey', payload: { from: host.id, hostPub: PUB, iv: 'aXY', ct: 'Y3Q' } },
+      { targetId: guest.id, event: 'e2ee:rekey', payload: { from: host.id, hostPub: PUB, iv: 'aXY', ct: 'Y3Q', epoch: 1 } },
     ]);
   });
 
@@ -95,6 +96,20 @@ describe('e2ee:rekey', () => {
   });
 });
 
+describe('e2ee hardening', () => {
+  it('rejects a bad epoch', () => {
+    const { io, host, guest, roomId } = setup('e2ee7', 8);
+    for (const epoch of [undefined, -1, 1.5, '1', 2e9]) invoke(host, 'e2ee:rekey', { roomId, to: guest.id, hostPub: PUB, iv: 'aXY', ct: 'Y3Q', epoch });
+    expect(only(io.toBroadcasts, 'e2ee:rekey')).toHaveLength(0);
+  });
+
+  it('rate-limits a hello flood from one socket', () => {
+    const { guest, roomId } = setup('e2ee8', 9);
+    for (let i = 0; i < 60; i++) invoke(guest, 'e2ee:hello', { roomId, pub: PUB });
+    expect(only(guest.roomBroadcasts, 'e2ee:hello').length).toBeLessThan(30);
+  });
+});
+
 describe('room:kick', () => {
   it('flags the user-left broadcast as kicked so the host client rotates the media key', () => {
     const { io, host, guest, roomId } = setup('e2ee6', 7);
@@ -102,5 +117,19 @@ describe('room:kick', () => {
     invoke(host, 'room:kick', { roomId, targetId: guest.id });
     const left = io.toBroadcasts.find((b) => b.event === 'room:user-left');
     expect(left.payload.kicked).toBe(true);
+  });
+
+  it('also removes the kicked user from the SFU room, so they stop receiving media even if their client stays connected', () => {
+    const calls = [];
+    const orig = lkAdmin.removeParticipant;
+    lkAdmin.removeParticipant = (room, identity) => calls.push([room, identity]);
+    try {
+      const { io, host, guest, roomId } = setup('e2ee9', 10);
+      io.sockets.sockets.set(guest.id, guest);
+      invoke(host, 'room:kick', { roomId, targetId: guest.id });
+      expect(calls).toEqual([[`w:${roomId}`, guest.id]]);
+    } finally {
+      lkAdmin.removeParticipant = orig;
+    }
   });
 });
