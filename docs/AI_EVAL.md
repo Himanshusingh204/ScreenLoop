@@ -1,6 +1,6 @@
 # On-device captions: evaluation
 
-**Status: NOT YET MEASURED.** The feature builds and its pure logic is unit-tested (`client/src/ai/__tests__`), but it has not been run in a real browser against audio. Do not quote accuracy or latency until the table below is filled in.
+**Status: first real-browser measurement taken (n = 1 clean synthetic clip). Not enough to claim general accuracy.**
 
 ## What is verified
 - Chunker, recap builder, support check and caption cleaning: 11 unit tests.
@@ -13,11 +13,18 @@
 4. Latency = time from a window's last sample to its caption appearing (log `performance.now()` around the worker call).
 5. Run on 3 device classes: discrete-GPU desktop (WebGPU), integrated-GPU laptop, mid-range phone (WASM).
 
-## Results (fill in)
-| Device | Backend | Clips | WER (clean) | WER (music) | p50 latency | p95 latency | Notes |
-|---|---|---|---|---|---|---|---|
-| | WebGPU | | | | | | |
-| | WASM | | | | | | |
+## Results
+Run: `e2e/bench.js`, headless Chrome on a Windows laptop, host shares a 59-word Windows-TTS clip through the real LiveKit SFU with media E2EE on; a viewer turns on CC, so the model hears the *decrypted SFU stream*. Model `Xenova/whisper-tiny`.
+
+| Metric | Result |
+|---|---|
+| Time from clicking CC to ready (model download + init, cold cache) | 19.2 s |
+| First caption after audio starts | 6.8 s (5 s window + ~1.8 s inference/queue) |
+| Steady cadence | one caption per window, median gap 4.9 s (real time kept up) |
+| WER | **5.1 %** (3 errors / 59 words: "meanwhile" split in two, a window-boundary split "St." + "space travel") |
+| Backend | `navigator.gpu` present; the worker prefers WebGPU |
+
+Still missing for a defensible claim: 20+ real-speech clips (accents, music), the WASM-only path, a phone, and Firefox. TTS speech is cleaner than real speech, so 5.1 % is an optimistic floor.
 
 ## Known limits
 - `whisper-tiny` is the smallest model: expect weak accuracy on music, overlapping speech and accents. `whisper-base` is the upgrade path.

@@ -67,6 +67,7 @@ export function CaptionsLayer({ stream }) {
       {on && (last || note) && (
         <div
           role="status"
+          data-testid="captions"
           aria-live="polite"
           style={{
             position: 'absolute', left: '50%', bottom: 90, transform: 'translateX(-50%)', zIndex: 15,

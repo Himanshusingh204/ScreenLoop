@@ -1,0 +1,6 @@
+{
+  "name": "screenloop-e2e",
+  "private": true,
+  "description": "Live end-to-end checks: real Chrome + real LiveKit. See README.md",
+  "dependencies": { "playwright-core": "^1.49.0", "livekit-server-sdk": "^2.20.1" }
+}

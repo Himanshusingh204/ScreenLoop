@@ -67,7 +67,10 @@ const corsOptions = {
   credentials: true,
 };
 
-app.use(cors(corsOptions));
+// Probes/scrapers send no Origin header, which CORS rejects in production: exempt them from the browser CORS gate.
+const PROBE_PATHS = new Set(['/health', '/healthz', '/metrics']);
+const corsMw = cors(corsOptions);
+app.use((req, res, next) => (PROBE_PATHS.has(req.path) ? next() : corsMw(req, res, next)));
 app.use(express.json());
 
 // ─── Security Headers (non-Vercel deployments) ──────────────────────────────
@@ -117,8 +120,10 @@ registerGauges({
   countMeets,
   countSockets: () => io.engine.clientsCount,
 });
-// shortcut: /metrics is open; restrict at the ingress (or add a bearer) before exposing publicly.
+// Set METRICS_TOKEN to require `Authorization: Bearer <token>`; unset = open (fine on a private network only).
 app.get('/metrics', async (req, res) => {
+  const want = process.env.METRICS_TOKEN;
+  if (want && req.get('authorization') !== `Bearer ${want}`) return res.status(401).end();
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });

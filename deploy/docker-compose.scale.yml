@@ -9,9 +9,18 @@ x-node: &node
     MAX_IP_CONNECTIONS: "200"
     MAX_ROOMS: "5000"
     ALLOWED_ORIGIN: http://localhost:3000,http://localhost:5173
-  depends_on: [redis]
+    LIVEKIT_URL: ws://localhost:7880 # what browsers connect to
+    LIVEKIT_API_URL: http://livekit:7880 # server -> LiveKit inside the compose network
+    LIVEKIT_API_KEY: devkey
+    LIVEKIT_API_SECRET: secret
+  depends_on: [redis, livekit]
 services:
   redis: { image: "redis:7-alpine" }
+  livekit:
+    image: livekit/livekit-server:v1.13.11
+    command: --dev --node-ip 127.0.0.1
+    ports: ["7880:7880", "7881:7881", "7882:7882/udp"]
+    environment: ["LIVEKIT_KEYS=devkey: secret"]
   server1: *node
   server2: *node
   server3: *node

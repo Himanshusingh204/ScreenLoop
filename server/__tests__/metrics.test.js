@@ -26,4 +26,26 @@ describe('observability', () => {
       expect(body).toContain(name);
     }
   });
+
+  it('health and metrics probes work in production without an Origin header (LB / k8s probes send none)', async () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      for (const path of ['/healthz', '/health', '/metrics']) expect((await fetch(`${base}${path}`)).status).toBe(200);
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
+
+  it('requires a bearer token on /metrics when METRICS_TOKEN is set (healthz stays open)', async () => {
+    process.env.METRICS_TOKEN = 's3cret';
+    try {
+      expect((await fetch(`${base}/metrics`)).status).toBe(401);
+      expect((await fetch(`${base}/metrics`, { headers: { Authorization: 'Bearer wrong' } })).status).toBe(401);
+      expect((await fetch(`${base}/metrics`, { headers: { Authorization: 'Bearer s3cret' } })).status).toBe(200);
+      expect((await fetch(`${base}/healthz`)).status).toBe(200);
+    } finally {
+      delete process.env.METRICS_TOKEN;
+    }
+  });
 });

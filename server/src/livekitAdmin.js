@@ -3,7 +3,8 @@ const { RoomServiceClient } = require('livekit-server-sdk');
 const logger = require('./logger');
 
 let client = null;
-const httpUrl = () => (process.env.LIVEKIT_URL || 'ws://127.0.0.1:7880').replace(/^ws/, 'http');
+// LIVEKIT_URL is what BROWSERS connect to; LIVEKIT_API_URL (optional) is how this server reaches LiveKit internally.
+const httpUrl = () => (process.env.LIVEKIT_API_URL || process.env.LIVEKIT_URL || 'ws://127.0.0.1:7880').replace(/^ws/, 'http');
 
 function getClient() {
   if (!client) {
