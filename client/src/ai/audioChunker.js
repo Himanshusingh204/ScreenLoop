@@ -2,6 +2,7 @@
 export class AudioChunker {
   constructor({ rate = 16000, windowSec = 5, overlapSec = 0 } = {}) {
     if (overlapSec >= windowSec) throw new Error('overlapSec must be smaller than windowSec');
+    this.rate = rate;
     this.win = Math.round(rate * windowSec);
     this.keep = Math.round(rate * overlapSec);
     this.buf = new Float32Array(0);
@@ -23,5 +24,12 @@ export class AudioChunker {
       this.buf = this.buf.slice(this.win - this.keep);
     }
     return out;
+  }
+
+  /** Empties the buffer. @returns {Float32Array|null} the remainder if it holds at least minSec of audio, else null */
+  flush(minSec = 1) {
+    const tail = this.buf;
+    this.buf = new Float32Array(0);
+    return tail.length > 0 && tail.length >= Math.round(this.rate * minSec) ? tail : null;
   }
 }

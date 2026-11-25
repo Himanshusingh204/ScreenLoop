@@ -34,4 +34,27 @@ describe('AudioChunker', () => {
   it('rejects an overlap that is not smaller than the window', () => {
     expect(() => new AudioChunker({ rate: RATE, windowSec: 1, overlapSec: 1 })).toThrow();
   });
+
+  it('flush returns the remainder as one Float32Array when it holds at least minSec', () => {
+    const c = new AudioChunker({ rate: RATE, windowSec: 5, overlapSec: 0 });
+    c.push(ramp(RATE * 12));
+    const tail = c.flush(1);
+    expect(tail).toBeInstanceOf(Float32Array);
+    expect(tail.length).toBe(RATE * 2);
+    expect(tail[0]).toBe(RATE * 10); // continues exactly where the last full window ended
+  });
+
+  it('flush returns null when the remainder is shorter than minSec', () => {
+    const c = new AudioChunker({ rate: RATE, windowSec: 5, overlapSec: 0 });
+    c.push(ramp(RATE * 5.5));
+    expect(c.flush(1)).toBeNull();
+  });
+
+  it('flush empties the buffer', () => {
+    const c = new AudioChunker({ rate: RATE, windowSec: 5, overlapSec: 0 });
+    c.push(ramp(RATE * 12));
+    c.flush(1);
+    expect(c.pending).toBe(0);
+    expect(c.flush(1)).toBeNull();
+  });
 });

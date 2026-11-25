@@ -2,9 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { AudioChunker } from '../ai/audioChunker';
 import { isCaptionSupported } from '../ai/support';
+import { mergeCaption } from '../ai/mergeCaption';
 
 const RATE = 16000;
 const LOAD_TIMEOUT_MS = 120000;
+const FLUSH_WAIT_MS = 6000; // on stop, wait this long for the final window's caption
 const MAX_LINES = 500;
 const MAX_BACKLOG = 2; // drop windows rather than fall behind real time
 
@@ -28,6 +30,7 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
     const t0 = Date.now();
     let backlog = 0;
     let ready = false;
+    let onReply = null; // resolves a pending final-window flush when the worker answers
     const worker = new Worker(new URL('../ai/captionWorker.js', import.meta.url), { type: 'module' });
     const fail = (msg) => { setError(msg); setStatus('error'); };
     const timer = setTimeout(() => { if (!ready) fail('Caption model took too long to load.'); }, LOAD_TIMEOUT_MS);
@@ -41,15 +44,22 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
       }
       else { // 'caption' or 'idle': one window finished
         backlog = Math.max(0, backlog - 1);
-        if (data.type === 'caption') setCaptions((c) => [...c, { text: data.text, ts: data.ts }].slice(-MAX_LINES));
+        if (data.type === 'caption') {
+          // windows overlap, so drop the words this caption repeats from the one before
+          setCaptions((c) => {
+            const text = mergeCaption(c.at(-1)?.text, data.text);
+            return text ? [...c, { text, ts: data.ts }].slice(-MAX_LINES) : c;
+          });
+        }
       }
+      if (data.type !== 'progress') onReply?.();
     };
-    worker.onerror = (e) => fail(e.message || 'Caption worker crashed.');
+    worker.onerror = (e) => { fail(e.message || 'Caption worker crashed.'); onReply?.(); };
     let backend = null;
     try { backend = localStorage.getItem('sl-asr-backend'); } catch { /* storage blocked: use the default */ }
     worker.postMessage({ type: 'load', backend });
 
-    let ctx; let src; let proc; let mute;
+    let ctx; let src; let proc; let mute; let chunker;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       ctx = new AC({ sampleRate: RATE });
@@ -58,7 +68,7 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
       proc = ctx.createScriptProcessor(4096, 1, 1);
       mute = ctx.createGain();
       mute.gain.value = 0; // processor must reach destination to run, but we never play this copy
-      const chunker = new AudioChunker({ rate: RATE, windowSec: 5 });
+      chunker = new AudioChunker({ rate: RATE, windowSec: 5, overlapSec: 0.5 });
       proc.onaudioprocess = (e) => {
         if (!ready) return;
         for (const audio of chunker.push(new Float32Array(e.inputBuffer.getChannelData(0)))) {
@@ -80,8 +90,17 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
     return () => {
       clearTimeout(timer);
       proc.onaudioprocess = null;
+      const tail = chunker.flush(); // the final partial window, copied out before the audio graph goes away
       try { src.disconnect(); proc.disconnect(); mute.disconnect(); ctx.close(); } catch { /* already closed */ }
-      worker.terminate();
+      // Transcribe the tail, but skip it if the worker is already behind; terminate once answered or after the wait.
+      if (tail && ready && backlog < MAX_BACKLOG) {
+        worker.postMessage({ type: 'audio', audio: tail, ts: Date.now() - t0, translate: translateRef.current }, [tail.buffer]);
+        const reply = new Promise((resolve) => { onReply = resolve; });
+        const waited = new Promise((resolve) => { setTimeout(resolve, FLUSH_WAIT_MS); });
+        Promise.race([reply, waited]).then(() => worker.terminate());
+      } else {
+        worker.terminate();
+      }
     };
   }, [enabled, stream]);
 
