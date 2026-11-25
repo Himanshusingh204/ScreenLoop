@@ -8,6 +8,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // The ONNX wasm (~27 MB) and caption worker load on demand when captions are enabled, never precached.
+      workbox: { globIgnores: ['**/*.wasm', '**/captionWorker-*.js'] },
       includeAssets: ['pwa-icon.svg'],
       manifest: {
         name: 'Screenloop',

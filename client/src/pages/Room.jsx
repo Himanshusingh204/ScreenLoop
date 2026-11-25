@@ -7,6 +7,7 @@ import {
   JoinModal,
   TopBar,
   VideoPlayer,
+  CaptionsLayer,
   ControlBar,
   ChatSidebar,
   ToastContainer,
@@ -622,6 +623,8 @@ export default function Room() {
             isSharing={isSharing}
             videoRef={videoRef}
           />
+
+          <CaptionsLayer stream={stream} />
 
           {/* Screen Annotation Drawing Canvas */}
           <AnnotationCanvas

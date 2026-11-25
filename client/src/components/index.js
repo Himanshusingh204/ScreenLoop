@@ -2,6 +2,7 @@
 export { TopBar } from './TopBar';
 export { ControlBar } from './ControlBar';
 export { VideoPlayer } from './VideoPlayer';
+export { CaptionsLayer } from './CaptionsLayer';
 export { ChatSidebar } from './ChatSidebar';
 export { ParticipantList } from './ParticipantList';
 export { StatsOverlay } from './StatsOverlay';

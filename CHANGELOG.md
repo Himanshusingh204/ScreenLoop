@@ -13,10 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **LiveKit SFU media engine**: watch rooms stream through LiveKit (1 upload, many viewers) with P2P mesh fallback when no LiveKit credentials are set.
 - **Video Meet (`/meet`)**: multi-tile video grid, active speaker detection, pre-call lobby, device settings modal, emoji reactions, and hand raise.
 
+- **On-device live captions** (`CC` button in watch rooms): Whisper runs in a Web Worker (WebGPU, WASM fallback); audio never leaves the browser. Optional English translation and a downloadable extractive recap.
+- **Scale-out**: optional Redis adapter (`REDIS_URL`), proxy-aware rate limits (`TRUST_PROXY`), `MAX_IP_CONNECTIONS`, `/healthz`, Prometheus `/metrics`, nginx and Kubernetes manifests with room-affinity routing, and a socket load test (`loadtest/`).
+
+### Fixed
+- Per-IP limits collapsed to a single bucket behind a load balancer; they now read `X-Forwarded-For` when `TRUST_PROXY=true`.
+
 ### Planned
 - **Chat message search & filter** (see `client/src/data/roadmap.js`).
 - **Audio description track support**.
-- **Redis adapter** for multi-node signaling.
 
 ---
 

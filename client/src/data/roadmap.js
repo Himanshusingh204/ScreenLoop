@@ -36,6 +36,7 @@ export const ROADMAP_PHASES = [
       { title: 'Share modal QR code alt text & local generation', status: 'done' },
       { title: 'Fullscreen shortcut hints (F key)', status: 'done' },
       { title: 'Tooltips and ARIA labels on all control bar buttons', status: 'done' },
+      { title: 'On-device live captions, English translation and recap (Whisper in the browser)', status: 'done' },
       { title: 'Audio description track support', status: 'planned' },
     ],
   },
@@ -50,7 +51,7 @@ export const ROADMAP_PHASES = [
       { title: 'Brute-force PIN rate limiting and spam prevention', status: 'done' },
       { title: 'Max room caps & automatic TTL garbage collection', status: 'done' },
       { title: 'Separate reaction rate limit', status: 'done' },
-      { title: 'Redis cluster adapter for multi-node deployments', status: 'planned' },
+      { title: 'Redis adapter, room-affinity routing and metrics for multi-node deployments', status: 'done' },
     ],
   },
 ];
