@@ -206,14 +206,14 @@ ScreenLoop/
 
 | File | Purpose |
 | :--- | :--- |
-| **[package.json](file:///i:/Web%20devlopment/Screenshare/package.json)** | Root workspace scripts (`npm run dev`, `npm run build`, `npm run check`). |
-| **[vercel.json](file:///i:/Web%20devlopment/Screenshare/vercel.json)** | Root Vercel config enabling zero-configuration 1-click frontend deployments with hardened CSP headers (`worker-src 'self' blob:`). |
-| **[render.yaml](file:///i:/Web%20devlopment/Screenshare/render.yaml)** | Cloud deployment blueprint for hosting the Node.js signaling service on Render with health checks on `/health`. |
-| **[PROJECT_MEMORY.md](file:///i:/Web%20devlopment/Screenshare/PROJECT_MEMORY.md)** | Single-source-of-truth memory context file for human developers and AI assistants. |
-| **[CHANGELOG.md](file:///i:/Web%20devlopment/Screenshare/CHANGELOG.md)** | Semantic release notes following the Keep a Changelog standard. |
-| **[CONTRIBUTING.md](file:///i:/Web%20devlopment/Screenshare/CONTRIBUTING.md)** | Contributor guidelines for code standards, testing, and pull requests. |
-| **[SECURITY.md](file:///i:/Web%20devlopment/Screenshare/SECURITY.md)** | Security disclosure instructions routing to GitHub Security Advisories. |
-| **[LICENSE](file:///i:/Web%20devlopment/Screenshare/LICENSE)** | Standard MIT License. |
+| **[package.json](package.json)** | Root workspace scripts (`npm run dev`, `npm run build`, `npm run check`). |
+| **[vercel.json](vercel.json)** | Root Vercel config enabling zero-configuration 1-click frontend deployments with hardened CSP headers (`worker-src 'self' blob:`). |
+| **[render.yaml](render.yaml)** | Cloud deployment blueprint for hosting the Node.js signaling service on Render with health checks on `/health`. |
+| **[PROJECT_MEMORY.md](PROJECT_MEMORY.md)** | Single-source-of-truth memory context file for human developers and AI assistants. |
+| **[CHANGELOG.md](CHANGELOG.md)** | Semantic release notes following the Keep a Changelog standard. |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Contributor guidelines for code standards, testing, and pull requests. |
+| **[SECURITY.md](SECURITY.md)** | Security disclosure instructions routing to GitHub Security Advisories. |
+| **[LICENSE](LICENSE)** | Standard MIT License. |
 
 ---
 
