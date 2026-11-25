@@ -77,7 +77,7 @@ export default function Room() {
     connected,
     reconnecting,
     reconnectAttempt,
-  } = useSignalingSocket(SERVER_URL);
+  } = useSignalingSocket(SERVER_URL, { room: roomId });
 
   // ─── Audio-only mode & Quality state ──────────────────────────────────────────
   const [audioOnly, setAudioOnly] = useState(false);

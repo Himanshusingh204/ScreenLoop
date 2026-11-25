@@ -150,3 +150,20 @@ npm test --prefix client
 # Run production build check
 npm run build --prefix client
 ```
+
+## 📈 Scaling Out (multiple signaling nodes)
+
+Rooms live in each node's memory, so the load balancer **pins a room to one node** by hashing the `?room=` query the client sends
+(`deploy/nginx.conf`, or the ingress annotation in `deploy/k8s/signaling.yaml`). Set `REDIS_URL` so Socket.IO broadcasts also
+reach sockets on other nodes, and `TRUST_PROXY=true` so rate limits use the real client IP from `X-Forwarded-For`
+(never enable it without a proxy you control: the header is spoofable).
+
+| Env | Meaning | Default |
+|---|---|---|
+| `REDIS_URL` | enables the Redis adapter | unset (single node) |
+| `TRUST_PROXY` | trust `X-Forwarded-For` | unset |
+| `MAX_IP_CONNECTIONS` | sockets per client IP | 5 |
+| `MAX_ROOMS` | rooms per node | 100 |
+
+Local 3-node test: `docker compose -f deploy/docker-compose.scale.yml up --build`. Scrape `GET /metrics` (Prometheus); probe `GET /healthz`.
+Trade-off: if a node dies, its rooms end (they are ephemeral); clients auto-reconnect and recreate. `/metrics` is unauthenticated, so block it at the ingress.

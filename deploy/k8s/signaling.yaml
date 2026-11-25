@@ -1,0 +1,56 @@
+# Signaling nodes. Ingress must hash on the `room` query arg (nginx-ingress annotation below).
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: screenloop-signaling }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: signaling } }
+  template:
+    metadata: { labels: { app: signaling } }
+    spec:
+      terminationGracePeriodSeconds: 15
+      containers:
+        - name: server
+          image: screenloop-server:latest
+          ports: [{ containerPort: 4000 }]
+          env:
+            - { name: TRUST_PROXY, value: "true" }
+            - { name: REDIS_URL, valueFrom: { secretKeyRef: { name: screenloop, key: redis-url } } }
+            - { name: LIVEKIT_API_KEY, valueFrom: { secretKeyRef: { name: screenloop, key: lk-key } } }
+            - { name: LIVEKIT_API_SECRET, valueFrom: { secretKeyRef: { name: screenloop, key: lk-secret } } }
+            - { name: MAX_IP_CONNECTIONS, value: "200" }
+            - { name: MAX_ROOMS, value: "5000" }
+          readinessProbe: { httpGet: { path: /healthz, port: 4000 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: 4000 }, periodSeconds: 15 }
+          resources: { requests: { cpu: 500m, memory: 256Mi }, limits: { memory: 512Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: screenloop-signaling }
+spec:
+  selector: { app: signaling }
+  ports: [{ port: 80, targetPort: 4000 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: screenloop-signaling }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: screenloop-signaling }
+  minReplicas: 3
+  maxReplicas: 30
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: screenloop-signaling
+  annotations:
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$arg_room"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+spec:
+  rules:
+    - http:
+        paths:
+          - { path: /, pathType: Prefix, backend: { service: { name: screenloop-signaling, port: { number: 80 } } } }

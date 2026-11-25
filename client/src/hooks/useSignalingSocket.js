@@ -19,6 +19,7 @@ export function useSignalingSocket(
     reconnectionAttempts = 15,
     onReconnectFailedMessage = '❌ Could not reconnect. Please refresh.',
     onReconnectFailed = null,
+    room = null, // sent as ?room= so the load balancer can pin a room to one node
   } = options;
 
   const [socket, setSocket] = useState(null);
@@ -42,6 +43,7 @@ export function useSignalingSocket(
       reconnection,
       reconnectionDelay,
       reconnectionAttempts,
+      ...(room ? { query: { room } } : {}),
       transports: transportsKey ? transportsKey.split(',') : DEFAULT_TRANSPORTS,
     });
     socketRef.current = s;
@@ -82,7 +84,7 @@ export function useSignalingSocket(
       socketRef.current = null;
       setSocket(null);
     };
-  }, [url, reconnection, reconnectionDelay, reconnectionAttempts, transportsKey]);
+  }, [url, reconnection, reconnectionDelay, reconnectionAttempts, transportsKey, room]);
 
   const disconnect = useCallback(() => {
     const s = socketRef.current;

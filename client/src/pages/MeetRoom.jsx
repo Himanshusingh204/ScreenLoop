@@ -41,7 +41,7 @@ export default function MeetRoom() {
 
   // Shared signaling connection (Phase 2: useSignalingSocket — socket persists
   // across lobby → call transition so the local stream isn't torn down).
-  const { socket, socketRef } = useSignalingSocket(SOCKET_URL);
+  const { socket, socketRef } = useSignalingSocket(SOCKET_URL, { room: meetId });
 
   const {
     localStream, devices, micOn, cameraOn,
