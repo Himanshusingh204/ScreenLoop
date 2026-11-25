@@ -82,3 +82,21 @@ jobs:
         curl -f http://localhost:4000/health || (kill $SERVER_PID && exit 1)
         kill $SERVER_PID
         echo "Server smoke test passed"
+
+    - name: Dependency audit (production deps, high severity)
+      run: cd server && npm audit --omit=dev --audit-level=high
+
+  deploy-manifests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Validate compose files
+      run: |
+        docker compose -f docker-compose.yml config -q
+        docker compose -f deploy/docker-compose.scale.yml config -q
+    - name: Bring up the 3-node stack and probe it through the load balancer
+      run: |
+        docker compose -f deploy/docker-compose.scale.yml up --build -d
+        for i in $(seq 1 30); do curl -sf http://localhost:4000/healthz && break; sleep 2; done
+        curl -sf http://localhost:4000/healthz
+        docker compose -f deploy/docker-compose.scale.yml down
