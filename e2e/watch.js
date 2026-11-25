@@ -27,7 +27,8 @@ const FAKE_SCREEN = () => {
 
 async function open(ctx, url, name, { host = false } = {}) {
   const page = await ctx.newPage();
-  page.on('dialog', (d) => d.accept());
+  // accept the kick confirm, decline the follow-up "block rejoin" prompt (all test browsers share one address)
+  page.on('dialog', (d) => (/Also block/.test(d.message()) ? d.dismiss() : d.accept()));
   page.on('console', (m) => { if (/e2ee|E2EE|rekey|LiveKit\] (Connected|Disc)/i.test(m.text())) log(`   [${name}]`, m.text().slice(0, 110)); });
   await page.addInitScript(() => { window.__e2eeSeen = false; new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if ((n.textContent || '').includes('end-to-end encrypted')) window.__e2eeSeen = true; }).observe(document, { childList: true, subtree: true }); });
   if (host) await page.addInitScript(FAKE_SCREEN);

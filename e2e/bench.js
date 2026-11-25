@@ -6,8 +6,11 @@ const path = require('path');
 const APP = 'http://localhost:5173';
 const ROOM = `b${Date.now().toString(36)}`.slice(0, 12);
 const KEY = 'bk' + Math.random().toString(36).slice(2, 12) + 'QWERTY12';
-const REF = fs.readFileSync(path.join(__dirname, 'ref.txt'), 'utf8');
-const WAV = fs.readFileSync(path.join(__dirname, 'bench.wav'));
+const CLIP = process.env.CLIP || 'bench';
+const REF = fs.readFileSync(path.join(__dirname, process.env.REF || 'ref.txt'), 'utf8');
+const WAV = fs.readFileSync(path.join(__dirname, `${CLIP}.wav`));
+const BACKEND = process.env.BACKEND || '';
+const NOISE = process.env.NOISE === '1';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const norm = (t) => t.toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
 
@@ -27,7 +30,9 @@ const HOST_INIT = () => {
     const audio = new Audio('/bench.wav'); audio.crossOrigin = 'anonymous';
     window.__audio = audio;
     const ac = new AudioContext(); const src = ac.createMediaElementSource(audio); const dest = ac.createMediaStreamDestination();
-    src.connect(dest); dest.stream.getAudioTracks().forEach((t) => vs.addTrack(t));
+    src.connect(dest);
+    if (window.__noise) { const len = ac.sampleRate * 120; const b = ac.createBuffer(1, len, ac.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1); const n = ac.createBufferSource(); n.buffer = b; n.loop = true; const g2 = ac.createGain(); g2.gain.value = window.__noise; n.connect(g2); g2.connect(dest); n.start(); }
+    dest.stream.getAudioTracks().forEach((t) => vs.addTrack(t));
     return vs;
   };
 };
@@ -56,6 +61,7 @@ const VIEWER_INIT = () => {
   await ctx.route('**/bench.wav', (r) => r.fulfill({ body: WAV, contentType: 'audio/wav', headers: { 'access-control-allow-origin': '*' } }));
 
   const host = await ctx.newPage();
+  await host.addInitScript((n) => { window.__noise = n; }, NOISE ? 0.08 : 0);
   await host.addInitScript(HOST_INIT);
   await host.goto(`${APP}/room/${ROOM}?host=true#${KEY}`);
   await host.locator('#display-name').fill('Host'); await host.locator('#join-btn').click();
@@ -64,7 +70,7 @@ const VIEWER_INIT = () => {
   console.log('host audio element:', await host.evaluate(() => typeof window.__audio));
 
   const v = await ctx.newPage();
-  await v.addInitScript(() => { window.__backend = navigator.gpu ? 'webgpu-available' : 'wasm-only'; });
+  await v.addInitScript((b) => { try { if (b) localStorage.setItem('sl-asr-backend', b); } catch (e) { /* ignore */ } }, BACKEND);
   await v.goto(`${APP}/room/${ROOM}#${KEY}`);
   await v.locator('#display-name').fill('Viewer'); await v.locator('#join-btn').click();
   await v.locator('.room-video-area video').waitFor({ timeout: 25000 });
@@ -79,7 +85,7 @@ const VIEWER_INIT = () => {
     if (/stopped|not supported/i.test(txt)) { console.log('CC ERROR:', txt); await browser.close(); process.exit(1); }
     await sleep(500);
   }
-  console.log('model ready after ms:', tReady - tClick, ' backend:', await v.evaluate(() => window.__backend));
+  console.log('model ready after ms:', tReady - tClick, ' backend:', await v.evaluate(() => window.__captionDevice), ' noise:', NOISE);
 
   console.log('viewer status text:', JSON.stringify(await v.locator('[data-testid=captions]').first().innerText().catch(() => 'none')));
   console.log('host audio now:', await host.evaluate(() => typeof window.__audio), host.url());

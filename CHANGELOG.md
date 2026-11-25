@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Scale-out**: optional Redis Socket.IO adapter (`REDIS_URL`), room-affinity load balancing, `/healthz`, Prometheus `/metrics` (optional `METRICS_TOKEN`), nginx / docker-compose / Kubernetes manifests, Socket.IO load test with published baseline.
 - **Live verification suite** (`e2e/`) driving real Chrome against a real LiveKit server; `docs/THREAT_MODEL.md`, `SYSTEM_DESIGN.md`, `VERIFICATION.md`, `AI_EVAL.md`, `CASE_STUDY.md`.
 - CI: dependency audit and a 3-node compose smoke test.
+- Opt-in "kick and block rejoin"; `deploy/k8s/check.py` static manifest check; multi-node load test (1,500 clients, 100% delivered).
 
 ### Changed
 - **LiveKit tokens are issued over the authenticated socket (`sfu:token`)**; the open `POST /api/token` endpoint was removed. Identity is the socket id, only the server-recorded host can publish, and kicked users are removed from the SFU.
@@ -27,12 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Per-IP limits collapsed to one bucket behind a load balancer; they now use the rightmost `X-Forwarded-For` hop when `TRUST_PROXY=true` (nginx overwrites the header).
 - Multi-node: PIN could be bypassed via the token endpoint, and a same-named "shadow" room could be created on another node; sockets are now bound to their room.
 - `docker-compose.yml` could never start LiveKit (key format) and handed browsers an unreachable hostname.
+- nginx `events {}` capped the load balancer at ~256 users and the server Dockerfile HEALTHCHECK could never pass (IPv6 `localhost`).
 - `/healthz`, `/health`, `/metrics` returned 500 in production for requests without an `Origin` header.
 - Meet mesh fallback missed peers depending on join order; the "end-to-end encrypted" indicator no longer stays up after a fall back to P2P.
 - Captions: a single bad audio window no longer stops captions; unsupported browsers fail cleanly instead of crashing the page.
 
 ### Known limitations
-- A kick is not a ban (the link is the credential). Meet is not frame-encrypted, and SFU and mesh Meet peers do not interoperate.
+- A plain kick is not a ban (the link is the credential); the host can now opt in to blocking rejoin for the room's lifetime (keyed like the other abuse limits, so people behind one NAT may be blocked too). Meet is not frame-encrypted, and SFU and mesh Meet peers do not interoperate.
 - `deploy/k8s/` has not been applied to a cluster. Caption accuracy is measured on one clean synthetic clip only.
 
 ### Planned

@@ -85,7 +85,7 @@ Chat messages are encrypted client-side with **AES-256-GCM** via the Web Crypto 
 
 | Area | What shipped | Verified how |
 | :--- | :--- | :--- |
-| **On-device AI captions** | `CC` button: Whisper runs in a Web Worker (WebGPU, WASM fallback); optional English translation; downloadable recap. **No audio or transcript leaves the device.** | Real Chrome, via the E2EE SFU path: ready in 19 s, first caption 6.8 s, WER 5.1 % on one clean clip ([AI_EVAL](docs/AI_EVAL.md)) |
+| **On-device AI captions** | `CC` button: Whisper runs in a Web Worker (WebGPU, WASM fallback); optional English translation; downloadable recap. **No audio or transcript leaves the device.** | Real Chrome, via the E2EE SFU path: ready in 19 s, first caption 6.8 s, pooled WER 16.4 % over 4 synthetic clips on WebGPU and WASM ([AI_EVAL](docs/AI_EVAL.md)) |
 | **Media-frame E2EE** (watch rooms) | LiveKit `ExternalE2EEKeyProvider`, key from the URL `#fragment`; the host rotates the key on a kick (ECDH + HKDF bound to the room key) | Live: keyless viewer decodes 0 frames; rotation reaches remaining viewers; late joiner decodes |
 | **Meet on the SFU** (opt-in `VITE_MEET_SFU=true`) | One upload per user via LiveKit, automatic mesh fallback | Live: 3 tabs, and fallback with LiveKit stopped |
 | **Server-authorized media** | LiveKit tokens issued over the authenticated socket (`sfu:token`); identity = socket id; only the recorded host can publish; kicked users removed from the SFU | Live + unit |
@@ -286,7 +286,7 @@ cd client
 npm run build
 ```
 
-Current baseline: **server 83 tests, client 84 tests, lint clean, build OK**.
+Current baseline: **server 86 tests, client 84 tests, lint clean, build OK**.
 
 Beyond unit tests, `e2e/` drives real Chrome against a real LiveKit server (Meet on the SFU and its fallback, media E2EE, kick and key rotation, captions benchmark). See [e2e/README.md](e2e/README.md) and [docs/VERIFICATION.md](docs/VERIFICATION.md). `loadtest/` holds the Socket.IO load test and published baseline.
 

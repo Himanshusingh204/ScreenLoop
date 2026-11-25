@@ -9,10 +9,11 @@ self.onmessage = async ({ data }) => {
   try {
     if (data.type === 'load') {
       asr = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-        device: self.navigator?.gpu ? 'webgpu' : 'wasm',
+        // data.backend === 'wasm' forces the CPU path (used to test devices without WebGPU)
+        device: data.backend !== 'wasm' && self.navigator?.gpu ? 'webgpu' : 'wasm',
         progress_callback: (p) => self.postMessage({ type: 'progress', progress: p.progress ?? 0 }),
       });
-      self.postMessage({ type: 'ready' });
+      self.postMessage({ type: 'ready', device: data.backend !== 'wasm' && self.navigator?.gpu ? 'webgpu' : 'wasm' });
     } else if (data.type === 'audio' && asr) {
       // language omitted = auto-detect; task 'translate' makes Whisper output English
       const out = await asr(data.audio, { task: data.translate ? 'translate' : 'transcribe' });

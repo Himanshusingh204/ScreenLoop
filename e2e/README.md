@@ -15,10 +15,17 @@ node watch.js                # watch-room E2EE, host-only publish, kick+rotation
 Also works through the 3-node stack: `docker compose -f deploy/docker-compose.scale.yml up --build -d` (LB on :4000, LiveKit on :7880), then `node watch.js`.
 
 ## Caption benchmark
-`bench.js` needs `bench.wav` next to it. Generate it from `ref.txt` with Windows TTS:
+`bench.js` plays a synthetic-speech clip as the host's shared audio and reads the viewer's captions. Clips are generated locally with Windows TTS from the `ref*.txt` passages (WAVs are git-ignored):
 ```powershell
 Add-Type -AssemblyName System.Speech
 $s = New-Object System.Speech.Synthesis.SpeechSynthesizer
+$s.SelectVoice("Microsoft David Desktop")   # also: Zira, Hazel
 $s.SetOutputToWaveFile("bench.wav"); $s.Speak((Get-Content ref.txt -Raw)); $s.Dispose()
 ```
-then `node bench.js` (downloads the Whisper model on first run).
+```bash
+node bench.js                                   # default backend
+CLIP=clip2 REF=ref2.txt node bench.js           # other clip / reference text
+BACKEND=wasm node bench.js                      # force the CPU path (no WebGPU)
+NOISE=1 node bench.js                           # mix white noise into the audio
+```
+Warm the Vite dev server first (open the app once): a cold start re-optimizes dependencies and force-reloads the page mid-run.

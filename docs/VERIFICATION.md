@@ -27,7 +27,7 @@ Environment: Windows 11, Chrome (headless, fake camera/mic), LiveKit v1.13.11 in
 6. The `e2e` run showed per-IP limits keyed on the proxy address (fixed earlier) and, with the independent review, a multi-node PIN bypass.
 
 ## Caption benchmark (see `docs/AI_EVAL.md`)
-Single clean synthetic-speech clip, so it shows the pipeline works, not general accuracy.
+4 synthetic clips (3 voices, WebGPU and WASM, one noisy): pooled WER 16.4 %. Shows the pipeline works on both backends; not a general accuracy claim.
 
 ## Not verified
-Firefox/Safari/mobile; WebGPU vs WASM backend split (Chrome reported `navigator.gpu` present, the worker picks WebGPU then); real network loss/latency; Kubernetes manifests (compose and nginx were run, `deploy/k8s/` was not); more than 3 nodes; the 1 M-user design target.
+Firefox/Safari/mobile; real network loss/latency; Kubernetes manifests (compose and nginx were run, `deploy/k8s/` was not); more than 3 nodes; the 1 M-user design target.

@@ -34,7 +34,7 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
 
     worker.onmessage = ({ data }) => {
       if (data.type === 'progress') setProgress(Math.round(data.progress));
-      else if (data.type === 'ready') { ready = true; clearTimeout(timer); setStatus('ready'); }
+      else if (data.type === 'ready') { ready = true; clearTimeout(timer); setStatus('ready'); window.__captionDevice = data.device; }
       else if (data.type === 'error') {
         if (data.fatal) fail(data.message);
         else backlog = Math.max(0, backlog - 1); // one bad window: skip it, keep captioning
@@ -45,7 +45,9 @@ export function useLiveCaptions(stream, { enabled = false, translate = false } =
       }
     };
     worker.onerror = (e) => fail(e.message || 'Caption worker crashed.');
-    worker.postMessage({ type: 'load' });
+    let backend = null;
+    try { backend = localStorage.getItem('sl-asr-backend'); } catch { /* storage blocked: use the default */ }
+    worker.postMessage({ type: 'load', backend });
 
     let ctx; let src; let proc; let mute;
     try {
