@@ -181,6 +181,7 @@ function getParticipants(roomId) {
     name: data.name,
     isHost: data.isHost,
     gender: data.gender || DEFAULT_GENDER,
+    e2ePub: data.e2ePub || null, // public ECDH key for media-key delivery (public by design)
   }));
 }
 

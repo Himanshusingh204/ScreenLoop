@@ -11,3 +11,4 @@ export { useMeetRTC } from './useMeetRTC';
 export { useActiveSpeaker } from './useActiveSpeaker';
 export { useSignalingSocket } from './useSignalingSocket';
 export { useLiveKitRoom } from './useLiveKitRoom';
+export { useMediaKeyRotation } from './useMediaKeyRotation';

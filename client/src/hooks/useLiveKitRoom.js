@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Room, RoomEvent, Track } from 'livekit-client';
+import { Room, RoomEvent, Track, ExternalE2EEKeyProvider, isE2EESupported } from 'livekit-client';
 import { CINEMA_AUDIO_PRESET } from '../utils/audioPresets';
 
 const SERVER_URL =
@@ -22,6 +22,7 @@ export function useLiveKitRoom({
   name,
   pin,
   isHost,
+  e2eeKey = null, // URL-hash room key: when set (and supported), media frames are end-to-end encrypted
   enabled = true,
   onScreenTrackSubscribed,
   onScreenTrackUnsubscribed,
@@ -32,7 +33,9 @@ export function useLiveKitRoom({
   const [error, setError] = useState(null);
   const [remoteScreenStream, setRemoteScreenStream] = useState(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [e2eeActive, setE2eeActive] = useState(false);
   const roomRef = useRef(null);
+  const keyProviderRef = useRef(null);
 
   // Keep latest callbacks in refs so the connection effect doesn't re-run
   // (and tear down the SFU room) on every parent render.
@@ -48,9 +51,14 @@ export function useLiveKitRoom({
     if (!enabled || !roomId || !name) return;
 
     let isMounted = true;
+    const keyProvider = e2eeKey && isE2EESupported() ? new ExternalE2EEKeyProvider() : null;
+    keyProviderRef.current = keyProvider;
     const lkRoom = new Room({
       adaptiveStream: true,
       dynacast: true,
+      ...(keyProvider
+        ? { e2ee: { keyProvider, worker: new Worker(new URL('livekit-client/e2ee-worker', import.meta.url), { type: 'module' }) } }
+        : {}),
     });
     roomRef.current = lkRoom;
 
@@ -139,7 +147,12 @@ export function useLiveKitRoom({
           }
         });
 
-        // 3. Connect to LiveKit server
+        // 3. Key first, then enable E2EE, then connect: no frame is ever sent unencrypted
+        if (keyProvider) {
+          await keyProvider.setKey(e2eeKey);
+          await lkRoom.setE2EEEnabled(true);
+          if (isMounted) setE2eeActive(true);
+        }
         await lkRoom.connect(url, token);
       } catch (err) {
         if (!isMounted) return;
@@ -153,12 +166,14 @@ export function useLiveKitRoom({
 
     return () => {
       isMounted = false;
+      setE2eeActive(false);
+      keyProviderRef.current = null;
       if (lkRoom) {
         lkRoom.disconnect();
         roomRef.current = null;
       }
     };
-  }, [roomId, name, pin, isHost, enabled]);
+  }, [roomId, name, pin, isHost, enabled, e2eeKey]);
 
   // Start Screen Sharing with Cinema Audio
   const startScreenShare = useCallback(async () => {
@@ -189,7 +204,14 @@ export function useLiveKitRoom({
     setIsSharing(false);
   }, []);
 
+  // Swap in a rotated media key (delivered per-recipient by MediaKeyCoordinator)
+  const rotateKey = useCallback(async (key) => {
+    await keyProviderRef.current?.setKey(key);
+  }, []);
+
   return {
+    e2eeActive,
+    rotateKey,
     room,
     isConnected,
     isConnecting,

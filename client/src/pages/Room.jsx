@@ -29,6 +29,7 @@ import {
   useScreenRecording,
   useSignalingSocket,
   useLiveKitRoom,
+  useMediaKeyRotation,
 } from '../hooks';
 
 import { fireRoomLaunchConfetti, addRecentRoom } from '../utils';
@@ -155,11 +156,14 @@ export default function Room() {
     startScreenShare: startLiveKitScreenShare,
     stopScreenShare: stopLiveKitScreenShare,
     error: lkError,
+    rotateKey: rotateMediaKey,
+    e2eeActive,
   } = useLiveKitRoom({
     roomId,
     name: myName,
     pin: joinInfoRef.current?.pin,
     isHost: isActualHost,
+    e2eeKey: roomKey || null,
     enabled: phase === 'room' && !!myName,
     onScreenTrackSubscribed: (stream) => {
       setRemoteStream(stream);
@@ -213,6 +217,12 @@ export default function Room() {
   });
 
   addToastRef.current = addToast;
+
+  // Media E2EE: the SFU only ever sees ciphertext; host rotates the key when it removes someone.
+  useMediaKeyRotation({ socket, roomId, enabled: e2eeActive, isHost: isActualHost, applyKey: rotateMediaKey, participants });
+  useEffect(() => {
+    if (e2eeActive) addToast('🔒 Media is end-to-end encrypted');
+  }, [e2eeActive, addToast]);
 
   // Surface LiveKit failures as toasts (falls back to WebRTC automatically).
   useEffect(() => {

@@ -490,6 +490,7 @@ function registerHandlers(socket, io) {
       name: kickedName,
       participants: getParticipants(roomId),
       newHostId: result.newHostId,
+      kicked: true, // host client rotates the media key on a kick
     });
 
     if (result.newHostId) {
@@ -497,6 +498,26 @@ function registerHandlers(socket, io) {
         message: 'You are now the host.',
       });
     }
+  });
+
+  // ─── Media E2EE key delivery ───────────────────────────────────────────────
+  // Server only relays: public keys (so the host can wrap) and wrapped keys (opaque to us).
+  const B64 = /^[A-Za-z0-9_-]+$/;
+  const okB64 = (v, max) => typeof v === 'string' && v.length > 0 && v.length <= max && B64.test(v);
+
+  socket.on('e2ee:hello', ({ roomId, pub } = {}) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m || !okB64(pub, 200)) return;
+    m.participant.e2ePub = pub;
+    socket.to(roomId).emit('e2ee:hello', { from: socket.id, pub });
+  });
+
+  socket.on('e2ee:rekey', ({ roomId, to, hostPub, iv, ct } = {}) => {
+    const m = requireRoomMember(socket, roomId);
+    if (!m || m.room.hostId !== socket.id) return;
+    if (typeof to !== 'string' || !m.room.participants.has(to)) return;
+    if (!okB64(hostPub, 200) || !okB64(iv, 32) || !okB64(ct, 300)) return;
+    io.to(to).emit('e2ee:rekey', { from: socket.id, hostPub, iv, ct });
   });
 
   // ─── Transfer Host ──────────────────────────────────────────────────────────
