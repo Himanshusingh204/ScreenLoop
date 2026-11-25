@@ -71,7 +71,10 @@ export const ParticipantList = memo(function ParticipantList({
                   className="btn btn-ghost btn-sm mod-btn mod-btn-danger"
                   onClick={() => {
                     if (window.confirm(`Kick ${p.name} from the room?`)) {
-                      onKick(p.socketId);
+                      // A kick alone lets them rejoin with the link; offer to also block rejoining (same device/network)
+                      const ban = window.confirm(`Also block ${p.name} from rejoining this room?
+(People on the same network may be blocked too.)`);
+                      onKick(p.socketId, ban);
                     }
                   }}
                   title="Kick User"

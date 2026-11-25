@@ -30,6 +30,7 @@ const { tokenRequests } = require('./metrics');
 const lkAdmin = require('./livekitAdmin');
 
 const {
+  getClientKey,
   checkSpam,
   checkReactionRate,
   checkPinBruteForce,
@@ -237,6 +238,10 @@ function registerHandlers(socket, io) {
       const room = getRoom(roomId);
       if (!room) {
         socket.emit('room:error', { message: 'Room not found. Check the link and try again.' });
+        return;
+      }
+      if (room.bannedKeys?.has(getClientKey(socket))) {
+        socket.emit('room:error', { message: 'You were removed from this room by the host.' });
         return;
       }
 
@@ -480,7 +485,7 @@ function registerHandlers(socket, io) {
   });
 
   // ─── Host Moderation (Kick) ─────────────────────────────────────────────────
-  socket.on('room:kick', ({ roomId, targetId }) => {
+  socket.on('room:kick', ({ roomId, targetId, ban }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
     const { room } = m;
@@ -492,6 +497,11 @@ function registerHandlers(socket, io) {
 
     const result = leaveRoom(roomId, targetId);
     if (!result) return;
+
+    // Opt-in ban (strict boolean) for the room's lifetime, keyed like the other abuse limits. Trade-off: users
+    // behind the same NAT share a key, so a ban can block innocent neighbours; hence it is opt-in.
+    const victimSock = io.sockets.sockets.get(targetId);
+    if (ban === true && victimSock) room.bannedKeys.add(getClientKey(victimSock));
 
     io.to(targetId).emit('room:kicked');
     // Defense in depth: drop them from the SFU too (their LiveKit identity is their socket id)

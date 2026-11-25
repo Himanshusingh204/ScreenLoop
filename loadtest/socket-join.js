@@ -6,6 +6,7 @@ const { io } = require('socket.io-client');
 const [url = 'http://localhost:4000', ROOMS = '20', PER_ROOM = '5', DURATION = '30'] = process.argv.slice(2);
 const rooms = +ROOMS, perRoom = +PER_ROOM, duration = +DURATION;
 const lat = [];
+const errCount = {};
 let sent = 0, received = 0, errors = 0, connected = 0;
 const sockets = [];
 
@@ -14,10 +15,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function client(roomId, idx) {
   return new Promise((resolve) => {
-    const s = io(url, { transports: ['websocket'], forceNew: true, reconnection: false });
+    const s = io(url, { transports: ['websocket'], forceNew: true, reconnection: false, query: { room: roomId }, extraHeaders: { Origin: process.env.LT_ORIGIN || 'http://localhost:5173' } }); // ?room= is what the LB hashes on
     sockets.push(s);
-    s.on('connect_error', () => { errors++; resolve(null); });
-    s.on('room:error', () => { errors++; resolve(null); });
+    s.on('connect_error', (e) => { errors++; if (errCount[e.message] === undefined) console.log('connect_error:', e.message); errCount[e.message] = (errCount[e.message] || 0) + 1; resolve(null); });
+    s.on('room:error', (e) => { errors++; if (errCount[e.message] === undefined) console.log('room:error:', e.message); errCount[e.message] = (errCount[e.message] || 0) + 1; resolve(null); });
     s.on('chat:message', (m) => {
       const t = Number(String(m.text || '').split('|')[0]);
       if (t) { received++; lat.push(Date.now() - t); }

@@ -1,0 +1,11 @@
+# Raises per-IP/per-node caps for load tests (every client shares the LB address). Use ONLY for testing.
+x-lt: &lt
+  MAX_IP_CONNECTIONS: "100000"
+  SPAM_MAX_EVENTS: "100000"
+  MAX_ROOMS: "100000"
+  MAX_PARTICIPANTS: "20"
+  LOG_LEVEL: "error"
+services:
+  server1: { environment: *lt }
+  server2: { environment: *lt }
+  server3: { environment: *lt }

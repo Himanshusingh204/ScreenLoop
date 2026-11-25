@@ -574,8 +574,8 @@ export default function Room() {
     setCurrentQuality(newQuality);
   }, []);
 
-  const handleKick = useCallback((targetId) => {
-    socket?.emit('room:kick', { roomId, targetId });
+  const handleKick = useCallback((targetId, ban = false) => {
+    socket?.emit('room:kick', { roomId, targetId, ban: ban === true });
     playLeaveChime();
   }, [roomId, socket, playLeaveChime]);
 

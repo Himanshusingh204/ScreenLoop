@@ -133,3 +133,41 @@ describe('room:kick', () => {
     }
   });
 });
+
+describe('kick with ban', () => {
+  const rejoin = (roomId, ip) => {
+    const again = makeSocket(`${roomId}-again`, `10.9.${ip}.2`); // same client address as the kicked guest
+    return { again };
+  };
+
+  it('a banned client key cannot rejoin the room for its lifetime', () => {
+    const { io, host, guest, roomId } = setup('ban1', 11);
+    io.sockets.sockets.set(guest.id, guest);
+    invoke(host, 'room:kick', { roomId, targetId: guest.id, ban: true });
+    const { again } = rejoin(roomId, 11);
+    registerHandlers(again, io);
+    invoke(again, 'room:join', { roomId, name: 'Guest' });
+    expect(again.emits.some((e) => e.event === 'room:error')).toBe(true);
+    expect(again.emits.some((e) => e.event === 'room:joined')).toBe(false);
+  });
+
+  it('a plain kick (no ban) still allows rejoining with the link', () => {
+    const { io, host, guest, roomId } = setup('ban2', 12);
+    io.sockets.sockets.set(guest.id, guest);
+    invoke(host, 'room:kick', { roomId, targetId: guest.id });
+    const { again } = rejoin(roomId, 12);
+    registerHandlers(again, io);
+    invoke(again, 'room:join', { roomId, name: 'Guest' });
+    expect(again.emits.some((e) => e.event === 'room:joined')).toBe(true);
+  });
+
+  it('only a boolean true bans (no truthy-string surprises)', () => {
+    const { io, host, guest, roomId } = setup('ban3', 13);
+    io.sockets.sockets.set(guest.id, guest);
+    invoke(host, 'room:kick', { roomId, targetId: guest.id, ban: 'yes' });
+    const { again } = rejoin(roomId, 13);
+    registerHandlers(again, io);
+    invoke(again, 'room:join', { roomId, name: 'Guest' });
+    expect(again.emits.some((e) => e.event === 'room:joined')).toBe(true);
+  });
+});

@@ -86,6 +86,7 @@ function createRoom(roomId, hostSocketId, hostName, pin = null, gender = DEFAULT
     createdAt: Date.now(),
     lastActivityAt: Date.now(),
     hostOnlyControls: false,
+    bannedKeys: new Set(), // client keys removed with ban:true; lifetime of the room
   };
   room.participants.set(hostSocketId, {
     name: hostName,

@@ -15,13 +15,16 @@ Environment: Windows 11, Chrome (headless, fake camera/mic), LiveKit v1.13.11 in
 | Late joiner (URL key only) receives the current key | PASS |
 | Same suite through nginx + 3 Docker signaling nodes + Redis + LiveKit | PASS |
 | Captions on the E2EE-decrypted SFU stream | PASS (below) |
+| 1,500 sockets / 300 rooms through nginx + 3 nodes + Redis | PASS: 100% delivered, p95 602 ms (`loadtest/README.md`) |
+| Kick with opt-in ban blocks rejoin; plain kick allows it | Unit |
 
 ## Bugs that only live testing found
 1. `docker-compose.yml` could never start LiveKit (`LIVEKIT_KEYS` needs `key: secret` with a space); also handed browsers an unreachable container hostname.
 2. Meet mesh fallback missed peers depending on join order.
 3. Clicking **Share** before the SFU connected silently used P2P (no SFU, no E2EE) for the whole session.
 4. `/healthz` and `/metrics` returned 500 in production because CORS rejected requests with no `Origin` (every LB/k8s probe).
-5. The `e2e` run showed per-IP limits keyed on the proxy address (fixed earlier) and, with the independent review, a multi-node PIN bypass.
+5. nginx `events {}` capped the load balancer at ~256 users; the Dockerfile HEALTHCHECK could never pass (IPv6 `localhost`); server prod dependencies had 1 critical + 5 high advisories (now 0).
+6. The `e2e` run showed per-IP limits keyed on the proxy address (fixed earlier) and, with the independent review, a multi-node PIN bypass.
 
 ## Caption benchmark (see `docs/AI_EVAL.md`)
 Single clean synthetic-speech clip, so it shows the pipeline works, not general accuracy.
