@@ -74,7 +74,8 @@ describe('MediaKeyCoordinator', () => {
     const kicked = await peer(bus, 'bad', false);
     await tick();
     await host.socket.fire('room:user-left', { kicked: true, participants: [{ socketId: 'host' }, { socketId: 'g1' }] });
-    await tick();
+    await until(() => g1.applied.length > 0); // wait for delivery to the remaining peer, not a fixed delay
+    await tick(); // then give the (never-sent) key to the removed peer a chance to show up
     expect(g1.applied).toHaveLength(1);
     expect(kicked.applied).toHaveLength(0);
   });
