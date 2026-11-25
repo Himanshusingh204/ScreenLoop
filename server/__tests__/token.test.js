@@ -51,3 +51,20 @@ describe('POST /api/token', () => {
     expect((await post({ roomId: 'pinroom', participantName: 'B', pin: 'secret' })).status).toBe(429);
   });
 });
+
+describe('POST /api/token socketId metadata (SFU tile mapping)', () => {
+  const meta = async (extra) => {
+    const res = await post({ roomId: 'meet-abc', participantName: 'Bob', ...extra });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    return JSON.parse(JSON.parse(Buffer.from(json.token.split('.')[1], 'base64url').toString()).metadata);
+  };
+
+  it('carries a well-formed socketId into token metadata', async () => {
+    expect((await meta({ socketId: 'Ab_9-xyz' })).socketId).toBe('Ab_9-xyz');
+  });
+
+  it.each([[{ a: 1 }], ['bad id!'], ['x'.repeat(41)], [123]])('drops malformed socketId %j', async (bad) => {
+    expect((await meta({ socketId: bad })).socketId).toBeUndefined();
+  });
+});

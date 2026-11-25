@@ -170,7 +170,7 @@ app.get('/api/rooms', (req, res) => {
 app.post('/api/token', tokenLimiter, async (req, res) => {
   tokenRequests.inc();
   try {
-    const { roomId, participantName, pin, isHost, gender } = req.body || {};
+    const { roomId, participantName, pin, isHost, gender, socketId } = req.body || {};
 
     if (!roomId || typeof roomId !== 'string' || !/^[A-Za-z0-9_-]{1,32}$/.test(roomId)) {
       return res.status(400).json({ error: 'Invalid room ID format' });
@@ -203,7 +203,12 @@ app.post('/api/token', tokenLimiter, async (req, res) => {
       roomId,
       participantName: participantName.trim(),
       isHost: !!isHost,
-      metadata: { gender: normalizeGender(gender) },
+      // socketId lets Meet map an SFU participant to its signaling presence (tile, mic, hand).
+      // Display-only: it grants nothing, so a client claiming another's id can only mislabel its own tile.
+      metadata: {
+        gender: normalizeGender(gender),
+        ...(typeof socketId === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(socketId) ? { socketId } : {}),
+      },
     });
 
     res.json({

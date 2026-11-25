@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMediaDevices } from '../hooks/useMediaDevices';
 import { useMeetRTC } from '../hooks/useMeetRTC';
+import { useMeetLiveKit } from '../hooks/useMeetLiveKit';
 import { useActiveSpeaker } from '../hooks/useActiveSpeaker';
 import { useSignalingSocket } from '../hooks/useSignalingSocket';
 import MeetLobby from '../components/meet/MeetLobby';
@@ -22,6 +23,8 @@ const SOCKET_URL =
   (import.meta.env.DEV
     ? 'http://localhost:4000'
     : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000'));
+
+const SFU_ENABLED = import.meta.env.VITE_MEET_SFU === 'true';
 
 export default function MeetRoom() {
   const { meetId } = useParams();
@@ -50,10 +53,17 @@ export default function MeetRoom() {
     startStream, toggleMic, toggleCamera, stopStream,
   } = useMediaDevices();
 
-  const {
-    remoteStreams, sendOffer, handleSignal,
-    replaceTrack, removePeer, cleanup: cleanupRTC,
-  } = useMeetRTC(socketRef, localStream);
+  // SFU mode (VITE_MEET_SFU=true): one upload per user via LiveKit; falls back to the P2P mesh if it can't connect.
+  const sfu = useMeetLiveKit({ meetId, name, socketId: socket?.id, localStream, enabled: SFU_ENABLED && !inLobby });
+  const mesh = useMeetRTC(socketRef, localStream);
+  const sfuActive = SFU_ENABLED && !sfu.failed;
+  const noop = () => {};
+  const remoteStreams = sfuActive ? sfu.remoteStreams : mesh.remoteStreams;
+  const sendOffer = sfuActive ? noop : mesh.sendOffer;
+  const handleSignal = sfuActive ? noop : mesh.handleSignal;
+  const replaceTrack = (track, kind) => (sfuActive ? sfu.replaceTrack(track, kind) : mesh.replaceTrack(track, kind));
+  const removePeer = sfuActive ? noop : mesh.removePeer;
+  const cleanupRTC = mesh.cleanup;
 
   const { activeSpeaker } = useActiveSpeaker(remoteStreams, participants);
 
@@ -155,6 +165,16 @@ export default function MeetRoom() {
       s.off('meet:closed', handleClosed);
     };
   }, [socket, meetId, inLobby, name, gender, micOn, cameraOn, navigate]);
+
+  // SFU unreachable: bring up the mesh with the people already here. The lower socket id offers, so both sides don't (glare).
+  // Limitation: a peer whose SFU connected cannot see a peer who fell back (mixed modes don't interoperate).
+  useEffect(() => {
+    if (!SFU_ENABLED || !sfu.failed || !socket?.id) return;
+    participants.forEach((p) => {
+      if (socket.id < p.socketId) mesh.sendOffer(p.socketId);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sfu.failed]);
 
   // Teardown media on unmount only (socket is owned by useSignalingSocket).
   useEffect(() => {
