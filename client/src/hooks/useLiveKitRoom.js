@@ -32,6 +32,7 @@ export function useLiveKitRoom({
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState(null);
   const [remoteScreenStream, setRemoteScreenStream] = useState(null);
+  const [remoteAudioStream, setRemoteAudioStream] = useState(null); // cinema audio, for on-device captions
   const [isSharing, setIsSharing] = useState(false);
   const [e2eeActive, setE2eeActive] = useState(false);
   const roomRef = useRef(null);
@@ -106,6 +107,7 @@ export function useLiveKitRoom({
           setIsConnected(false);
           setIsSharing(false);
           setRemoteScreenStream(null);
+          setRemoteAudioStream(null);
         });
 
         // When a remote participant shares their screen
@@ -117,6 +119,7 @@ export function useLiveKitRoom({
             if (onScreenTrackSubscribedRef.current) onScreenTrackSubscribedRef.current(mediaStream, participant);
           } else if (track.source === Track.Source.ScreenShareAudio) {
             console.log('[LiveKit] Subscribed to cinema audio track');
+            setRemoteAudioStream(new MediaStream([track.mediaStreamTrack]));
             // Attach the audio track to a playable element in the DOM
             const audioEl = track.attach();
             audioEl.id = 'livekit-cinema-audio';
@@ -138,6 +141,7 @@ export function useLiveKitRoom({
             if (onScreenTrackUnsubscribedRef.current) onScreenTrackUnsubscribedRef.current();
           } else if (track.source === Track.Source.ScreenShareAudio) {
             console.log('[LiveKit] Remote cinema audio stopped');
+            setRemoteAudioStream(null);
             track.detach();
             const el = document.getElementById('livekit-cinema-audio');
             if (el) {
@@ -212,6 +216,7 @@ export function useLiveKitRoom({
   return {
     e2eeActive,
     rotateKey,
+    remoteAudioStream,
     room,
     isConnected,
     isConnecting,

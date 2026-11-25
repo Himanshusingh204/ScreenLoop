@@ -164,6 +164,7 @@ reach sockets on other nodes, and `TRUST_PROXY=true` so rate limits use the real
 | `TRUST_PROXY` | trust `X-Forwarded-For` | unset |
 | `MAX_IP_CONNECTIONS` | sockets per client IP | 5 |
 | `MAX_ROOMS` | rooms per node | 100 |
+| `VITE_MEET_SFU` (client build) | `true` runs Video Meet on LiveKit with mesh fallback | unset (mesh) |
 
 Local 3-node test: `docker compose -f deploy/docker-compose.scale.yml up --build`. Scrape `GET /metrics` (Prometheus); probe `GET /healthz`.
 Trade-off: if a node dies, its rooms end (they are ephemeral); clients auto-reconnect and recreate. `/metrics` is unauthenticated, so block it at the ingress.

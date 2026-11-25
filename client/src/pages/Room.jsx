@@ -158,6 +158,7 @@ export default function Room() {
     error: lkError,
     rotateKey: rotateMediaKey,
     e2eeActive,
+    remoteAudioStream: lkAudioStream,
   } = useLiveKitRoom({
     roomId,
     name: myName,
@@ -634,7 +635,7 @@ export default function Room() {
             videoRef={videoRef}
           />
 
-          <CaptionsLayer stream={stream} />
+          <CaptionsLayer stream={stream?.getAudioTracks().length ? stream : lkAudioStream} />
 
           {/* Screen Annotation Drawing Canvas */}
           <AnnotationCanvas
