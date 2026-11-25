@@ -107,7 +107,7 @@ Handlers verify the sender is a member of the target room before relaying. The s
 2. Browsers never send the fragment in HTTP or WebSocket requests, so the server never sees the key.
 3. Each message is encrypted with a fresh 12-byte IV; the payload is `IV || ciphertext`, base64url encoded. The server relays ciphertext only. A wrong key makes decryption return `null`.
 
-**What is not end-to-end encrypted: media.** Audio/video is protected in transit by WebRTC DTLS-SRTP. In P2P mode that is effectively peer-to-peer; in LiveKit mode the SFU terminates DTLS-SRTP and can access media. Media-frame E2EE (Insertable Streams) is **not implemented** and is a possible future item.
+**What is not end-to-end encrypted: media.** Audio/video is protected in transit by WebRTC DTLS-SRTP. In P2P mode that is effectively peer-to-peer; in LiveKit mode the SFU terminates DTLS-SRTP and can access media. Watch-room media-frame E2EE is **implemented but unverified against a live SFU**: `useLiveKitRoom` enables LiveKit's `ExternalE2EEKeyProvider` with the URL-fragment key, and `MediaKeyCoordinator` (`client/src/utils/mediaKeyCoordinator.js`) rotates it on a kick by wrapping a fresh key to each remaining peer's ECDH public key; the server only relays (`e2ee:hello`, `e2ee:rekey`, host-only). A viewer whose link lacks the `#key` cannot decode an encrypted stream. A kick is not a ban: the link is the credential, so a removed user who rejoins with it is given the current key. Video Meet is not frame-encrypted.
 
 ## 7. Security Layers
 

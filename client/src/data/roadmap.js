@@ -10,7 +10,7 @@ export const ROADMAP_PHASES = [
       { title: 'Hybrid fallback to WebRTC mesh without credentials', status: 'done' },
       { title: 'LiveKit JWT access token minting with PIN verification', status: 'done' },
       { title: 'Picture-in-Picture floating toggle on video stage', status: 'done' },
-      { title: 'E2EE Insertable Streams media frame encryption', status: 'planned' },
+      { title: 'E2EE media frame encryption (implemented, pending live-SFU verification)', status: 'planned' },
     ],
   },
   {

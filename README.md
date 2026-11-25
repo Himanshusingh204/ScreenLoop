@@ -63,7 +63,7 @@ Chat messages are encrypted client-side with **AES-256-GCM** via the Web Crypto 
 - **No software or extension downloads**
 - **The signaling server never handles media** (media goes through LiveKit or directly between peers)
 - **Chat decryption keys never leave the browser URL fragment**
-- **Media is encrypted in transit (DTLS-SRTP) but not end-to-end** when routed through the LiveKit SFU
+- **Media is encrypted in transit (DTLS-SRTP).** In watch rooms, when the link carries the key (`#...`), media frames are additionally end-to-end encrypted (LiveKit `ExternalE2EEKeyProvider`, key derived from the URL fragment), so the SFU forwards ciphertext; when the host removes someone it rotates the key per recipient (ECDH-wrapped). Video Meet and the P2P fallback are not frame-encrypted. **Status: unit-tested key logic and a clean build; not yet verified against a live LiveKit server.**
 
 ---
 
