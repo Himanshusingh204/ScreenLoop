@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // useRoom.js — Room state: participants, toasts, sync events, chat
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { encryptMessage, decryptMessage } from '../utils/crypto';
@@ -25,7 +23,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
   const [isActualHost, setIsActualHost] = useState(isHost);
   const toastIdRef = useRef(0);
 
-  // ─── Add a toast notification ─────────────────────────────────────────────
+  // Add a toast notification
   const addToast = useCallback((text) => {
     const id = ++toastIdRef.current;
     setToasts((prev) => [...prev, { id, text }]);
@@ -35,7 +33,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     }, 3000);
   }, []);
 
-  // ─── Send a sync event (host only) ────────────────────────────────────────
+  // Send a sync event (host only)
   const emitSync = useCallback(
     (event, payload) => {
       if (!socket) return;
@@ -44,7 +42,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     [socket, roomId, myName]
   );
 
-  // ─── Send a chat message ──────────────────────────────────────────────────
+  // Send a chat message
   // Phase 2: explicit `enc` flag marks E2EE ciphertext (server relays it so
   // receivers know to decrypt; replaces the legacy length>30 heuristic).
   const sendChatMessage = useCallback(
@@ -66,7 +64,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     [socket, roomId, myName, roomKey]
   );
 
-  // ─── Delete a chat message ───────────────────────────────────────────────
+  // Delete a chat message
   const deleteChatMessage = useCallback(
     (msgId, msgTimestamp) => {
       if (!socket) return;
@@ -75,7 +73,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     [socket, roomId]
   );
 
-  // ─── Edit a chat message ─────────────────────────────────────────────────
+  // Edit a chat message
   const editChatMessage = useCallback(
     async (msgId, msgTimestamp, newText) => {
       if (!socket || !newText.trim()) return;
@@ -93,7 +91,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     [socket, roomId, roomKey]
   );
 
-  // ─── Typing indicator ──────────────────────────────────────────────────
+  // Typing indicator
   const lastTypingEmit = useRef(0);
   const emitTyping = useCallback(() => {
     if (!socket) return;
@@ -103,7 +101,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     socket.emit('chat:typing', { roomId });
   }, [socket, roomId]);
 
-  // ─── Toggle host-only controls ────────────────────────────────────────────
+  // Toggle host-only controls
   const toggleHostOnly = useCallback(
     (enabled) => {
       if (!socket) return;
@@ -112,10 +110,10 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     [socket, roomId]
   );
 
-  // ─── Typing indicator state ────────────────────────────────────────────
+  // Typing indicator state
   const [typingUsers, setTypingUsers] = useState({});
 
-  // ─── Auto-clear expired typing indicators (>3s) ───────────────────────────
+  // Auto-clear expired typing indicators (>3s)
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now();
@@ -136,7 +134,7 @@ export function useRoom({ socket, roomId, myName, isHost, roomKey, onInitiateOff
     return () => clearInterval(timer);
   }, []);
 
-  // ─── Socket event listeners ───────────────────────────────────────────────
+  // Socket event listeners
   useEffect(() => {
     if (!socket) return;
 

@@ -68,7 +68,7 @@ export async function decryptMessage(payloadString, keyString) {
   }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers
 
 async function importKey(keyString) {
   const buffer = base64UrlToBuffer(keyString);

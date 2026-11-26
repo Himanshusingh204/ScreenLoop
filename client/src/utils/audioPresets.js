@@ -1,8 +1,6 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // audioPresets.js — Cinema-quality audio constraints for watch party & movies
 // Disables voice-chat filters (noise gate, echo cancelling) to preserve
 // full dynamic range, surround sound, and uncompressed film scores.
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const CINEMA_AUDIO_PRESET = {
   echoCancellation: false,

@@ -332,7 +332,7 @@ ScreenLoop/
 └── LICENSE                    # MIT License
 ```
 
-> 📖 **For an in-depth component breakdown, hooks reference, and lifecycle map, see the [File Structure Documentation](docs/FILE_STRUCTURE.md).**
+> 📖 For the repo layout and contributor rules, see [PROJECT_MEMORY.md](PROJECT_MEMORY.md); for how it works, [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 

@@ -1,9 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // roomManager.js — In-memory room state management
 // No database needed. Rooms live as long as the server is running.
 // Includes capacity enforcement, room validation, and auto-cleanup.
 // Manages both watch-party rooms and meet (video-call) rooms.
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Room structure:
@@ -248,7 +246,7 @@ function stopRoomSweep() {
   clearInterval(roomSweepTimer);
 }
 
-// ─── Meet Room Management ──────────────────────────────────────────────────
+// Meet Room Management
 
 const MAX_MEET_PARTICIPANTS = parseInt(process.env.MAX_MEET_PARTICIPANTS, 10) || 20;
 const MEET_TTL_MS =

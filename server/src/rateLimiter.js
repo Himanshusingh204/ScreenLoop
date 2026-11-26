@@ -1,8 +1,6 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // rateLimiter.js — IP-based spam and brute force protection
 // Keyed by IP address to prevent bypass via reconnect.
 // Uses expiry-based cleanup to avoid memory leaks.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const spamLimits = new Map(); // IP -> { count, firstEvent }
 const reactionLimits = new Map(); // socketId -> { count, firstEvent }

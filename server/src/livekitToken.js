@@ -1,7 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // livekitToken.js — LiveKit AccessToken generator for Screenloop
 // Creates short-lived, cryptographically signed JWTs with room-level permissions
-// ─────────────────────────────────────────────────────────────────────────────
 
 const { AccessToken } = require('livekit-server-sdk');
 

@@ -90,7 +90,7 @@ export function ControlBar({
   // Use controlled quality from parent (Room.jsx), fallback to '1080p'
   const quality = currentQuality || '1080p';
 
-  // ─── Sync volume & audio boost to video ───────────────────────────────────
+  // Sync volume & audio boost to video
   useEffect(() => {
     if (videoRef?.current) {
       videoRef.current.volume = muted ? 0 : volume;
@@ -101,7 +101,7 @@ export function ControlBar({
     }
   }, [volume, muted, boostLevel, videoRef]);
 
-  // ─── PiP tracking ─────────────────────────────────────────────────────────
+  // PiP tracking
   useEffect(() => {
     const onPiPChange = () => setIsPiP(!!document.pictureInPictureElement);
     document.addEventListener('enterpictureinpicture', onPiPChange);
@@ -112,7 +112,7 @@ export function ControlBar({
     };
   }, []);
 
-  // ─── Track playback state for sync controls ───────────────────────────────
+  // Track playback state for sync controls
   useEffect(() => {
     const video = videoRef?.current;
     if (!video) {
@@ -161,7 +161,7 @@ export function ControlBar({
     }
   }, [videoRef]);
 
-  // ─── Playback sync: play / pause / seek across the room ───────────────────
+  // Playback sync: play / pause / seek across the room
   // Hosts own the stream, viewers request control via sync events.
   const togglePlayback = useCallback(() => {
     const video = videoRef?.current;
@@ -192,7 +192,7 @@ export function ControlBar({
     if (onSync) onSync('sync:seek', { time });
   }, [videoRef, onSync]);
 
-  // ─── Keyboard shortcut: M = mute ─────────────────────────────────────────
+  // Keyboard shortcut: M = mute
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;

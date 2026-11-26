@@ -1,8 +1,6 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // useLiveKitRoom.js — LiveKit media orchestration hook for Screenloop
 // Handles token acquisition, SFU room connection, screen sharing with
 // cinema audio, and track lifecycle management.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Room, RoomEvent, Track, ExternalE2EEKeyProvider, isE2EESupported } from 'livekit-client';

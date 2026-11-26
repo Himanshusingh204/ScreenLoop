@@ -1,7 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // sanitizer.js — Security sanitizer for user-generated strings
 // Prevents Cross-Site Scripting (XSS) and injection attacks
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Escapes HTML characters in a string to prevent XSS.

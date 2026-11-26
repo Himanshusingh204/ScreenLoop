@@ -1,7 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // LiveKitRoomWrapper.jsx — Unified LiveKit room provider for Screenloop
 // Manages media connections, hardware acceleration, reconnects and audio lifecycle
-// ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from 'react';
 import { LiveKitRoom } from '@livekit/components-react';

@@ -1,8 +1,6 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // index.js — Screenloop Signaling Server
 // Express + Socket.io — handles WebRTC signaling, chat, and drawing sync
 // Includes graceful shutdown, CSP-ready, and security headers.
-// ─────────────────────────────────────────────────────────────────────────────
 
 require('dotenv').config();
 
@@ -23,11 +21,11 @@ const connectedIPs = new Map();
 const app = express();
 const server = http.createServer(app);
 
-// ─── Disable X-Powered-By ───────────────────────────────────────────────────
+// Disable X-Powered-By
 app.disable('x-powered-by');
 if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 
-// ─── Dynamic Origin Validator ───────────────────────────────────────────────
+// Dynamic Origin Validator
 const explicitOrigins = process.env.ALLOWED_ORIGIN
   ? process.env.ALLOWED_ORIGIN.split(',').map((o) => o.trim())
   : [];
@@ -73,7 +71,7 @@ const corsMw = cors(corsOptions);
 app.use((req, res, next) => (PROBE_PATHS.has(req.path) ? next() : corsMw(req, res, next)));
 app.use(express.json());
 
-// ─── Security Headers (non-Vercel deployments) ──────────────────────────────
+// Security Headers (non-Vercel deployments)
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
@@ -82,7 +80,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Socket.io Setup ─────────────────────────────────────────────────────────
+// Socket.io Setup
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
@@ -103,7 +101,7 @@ const io = new Server(server, {
 
 attachRedisAdapter(io, process.env.REDIS_URL);
 
-// ─── Health Check ────────────────────────────────────────────────────────────
+// Health Check
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -128,7 +126,7 @@ app.get('/metrics', async (req, res) => {
   res.end(await register.metrics());
 });
 
-// ─── Room Listing (Phase 1: gated — prevents unauthenticated enumeration) ───
+// Room Listing (Phase 1: gated — prevents unauthenticated enumeration)
 // Set ROOM_LISTING_ENABLED=true to expose (dev default: on, prod default: off).
 // Lightweight per-IP rate limit included (no extra dependency).
 const roomListingHits = new Map();
@@ -170,7 +168,7 @@ app.get('/api/rooms', (req, res) => {
 
 // LiveKit tokens are issued over the authenticated socket ('sfu:token' in socketHandlers.js), not over open HTTP.
 
-// ─── Socket.io Connection ────────────────────────────────────────────────────
+// Socket.io Connection
 io.on('connection', (socket) => {
   const clientIP = getClientKey(socket);
   const ipCount = (connectedIPs.get(clientIP) || 0) + 1;
@@ -197,7 +195,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// ─── Start Server ────────────────────────────────────────────────────────────
+// Start Server
 const PORT = process.env.PORT || 4000;
 // Only listen when run directly, so tests can import `app` without binding a port
 if (require.main === module) {
@@ -210,7 +208,7 @@ if (require.main === module) {
   });
 }
 
-// ─── Graceful Shutdown ──────────────────────────────────────────────────────
+// Graceful Shutdown
 let isShuttingDown = false;
 
 function gracefulShutdown(signal) {
@@ -245,7 +243,7 @@ function gracefulShutdown(signal) {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// ─── Uncaught Exception / Unhandled Rejection Handlers ──────────────────────
+// Uncaught Exception / Unhandled Rejection Handlers
 process.on('uncaughtException', (err) => {
   logger.fatal({ err }, 'Uncaught Exception');
   gracefulShutdown('uncaughtException');
@@ -255,7 +253,7 @@ process.on('unhandledRejection', (reason) => {
   logger.fatal({ reason }, 'Unhandled Rejection');
 });
 
-// ─── Express Error Handler (must be last) ───────────────────────────────────
+// Express Error Handler (must be last)
 app.use((err, req, res, _next) => {
   logger.error({ err: err.message }, 'Express error');
   res.status(500).json({ error: 'Internal server error' });

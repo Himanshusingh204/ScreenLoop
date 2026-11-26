@@ -26,34 +26,26 @@
 
 ```
 ScreenLoop/
-├── .github/                 # workflows (ci.yml, codeql.yml), issue forms, PR template, dependabot
-├── client/                  # React 18 + Vite 5 frontend
-│   ├── public/              # logo, og-image, pwa icon, hero image, robots.txt
+├── .github/        workflows (ci, codeql), issue forms, PR template, dependabot
+├── client/         React 18 + Vite frontend
 │   └── src/
-│       ├── pages/           # Home, Room, MeetLanding, MeetRoom + info pages (Features, Security, About,
-│       │                    #   Help, Privacy, Terms, Accessibility, Changelog, Roadmap, Contact, NotFound)
-│       ├── components/      # SiteHeader/Footer, ControlBar, VideoPlayer, ChatSidebar, ShareModal, JoinModal,
-│       │   │                #   AnnotationCanvas, CursorOverlay, StatsOverlay, LiveKitRoomWrapper, ...
-│       │   ├── meet/        # MeetGrid, MeetTile, MeetLobby, MeetControlBar, MeetDeviceModal,
-│       │   │                #   MeetChatDrawer, MeetPeopleDrawer, MeetReactions
-│       │   └── icons/       # central Phosphor icon exports
-│       ├── hooks/           # useSignalingSocket, useRoom, useLiveKitRoom, useWebRTC, useWebRTCStats,
-│       │                    #   useMeetRTC, useMediaDevices, useActiveSpeaker, useScreenRecording,
-│       │                    #   useWakeLock, useNetworkStatus, useSoundEffects, useScrollReveal
-│       ├── utils/           # crypto, audioPresets, audioBooster, roomId, sanitizer, linkify, recentRooms,
-│       │                    #   formatTime, webrtcConfig, confetti, sfxSynth, viewTransition (+ __tests__/)
-│       ├── data/            # changelog.js, roadmap.js (feed the public pages)
-│       ├── styles/          # tokens, base, components, utilities, responsive, home, room, meet, pages,
-│       │                    #   home-redesign, room-redesign
-│       └── test/setup.js    # Vitest setup (localStorage + WebCrypto shims for CI Node versions)
-├── server/                  # Node.js Express + Socket.IO
-│   ├── src/                 # index.js, socketHandlers.js, roomManager.js, rateLimiter.js,
-│   │                        #   livekitToken.js, logger.js
-│   └── __tests__/           # roomManager, rateLimiter, socketHandlers, livekitToken
-├── docs/                    # FILE_STRUCTURE, SFU_DESIGN, AUTH_DESIGN* , DATABASE_DESIGN*  (*proposals only)
-├── ARCHITECTURE.md  CHANGELOG.md  CONTRIBUTING.md  CODE_OF_CONDUCT.md  DEPLOYMENT.md
-├── MASTER_PLAN_NEW.md  PROJECT_MEMORY.md  README.md  SECURITY.md  LICENSE
-└── docker-compose.yml  render.yaml  vercel.json  package.json
+│       ├── pages/        Home, Room, MeetLanding, MeetRoom + info pages
+│       ├── components/   ControlBar, VideoPlayer, ChatSidebar, ShareModal, CaptionsLayer, ...
+│       │   └── meet/     MeetGrid, MeetTile, MeetLobby, MeetControlBar, drawers, reactions
+│       ├── hooks/        useSignalingSocket, useRoom, useLiveKitRoom, useWebRTC, useMeetRTC,
+│       │                 useMeetLiveKit, useLiveCaptions, useMediaKeyRotation, ...
+│       ├── ai/           on-device captions: audioChunker, captionWorker, recap, support
+│       ├── utils/        crypto, audioPresets, mediaKeyCoordinator, sfuToken, meshFallback, ...
+│       ├── data/         changelog.js, roadmap.js (feed the public pages)
+│       └── styles/       tokens + per-area vanilla CSS
+├── server/         Express + Socket.IO signaling
+│   ├── src/        index, socketHandlers, roomManager, rateLimiter, livekitToken, livekitAdmin,
+│   │               redisAdapter, metrics, logger
+│   └── __tests__/
+├── deploy/         nginx + Kubernetes manifests (k8s not applied to a cluster)
+├── docs/           SYSTEM_DESIGN, THREAT_MODEL, VERIFICATION, AI_EVAL, CASE_STUDY
+├── e2e/ loadtest/  live browser suite and socket load test
+└── ARCHITECTURE, CHANGELOG, CONTRIBUTING, DEPLOYMENT, SECURITY, README (root)
 ```
 
 ---
@@ -96,13 +88,25 @@ Host generates a 256-bit AES-GCM key → placed in URL hash `/room/ID#KEY` → b
 2. **Never route media through the signaling server.**
 3. **Keep zero-account privacy**: no registration, no database requirement, no login gates.
 4. **Preserve CSP**: when adding external assets/workers, keep `vercel.json` and `client/vercel.json` directives valid.
-5. **Don't overclaim security**: media is not end-to-end encrypted; only chat is.
+5. **Don't overclaim security**: chat is E2EE; watch-room media is E2EE only with the `#key`; Meet and the P2P fallback are not. Cite `docs/VERIFICATION.md`.
 6. **Always run and verify**:
    - `cd server && npm test` (Vitest)
    - `cd client && npm test` (Vitest)
    - `cd client && npm run build` and `npm run lint`
    CI runs the client on Node 18 and 20, so avoid relying on globals that only exist in newer Node.
 7. **Never commit `.env` files**; only `.env.example` templates are tracked.
+
+---
+
+## 6. Status and open work
+
+Shipped: watch rooms (SFU + P2P fallback), Meet (mesh, opt-in SFU), E2EE chat, watch-room media E2EE with key rotation, Redis scale-out, on-device captions and recap, described-audio track (SFU only, not browser-tested).
+
+Open (needs real devices or a human):
+- NVDA/screen-reader pass on Room and Meet.
+- Caption benchmark on real human speech (only 4 synthetic clips measured; pooled WER 16.4 %).
+- 12-tab Meet check; `deploy/k8s/` never applied to a cluster.
+- Meet is dark-only; Meet is not frame-encrypted; mixed SFU/mesh Meet clients do not interoperate.
 
 ---
 

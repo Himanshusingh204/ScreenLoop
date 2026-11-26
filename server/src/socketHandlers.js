@@ -1,8 +1,6 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // socketHandlers.js — All Socket.io event handlers with security
 // Handles: room join/leave, WebRTC signaling, playback sync, chat
 // Security: membership validation, IP-based rate limiting, authorization
-// ─────────────────────────────────────────────────────────────────────────────
 
 const {
   createRoom,
@@ -41,7 +39,7 @@ const {
 const crypto = require('crypto');
 const logger = require('./logger');
 
-// ─── Chat message ownership (Phase 1 authz fix) ─────────────────────────────
+// Chat message ownership (Phase 1 authz fix)
 // Maps msgId -> { socketId, roomId, timestamp }. Prevents any participant from
 // deleting/editing anyone else's messages by spoofing msgId + msgTimestamp.
 // Server-side timestamp is authoritative; client msgTimestamp is untrusted.
@@ -98,7 +96,7 @@ function payloadSize(value) {
   }
 }
 
-// ─── Sync / annotation payload validation ───────────────────────────────────
+// Sync / annotation payload validation
 // Shapes match client/src: media times are seconds; pointer and stroke
 // coordinates are 0..1 fractions of the video area (pointer uses -1 on leave;
 // touch strokes may drift a little past the edge, hence the wider stroke range).
@@ -125,7 +123,7 @@ function isValidStroke(s) {
   return ['fromX', 'fromY', 'toX', 'toY'].every((k) => isStrokeCoord(s[k]));
 }
 
-// ─── Membership assertions (Phase 2: single source of truth) ────────────────
+// Membership assertions (Phase 2: single source of truth)
 // Every room/meet event must prove: socket claims this room AND the room exists
 // AND the socket is still a participant. Returns { room, participant } or null.
 function requireRoomMember(socket, roomId) {
@@ -196,7 +194,7 @@ function registerHandlers(socket, io) {
     });
   }
 
-  // ─── Room: Create ───────────────────────────────────────────────────────────
+  // Room: Create
   socket.on('room:create', ({ roomId, name, pin, gender }) => {
     try {
       // Task 44: Validate roomId format — no special characters
@@ -245,7 +243,7 @@ function registerHandlers(socket, io) {
     }
   });
 
-  // ─── Room: Join ─────────────────────────────────────────────────────────────
+  // Room: Join
   socket.on('room:join', ({ roomId, name, pin, gender }) => {
     try {
       // Task 44: Validate roomId format
@@ -328,7 +326,7 @@ function registerHandlers(socket, io) {
     }
   });
 
-  // ─── WebRTC: Offer (host -> viewer) ─────────────────────────────────────────
+  // WebRTC: Offer (host -> viewer)
   socket.on('webrtc:offer', ({ targetId, offer }) => {
     if (!socket.data.roomId || !targetId || !offer) return;
     if (payloadSize(offer) > MAX_SDP_CHARS) return;
@@ -342,7 +340,7 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── WebRTC: Answer (viewer -> host) ────────────────────────────────────────
+  // WebRTC: Answer (viewer -> host)
   socket.on('webrtc:answer', ({ targetId, answer }) => {
     if (!socket.data.roomId || !targetId || !answer) return;
     if (payloadSize(answer) > MAX_SDP_CHARS) return;
@@ -355,7 +353,7 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── WebRTC: ICE Candidate (both directions) ────────────────────────────────
+  // WebRTC: ICE Candidate (both directions)
   socket.on('webrtc:ice', ({ targetId, candidate }) => {
     if (!socket.data.roomId || !targetId) return;
     if (payloadSize(candidate) > MAX_ICE_CHARS) return;
@@ -368,14 +366,14 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── WebRTC: Stop Stream (host ended the share) ─────────────────────────────
+  // WebRTC: Stop Stream (host ended the share)
   socket.on('webrtc:stop', ({ roomId }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
     io.to(roomId).emit('webrtc:stream-end', { roomId });
   });
 
-  // ─── Sync: Play ─────────────────────────────────────────────────────────────
+  // Sync: Play
   // Phase 2: server-side name (never trust client-sent "name").
   socket.on('sync:play', ({ roomId, currentTime }) => {
     const m = requireRoomMember(socket, roomId);
@@ -384,7 +382,7 @@ function registerHandlers(socket, io) {
     socket.to(roomId).emit('sync:play', { name: m.participant.name, currentTime });
   });
 
-  // ─── Sync: Pause ────────────────────────────────────────────────────────────
+  // Sync: Pause
   socket.on('sync:pause', ({ roomId, currentTime }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
@@ -392,7 +390,7 @@ function registerHandlers(socket, io) {
     socket.to(roomId).emit('sync:pause', { name: m.participant.name, currentTime });
   });
 
-  // ─── Sync: Seek ─────────────────────────────────────────────────────────────
+  // Sync: Seek
   socket.on('sync:seek', ({ roomId, time }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
@@ -400,14 +398,14 @@ function registerHandlers(socket, io) {
     socket.to(roomId).emit('sync:seek', { name: m.participant.name, time });
   });
 
-  // ─── Chat: Typing Indicator ─────────────────────────────────────────────────
+  // Chat: Typing Indicator
   socket.on('chat:typing', ({ roomId }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
     socket.to(roomId).emit('chat:typing', { name: m.participant.name, socketId: socket.id });
   });
 
-  // ─── Chat: Message ───────────────────────────────────────────────────────────
+  // Chat: Message
   // Phase 2: explicit `enc` flag marks E2EE ciphertext (replaces length heuristic).
   socket.on('chat:message', ({ roomId, text, enc }) => {
     const m = requireRoomMember(socket, roomId);
@@ -431,7 +429,7 @@ function registerHandlers(socket, io) {
     socket.emit('chat:ack', { msgId });
   });
 
-  // ─── Chat: Delete ───────────────────────────────────────────────────────────
+  // Chat: Delete
   // Phase 1: ownership enforced via server-side map. Host may delete any
   // message; others may delete only their own within 60s (server clock).
   socket.on('chat:delete', ({ roomId, msgId, msgTimestamp }) => {
@@ -445,7 +443,7 @@ function registerHandlers(socket, io) {
     io.to(roomId).emit('chat:deleted', { msgId, deletedBy: participant.name });
   });
 
-  // ─── Chat: Edit ─────────────────────────────────────────────────────────────
+  // Chat: Edit
   // Phase 1: only the original author may edit, within 60s (server clock).
   // Phase 2: `enc` flag passes through so receivers know to decrypt.
   socket.on('chat:edit', ({ roomId, msgId, msgTimestamp, newText, enc }) => {
@@ -467,7 +465,7 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── Host: Toggle host-only controls ────────────────────────────────────────
+  // Host: Toggle host-only controls
   socket.on('room:host-only-toggle', ({ roomId, enabled }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
@@ -479,7 +477,7 @@ function registerHandlers(socket, io) {
     io.to(roomId).emit('room:host-only-changed', { enabled: room.hostOnlyControls });
   });
 
-  // ─── Reactions & Laser Pointer ───────────────────────────────────────────────
+  // Reactions & Laser Pointer
   socket.on('room:reaction', ({ roomId, emoji }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
@@ -513,7 +511,7 @@ function registerHandlers(socket, io) {
     socket.to(roomId).emit('sync:clear-draw');
   });
 
-  // ─── Host Moderation (Kick) ─────────────────────────────────────────────────
+  // Host Moderation (Kick)
   socket.on('room:kick', ({ roomId, targetId, ban }) => {
     const m = requireRoomMember(socket, roomId);
     if (!m) return;
@@ -558,7 +556,7 @@ function registerHandlers(socket, io) {
     }
   });
 
-  // ─── LiveKit token issuance (replaces the open /api/token endpoint) ─────────
+  // LiveKit token issuance (replaces the open /api/token endpoint)
   // Issued only over an authenticated socket that is already a member (PIN passed). Identity is the socket id, so a
   // tile cannot be claimed by someone else; only the server-recorded host may publish into a watch room.
   socket.on('sfu:token', async (req, ack) => {
@@ -602,7 +600,7 @@ function registerHandlers(socket, io) {
     }
   });
 
-  // ─── Media E2EE key delivery ───────────────────────────────────────────────
+  // Media E2EE key delivery
   // Server only relays: public keys (so the host can wrap) and wrapped keys (opaque to us).
   const B64 = /^[A-Za-z0-9_-]+$/;
   const okB64 = (v, max) => typeof v === 'string' && v.length > 0 && v.length <= max && B64.test(v);
@@ -624,7 +622,7 @@ function registerHandlers(socket, io) {
     io.to(to).emit('e2ee:rekey', { from: socket.id, hostPub, iv, ct, epoch });
   });
 
-  // ─── Transfer Host ──────────────────────────────────────────────────────────
+  // Transfer Host
   socket.on('room:transfer-host', ({ roomId, newHostId }) => {
     if (!requireRoomMember(socket, roomId)) return;
     if (transferHost(roomId, socket.id, newHostId)) {
@@ -635,7 +633,7 @@ function registerHandlers(socket, io) {
     }
   });
 
-  // ─── Meet: Join ────────────────────────────────────────────────────────────
+  // Meet: Join
   socket.on('meet:join', ({ meetId, name, gender, micOn, cameraOn }) => {
     try {
       if (!meetId || typeof meetId !== 'string' || !/^[A-Za-z0-9_-]{1,20}$/.test(meetId)) return;
@@ -687,7 +685,7 @@ function registerHandlers(socket, io) {
     }
   });
 
-  // ─── Meet: Signal (WebRTC relay) ──────────────────────────────────────────
+  // Meet: Signal (WebRTC relay)
   socket.on('meet:signal', ({ to, signalData }) => {
     if (!socket.data.meetId || !to || !signalData) return;
     if (payloadSize(signalData) > MAX_SDP_CHARS) return;
@@ -700,7 +698,7 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── Meet: State Change (mic/cam/share/hand) ──────────────────────────────
+  // Meet: State Change (mic/cam/share/hand)
   socket.on('meet:state-change', ({ micOn, cameraOn, isSharing, handRaised }) => {
     const m = requireMeetMember(socket);
     if (!m) return;
@@ -721,7 +719,7 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── Meet: Reaction ────────────────────────────────────────────────────────
+  // Meet: Reaction
   socket.on('meet:reaction', ({ emoji }) => {
     const m = requireMeetMember(socket);
     if (!m) return;
@@ -738,7 +736,7 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── Meet: Chat Message ────────────────────────────────────────────────────
+  // Meet: Chat Message
   socket.on('meet:chat', ({ text }) => {
     const m = requireMeetMember(socket);
     if (!m) return;
@@ -758,7 +756,7 @@ function registerHandlers(socket, io) {
     });
   });
 
-  // ─── Meet: Leave ───────────────────────────────────────────────────────────
+  // Meet: Leave
   socket.on('meet:leave', () => {
     if (!socket.data.meetId) return;
     const meetId = socket.data.meetId;
@@ -783,7 +781,7 @@ function registerHandlers(socket, io) {
     logger.info({ meetId, socketId: socket.id }, 'Meet left');
   });
 
-  // ─── Disconnect ─────────────────────────────────────────────────────────────
+  // Disconnect
   socket.on('disconnect', (reason) => {
     try {
       // Clean up meet room

@@ -51,3 +51,8 @@ Conclusion: scale signaling with commodity nodes; the cost and engineering limit
 | E2EE key bound to URL fragment | Server-held keys | Operator cannot read media; cost: link without `#key` is unusable. |
 | On-device ASR | Cloud ASR | Privacy and zero marginal cost; cost: per-viewer CPU/GPU and a one-time model download. |
 | Opt-in SFU for Meet | Always SFU | Safe rollout; fallback to the existing mesh. |
+
+## Why an SFU, and what it costs
+- Mesh: the host uploads one stream per viewer, which breaks down at a handful of peers and fails behind symmetric NAT without TURN. SFU: the host uploads once and the SFU forwards, with simulcast layers so a slow viewer drops to a lower resolution without affecting others.
+- Cinema preset: stereo Opus at 48 kHz with echo cancellation, noise suppression and AGC off (`client/src/utils/audioPresets.js`).
+- Cost: LiveKit Cloud's free tier and a small self-hosted VPS both cover small friend groups; check current pricing before relying on a number. Egress is the real cost at scale (see Capacity).

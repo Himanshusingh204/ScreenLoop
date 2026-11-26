@@ -55,7 +55,7 @@ export default function Room() {
     }
   }, [searchParams]);
 
-  // ─── Phase / connection state ─────────────────────────────────────────────
+  // Phase / connection state
   const [phase, setPhase]           = useState('joining');
   const [myName, setMyName]         = useState('');
   const [modalError, setModalError] = useState(null);
@@ -67,13 +67,13 @@ export default function Room() {
   const [remoteStream, setRemoteStream] = useState(null);
   const [isActualHost, setIsActualHost] = useState(intendedHost);
 
-  // ─── Modals and Overlays State ────────────────────────────────────────────
+  // Modals and Overlays State
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [statsVisible, setStatsVisible]       = useState(false);
   const [drawModeActive, setDrawModeActive]   = useState(false);
   const [hostDisconnected, setHostDisconnected] = useState(false);
 
-  // ─── Shared signaling connection (Phase 2: useSignalingSocket) ─────────────
+  // Shared signaling connection (Phase 2: useSignalingSocket)
   const {
     socket,
     connected,
@@ -81,24 +81,24 @@ export default function Room() {
     reconnectAttempt,
   } = useSignalingSocket(SERVER_URL, { room: roomId });
 
-  // ─── Audio-only mode & Quality state ──────────────────────────────────────────
+  // Audio-only mode & Quality state
   const [audioOnly, setAudioOnly] = useState(false);
   const [hearDescribed, setHearDescribed] = useState(false);
   const [currentQuality, setCurrentQuality] = useState('1080p');
 
-  // ─── Fullscreen state ─────────────────────────────────────────────────────
+  // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimer = useRef(null);
 
-  // ─── Web APIs Hooks (Wake Lock, SFX Synthesizer, Network Status) ──────────
+  // Web APIs Hooks (Wake Lock, SFX Synthesizer, Network Status)
   const isMediaActive = isSharing || !!remoteStream;
   useWakeLock(isMediaActive);
   const { isOnline } = useNetworkStatus();
   const { playJoinChime, playLeaveChime, playMessagePing, playReactionPop } = useSoundEffects();
 
-  // ─── Refs ─────────────────────────────────────────────────────────────────
+  // Refs
   const addToastRef = useRef(null);
   const videoRef    = useRef(null);
   const roomRef     = useRef(null);
@@ -114,11 +114,11 @@ export default function Room() {
   // (auto-rejoin/handleJoin handle the first join; connect handler is for reconnects).
   const initialConnectHandledRef = useRef(false);
 
-  // ─── Socket.io Connection ────────────────────────────────────────────────
+  // Socket.io Connection
   // Owned by useSignalingSocket (shared hook). Room-specific rejoin logic lives
   // in the WebRTC signaling effect + auto-rejoin effect below.
 
-  // ─── Auto-rejoin from sessionStorage on refresh ────────────────────────────
+  // Auto-rejoin from sessionStorage on refresh
   useEffect(() => {
     if (!socket) return;
     try {
@@ -137,7 +137,7 @@ export default function Room() {
     } catch { /* ignore corrupt data */ }
   }, [socket, roomId]);
 
-  // ─── WebRTC Engine ───────────────────────────────────────────────────────
+  // WebRTC Engine
   const {
     startScreenShare, sendOfferToViewer,
     handleOffer, handleAnswer, handleIce,
@@ -149,7 +149,7 @@ export default function Room() {
     onTrackEnded: () => setIsSharing(false),
   });
 
-  // ─── LiveKit SFU Media Engine ─────────────────────────────────────────────
+  // LiveKit SFU Media Engine
   const {
     room: lkRoom,
     isConnected: isLiveKitActive,
@@ -191,7 +191,7 @@ export default function Room() {
     return new MediaStream([track]);
   }, [isLiveKitActive, isActualHost, lkRoom]);
 
-  // ─── Screen Recording Hook ──────────────────────────────────────────────
+  // Screen Recording Hook
   const recordingStream = isActualHost ? (livekitSelfStream || localStream.current) : remoteStream;
   const {
     isRecording,
@@ -200,7 +200,7 @@ export default function Room() {
     stopRecording,
   } = useScreenRecording(recordingStream);
 
-  // ─── Telemetry Hook ───────────────────────────────────────────────────────
+  // Telemetry Hook
   const streamStats = useWebRTCStats({
     peersRef: peers,
     isHost: isActualHost,
@@ -208,7 +208,7 @@ export default function Room() {
     enabled: true,
   });
 
-  // ─── Room State & Crypto Messaging ───────────────────────────────────────
+  // Room State & Crypto Messaging
   const {
     participants, setParticipants, setHostId,
     toasts, chatMessages, hostOnlyControls, setHostOnlyControls,
@@ -264,7 +264,7 @@ export default function Room() {
     };
   }, [socket, addToast]);
 
-  // ─── WebRTC Signaling Listeners ──────────────────────────────────────────
+  // WebRTC Signaling Listeners
   useEffect(() => {
     if (!socket) return;
     const handleStreamEnd = () => {
@@ -326,7 +326,7 @@ export default function Room() {
     };
   }, [socket, handleOffer, handleAnswer, handleIce, addToast, roomId]);
 
-  // ─── Room Join Events ─────────────────────────────────────────────────────
+  // Room Join Events
   useEffect(() => {
     if (!socket) return;
     const onJoined = ({ participants: p, isHost: h, hostId, hostOnlyControls: hoc }) => {
@@ -366,7 +366,7 @@ export default function Room() {
     };
   }, [socket, roomId, setParticipants, setHostId, setHostOnlyControls, playJoinChime, addToast]);
 
-  // ─── Media Session API ───────────────────────────────────────────────────
+  // Media Session API
   useEffect(() => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -377,7 +377,7 @@ export default function Room() {
     }
   }, [roomId, isActualHost]);
 
-  // ─── Track Fullscreen State ──────────────────────────────────────────────
+  // Track Fullscreen State
   useEffect(() => {
     const onChange = () => {
       const fs = !!document.fullscreenElement;
@@ -391,7 +391,7 @@ export default function Room() {
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
-  // ─── Auto-hide Controls in Fullscreen ─────────────────────────────────────
+  // Auto-hide Controls in Fullscreen
   const showControls = useCallback(() => {
     setControlsVisible(true);
     clearTimeout(hideTimer.current);
@@ -414,7 +414,7 @@ export default function Room() {
     return () => clearTimeout(hideTimer.current);
   }, [isFullscreen, showControls]);
 
-  // ─── Fullscreen Toggle ───────────────────────────────────────────────────
+  // Fullscreen Toggle
   const toggleFullscreen = useCallback(async () => {
     try {
       if (!document.fullscreenElement) {
@@ -427,7 +427,7 @@ export default function Room() {
     }
   }, []);
 
-  // ─── Keyboard Shortcuts ───────────────────────────────────────────────────
+  // Keyboard Shortcuts
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -442,7 +442,7 @@ export default function Room() {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleFullscreen, shareModalOpen, isFullscreen, sidebarOpen]);
 
-  // ─── Apply incoming playback sync events to the local video element ──────
+  // Apply incoming playback sync events to the local video element
   // Server broadcasts sync events to other participants; apply them here so
   // pause/play/seek actually affects playback (toasts are handled in useRoom).
   useEffect(() => {
@@ -471,7 +471,7 @@ export default function Room() {
     };
   }, [socket]);
 
-  // ─── Room Actions ─────────────────────────────────────────────────────────
+  // Room Actions
   const handleJoin = useCallback(({ name, pin, gender }) => {
     if (!socket) {
       setModalError('Not connected to server. Please wait or refresh.');
@@ -591,7 +591,7 @@ export default function Room() {
     setIsActualHost(false);
   }, [roomId, socket, stopScreenShare]);
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // Render
   if (!socket && phase === 'joining') {
     return <LoaderPage text="Connecting to server…" />;
   }

@@ -1,7 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // useWebRTC.js — Production WebRTC peer connection management
 // Includes ICE candidate queuing, dynamic bitrate adaptation, and robust recovery
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useRef, useCallback } from 'react';
 import { getIceServers } from '../utils/webrtcConfig';
@@ -22,7 +20,7 @@ function resolveIceServers() {
 
 const ICE_SERVERS = resolveIceServers();
 
-// ─── Video quality presets ────────────────────────────────────────────────────
+// Video quality presets
 export const QUALITY_PRESETS = {
   '720p': {
     label: '720p HD',
@@ -44,7 +42,7 @@ export const QUALITY_PRESETS = {
   },
 };
 
-// ─── High-quality cinema audio constraints ─────────────────────────────────
+// High-quality cinema audio constraints
 const AUDIO_CONSTRAINTS = CINEMA_AUDIO_PRESET;
 
 /**
@@ -75,7 +73,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     }
   }, []);
 
-  // ─── Create a peer connection ───────────────────────────────────────────────
+  // Create a peer connection
   const createPeer = useCallback(
     (targetId) => {
       if (peers.current[targetId]) {
@@ -116,7 +114,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     [socket, isHost, onStream]
   );
 
-  // ─── Cleanup ──────────────────────────────────────────────────────────────
+  // Cleanup
   const stopScreenShare = useCallback(() => {
     if (localStream.current) {
       localStream.current.getTracks().forEach((t) => t.stop());
@@ -127,7 +125,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     pendingIceCandidates.current = {};
   }, []);
 
-  // ─── Host: capture screen ──────────────────────────────────────────────────
+  // Host: capture screen
   const startScreenShare = useCallback(
     async (quality = '1080p') => {
       const videoConstraints = QUALITY_PRESETS[quality] ?? QUALITY_PRESETS['1080p'];
@@ -161,7 +159,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     [onTrackEnded, stopScreenShare]
   );
 
-  // ─── Host: send offer to a viewer ──────────────────────────────────────────
+  // Host: send offer to a viewer
   const sendOfferToViewer = useCallback(
     async (viewerId) => {
       if (!localStream.current) return;
@@ -183,7 +181,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     [createPeer, socket]
   );
 
-  // ─── Viewer: handle incoming offer ────────────────────────────────────────
+  // Viewer: handle incoming offer
   const handleOffer = useCallback(
     async ({ fromId, offer }) => {
       const peer = createPeer(fromId);
@@ -201,7 +199,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     [createPeer, socket, processPendingIce]
   );
 
-  // ─── Host: handle viewer's answer ─────────────────────────────────────────
+  // Host: handle viewer's answer
   const handleAnswer = useCallback(async ({ fromId, answer }) => {
     const peer = peers.current[fromId];
     if (peer) {
@@ -214,7 +212,7 @@ export function useWebRTC({ socket, isHost, onStream, onTrackEnded }) {
     }
   }, [processPendingIce]);
 
-  // ─── Handle incoming ICE candidate (with queuing) ─────────────────────────
+  // Handle incoming ICE candidate (with queuing)
   const handleIce = useCallback(async ({ fromId, candidate }) => {
     if (!candidate) return;
     const peer = peers.current[fromId];

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - Upcoming
 
+### Removed
+
+- Consolidated docs: dropped the unimplemented auth and database proposals, the file-structure guide, the SFU design note and the master-plan files. Their live content moved into `PROJECT_MEMORY.md` and `docs/SYSTEM_DESIGN.md`.
+
 ### Added
 
 - Described-audio track: the host can publish a narration mic track through the SFU; viewers opt in with the "DA" control-bar button. SFU only (no P2P fallback), not yet tested in a real browser.
@@ -52,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.5.0] - 2026-08-29
 
 ### Added
-- Dedicated **Google Meet Video Call Master Plan** (`VIDEO_CALL_MASTER_PLAN.md`, since consolidated into `MASTER_PLAN_NEW.md`) with comprehensive UX/UI blueprints and WebRTC signaling contracts.
+- Dedicated **Google Meet Video Call Master Plan** (`VIDEO_CALL_MASTER_PLAN.md`, since removed) with comprehensive UX/UI blueprints and WebRTC signaling contracts.
 - Automated **CodeQL static security analysis** workflow (`.github/workflows/codeql.yml`).
 - Repository community standards: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `CHANGELOG.md`.
 - Structured GitHub Issue Forms for bug reports and feature proposals (`.github/ISSUE_TEMPLATE/`).

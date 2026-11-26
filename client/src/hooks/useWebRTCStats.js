@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // useWebRTCStats.js — Real-time WebRTC stream quality and network telemetry
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef } from 'react';
 

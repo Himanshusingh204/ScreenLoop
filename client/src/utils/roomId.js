@@ -1,7 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // roomId.js — Generate and validate room IDs
 // Uses crypto.getRandomValues() for secure randomness.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const ROOM_ID_LENGTH = 10;
