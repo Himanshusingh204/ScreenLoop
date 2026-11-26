@@ -32,7 +32,7 @@ Screenloop is a **zero-account** place to watch together and meet face to face: 
 | Media-frame E2EE (watch rooms) | ✅ Shipped, verified live | `useLiveKitRoom`, `mediaKeyCoordinator.js` |
 | Multi-node scaling | ✅ Redis adapter + room affinity; compose stack run live; k8s not run | `deploy/`, `docs/SYSTEM_DESIGN.md` |
 | On-device captions + recap | ✅ Shipped (1 clip benchmarked) | `client/src/ai/`, `docs/AI_EVAL.md` |
-| Described-audio track | ❌ Not built | see P3 |
+| Described-audio track | ✅ Shipped on the SFU path only; not browser-tested; no P2P fallback | `useLiveKitRoom` (`setDescribedAudio`), ControlBar "DA" button |
 
 Quality gates today: server 83/83, client 84/84, lint clean, production build OK, live e2e suite in `e2e/` passing.
 

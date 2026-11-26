@@ -83,6 +83,7 @@ export default function Room() {
 
   // ─── Audio-only mode & Quality state ──────────────────────────────────────────
   const [audioOnly, setAudioOnly] = useState(false);
+  const [hearDescribed, setHearDescribed] = useState(false);
   const [currentQuality, setCurrentQuality] = useState('1080p');
 
   // ─── Fullscreen state ─────────────────────────────────────────────────────
@@ -160,6 +161,10 @@ export default function Room() {
     e2eeActive,
     keyStateRef: mediaKeyStateRef,
     remoteAudioStream: lkAudioStream,
+    describedAvailable,
+    describing,
+    setDescribedAudio,
+    setDescribedListening,
   } = useLiveKitRoom({
     socket,
     roomId,
@@ -688,6 +693,16 @@ export default function Room() {
             onSync={emitSync}
             onToggleFullscreen={toggleFullscreen}
             onReaction={handleReaction}
+            describedMode={isLiveKitActive ? (isActualHost ? 'host' : describedAvailable ? 'viewer' : null) : null}
+            describedOn={isActualHost ? describing : hearDescribed}
+            onToggleDescribed={() => {
+              if (isActualHost) {
+                setDescribedAudio(!describing).catch(() => addToastRef.current?.('Microphone unavailable'));
+              } else {
+                setDescribedListening(!hearDescribed);
+                setHearDescribed(!hearDescribed);
+              }
+            }}
             audioOnly={audioOnly}
             onToggleAudioOnly={handleToggleAudioOnly}
             currentQuality={currentQuality}

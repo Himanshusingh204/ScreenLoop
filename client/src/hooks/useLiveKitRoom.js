@@ -29,6 +29,8 @@ export function useLiveKitRoom({
   const [remoteScreenStream, setRemoteScreenStream] = useState(null);
   const [remoteAudioStream, setRemoteAudioStream] = useState(null); // cinema audio, for on-device captions
   const [isSharing, setIsSharing] = useState(false);
+  const [describedAvailable, setDescribedAvailable] = useState(false); // viewer: host is publishing a described-audio track
+  const [describing, setDescribing] = useState(false); // host: publishing it
   const [e2eeActive, setE2eeActive] = useState(false);
   const roomRef = useRef(null);
   const keyProviderRef = useRef(null);
@@ -88,6 +90,8 @@ export function useLiveKitRoom({
           setIsSharing(false);
           setRemoteScreenStream(null);
           setRemoteAudioStream(null);
+          setDescribedAvailable(false);
+          setDescribing(false);
         });
 
         // When a remote participant shares their screen
@@ -97,6 +101,13 @@ export function useLiveKitRoom({
             const mediaStream = new MediaStream([track.mediaStreamTrack]);
             setRemoteScreenStream(mediaStream);
             if (onScreenTrackSubscribedRef.current) onScreenTrackSubscribedRef.current(mediaStream, participant);
+          } else if (track.source === Track.Source.Microphone) {
+            // Described audio: attached muted; the viewer opts in with setDescribedListening
+            const el = track.attach();
+            el.id = 'livekit-described-audio';
+            el.muted = true;
+            document.body.appendChild(el);
+            setDescribedAvailable(true);
           } else if (track.source === Track.Source.ScreenShareAudio) {
             console.log('[LiveKit] Subscribed to cinema audio track');
             setRemoteAudioStream(new MediaStream([track.mediaStreamTrack]));
@@ -119,6 +130,10 @@ export function useLiveKitRoom({
             track.detach();
             setRemoteScreenStream(null);
             if (onScreenTrackUnsubscribedRef.current) onScreenTrackUnsubscribedRef.current();
+          } else if (track.source === Track.Source.Microphone) {
+            track.detach();
+            document.getElementById('livekit-described-audio')?.remove();
+            setDescribedAvailable(false);
           } else if (track.source === Track.Source.ScreenShareAudio) {
             console.log('[LiveKit] Remote cinema audio stopped');
             setRemoteAudioStream(null);
@@ -190,6 +205,21 @@ export function useLiveKitRoom({
     setIsSharing(false);
   }, []);
 
+  // Host: publish / unpublish the described-audio (narration) track
+  const setDescribedAudio = useCallback(async (on) => {
+    await roomRef.current?.localParticipant?.setMicrophoneEnabled(on);
+    setDescribing(on);
+  }, []);
+
+  // Viewer: hear or silence the host's narration
+  const setDescribedListening = useCallback((on) => {
+    const el = document.getElementById('livekit-described-audio');
+    if (el) {
+      el.muted = !on;
+      if (on) el.play?.().catch(() => {});
+    }
+  }, []);
+
   // Swap in a rotated media key (delivered per-recipient by MediaKeyCoordinator)
   const rotateKey = useCallback(async (key, epoch = 0) => {
     keyStateRef.current = { key, epoch };
@@ -198,6 +228,10 @@ export function useLiveKitRoom({
 
   return {
     e2eeActive,
+    describedAvailable,
+    describing,
+    setDescribedAudio,
+    setDescribedListening,
     rotateKey,
     keyStateRef,
     remoteAudioStream,

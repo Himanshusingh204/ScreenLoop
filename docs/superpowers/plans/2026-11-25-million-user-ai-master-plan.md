@@ -202,6 +202,6 @@
 ## Self-review notes
 
 - Spec coverage: P1.1-1.3, P2.1-2.3 and P3.2 map to Tasks 12, 4, 3, 4, 2/5 and 8. P3.1 (described audio) and P3.3 (a11y pass) are not scheduled. Add them after Phase 3 if wanted.
-- Status 2026-11-27: all tasks shipped except the open steps above (20-clip benchmark: 4 clips run; 12-tab Meet check; demo recording), which need real devices or a human. P3.1 described audio and P3.3 NVDA pass remain unscheduled.
+- Status 2026-11-27: all tasks shipped except the open steps above (20-clip benchmark: 4 clips run; 12-tab Meet check; demo recording), which need real devices or a human. P3.1 described audio shipped (SFU only, untested in a browser); the P3.3 NVDA pass remains.
 - Risk: "millions" is a design target, not a measured claim. Task 2 and Task 5 produce the real number. Quote only that number.
 - Risk: Whisper-tiny accuracy is weak on noisy movie audio. Task 11 publishes this honestly, and a whisper-base option is the fallback.

@@ -68,6 +68,9 @@ export function ControlBar({
   onToggleRecording,
   audioOnly,
   onToggleAudioOnly,
+  describedMode = null, // 'host' | 'viewer' | null
+  describedOn = false,
+  onToggleDescribed,
   currentQuality,
   onQualityChange,
 }) {
@@ -401,6 +404,21 @@ export function ControlBar({
         >
           {audioOnly ? <MicrophoneSlash size={18} /> : <Microphone size={18} />}
         </button>
+
+        {/* Described audio: host narrates over the stream; viewers opt in */}
+        {describedMode && (
+          <button
+            type="button"
+            className={`ctrl-btn ${describedOn ? 'active' : ''}`}
+            onClick={onToggleDescribed}
+            title={describedMode === 'host' ? 'Narrate (described audio)' : 'Hear described audio'}
+            aria-label={describedMode === 'host' ? 'Narrate (described audio)' : 'Hear described audio'}
+            aria-pressed={describedOn}
+          >
+            <Microphone size={18} weight={describedOn ? 'fill' : 'regular'} />
+            <span style={{ fontSize: 10, marginLeft: 3 }}>DA</span>
+          </button>
+        )}
 
         {/* Recording Toggle */}
         {onToggleRecording && (

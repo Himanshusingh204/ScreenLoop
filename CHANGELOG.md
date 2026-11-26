@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - Upcoming
 
 ### Added
+
+- Described-audio track: the host can publish a narration mic track through the SFU; viewers opt in with the "DA" control-bar button. SFU only (no P2P fallback), not yet tested in a real browser.
 - **On-device live captions** (`CC` in watch rooms): Whisper in a Web Worker (WebGPU, WASM fallback), optional English translation, downloadable extractive recap. No audio or transcript leaves the device.
 - **Media-frame end-to-end encryption** for watch rooms (LiveKit `ExternalE2EEKeyProvider`, key from the URL `#fragment`), with per-recipient key rotation when the host removes someone (ECDH P-256 + HKDF salted with the room key + AES-GCM, epoch-ordered).
 - **Video Meet on the LiveKit SFU** (opt-in `VITE_MEET_SFU=true`) with automatic P2P mesh fallback.
